@@ -23,6 +23,7 @@
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
         .form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+        .image-preview { margin-top: 0.5rem; max-width: 100%; max-height: 200px; border-radius: 4px; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 3000; }
         .modal-overlay.active { display: flex; }
         .modal-box { background: #fff; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; }
@@ -84,6 +85,11 @@
                     <label for="itemPrice">Price (in rupees)</label>
                     <input type="number" id="itemPrice" name="itemPrice" required placeholder="e.g., 300" min="0" step="10">
                 </div>
+                <div class="form-group">
+                    <label for="itemImage">Image</label>
+                    <input type="file" id="itemImage" name="itemImage" accept="image/*">
+                    <img id="imagePreview" class="image-preview" style="display:none;">
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn-save">Save Item</button>
@@ -95,6 +101,7 @@
     <script>
     let allItems = [];
     let editingId = null;
+    let currentImageBase64 = null;
 
     async function loadMenuItems() {
         const grid = document.getElementById('menuGridAdmin');
@@ -119,14 +126,15 @@
         }
         grid.innerHTML = allItems.map(item => `
             <div class="menu-card">
-                <h4>${item.name}</h4>
-                <p><strong>ID:</strong> ${item.id}</p>
-                <p><strong>Category:</strong> ${item.category}</p>
-                <p><strong>Price:</strong> ₹${Number(item.price).toFixed(0)}</p>
-                <div class="menu-card-actions">
-                    <button class="btn-edit" onclick="editItem('${item.id}')">Edit</button>
-                    <button class="btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
-                </div>
+                    ${item.image ? `<img src="${item.image}" style="width:100%; height:150px; object-fit:cover; border-radius:4px; margin-bottom:0.5rem;">` : ''}
+                    <h4>${item.name}</h4>
+                    <p><strong>ID:</strong> ${item.id}</p>
+                    <p><strong>Category:</strong> ${item.category}</p>
+                    <p><strong>Price:</strong> ₹${Number(item.price).toFixed(0)}</p>
+                    <div class="menu-card-actions">
+                        <button class="btn-edit" onclick="editItem('${item.id}')">Edit</button>
+                        <button class="btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
+                    </div>
             </div>
         `).join('');
     }
@@ -136,6 +144,8 @@
         const modal = document.getElementById('itemModal');
         const titleEl = document.getElementById('modalTitle');
         titleEl.textContent = title;
+        currentImageBase64 = null;
+        document.getElementById('imagePreview').style.display = 'none';
         
         if (itemId) {
             const item = allItems.find(i => i.id === itemId);
@@ -145,6 +155,11 @@
                 document.getElementById('itemName').value = item.name;
                 document.getElementById('itemCategory').value = item.category;
                 document.getElementById('itemPrice').value = item.price;
+                if (item.image) {
+                    currentImageBase64 = item.image;
+                    document.getElementById('imagePreview').src = item.image;
+                    document.getElementById('imagePreview').style.display = 'block';
+                }
             }
         } else {
             document.getElementById('itemId').disabled = false;
@@ -157,6 +172,7 @@
         const modal = document.getElementById('itemModal');
         modal.classList.remove('active');
         editingId = null;
+        currentImageBase64 = null;
     }
 
     function showMessage(text, type) {
@@ -193,6 +209,21 @@
 
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
 
+    // Handle image file selection
+    document.getElementById('itemImage').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentImageBase64 = event.target.result;
+            const preview = document.getElementById('imagePreview');
+            preview.src = currentImageBase64;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+
     document.getElementById('itemForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const itemId = document.getElementById('itemId').value;
@@ -201,6 +232,9 @@
         const price = Number(document.getElementById('itemPrice').value);
 
         const data = { id: itemId, name, category, price };
+        if (currentImageBase64) {
+            data.image = currentImageBase64;
+        }
 
         try {
             let response;
