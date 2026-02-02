@@ -372,7 +372,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initCartCollapse();
     window.addEventListener('resize', initCartCollapse);
 });
-(function(){
+// Checkout form handling
+document.addEventListener('DOMContentLoaded', function() {
     const checkoutForm = document.getElementById('checkoutForm');
     if (!checkoutForm) return; // not on this page
     
@@ -478,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pendingOrderData = null;
         });
     }
-})();
+});
 
 /* ===== Orders: create/save/manage (client-only simulation) ===== */
 
