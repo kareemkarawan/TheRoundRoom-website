@@ -75,9 +75,14 @@
         if (!tbody) return;
         let orders = [];
         try {
+            console.log('Fetching orders from database...');
             const response = await fetch('/.netlify/functions/orders');
+            console.log('Response status:', response.status);
             if (response.ok) {
                 orders = await response.json();
+                console.log('Fetched orders:', orders);
+            } else {
+                console.error('Failed to fetch orders:', response.status);
             }
         } catch (e) { console.warn('Could not fetch orders', e); }
         if (!orders || orders.length === 0) {

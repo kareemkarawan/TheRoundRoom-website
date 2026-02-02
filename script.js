@@ -375,6 +375,9 @@ document.addEventListener('DOMContentLoaded', function() {
 (function(){
     const checkoutForm = document.getElementById('checkoutForm');
     if (!checkoutForm) return; // not on this page
+    
+    let pendingOrderData = null;
+
     checkoutForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         const form = e.target;
@@ -395,39 +398,86 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Build order object (simulate payment success for now)
-        const order = createOrderObject({
-            firstName: first,
-            lastName: last,
-            phone: phone,
-            address: address,
-            note: note
-        }, rawCart);
+        // Store order data and show payment modal
+        pendingOrderData = {
+            customer: {
+                firstName: first,
+                lastName: last,
+                phone: phone,
+                address: address,
+                note: note
+            },
+            cart: rawCart
+        };
 
-        // Save order to MongoDB via Netlify function
-        const saved = await saveOrder(order);
-        if (!saved) {
-            alert('Failed to save order. Please try again.');
-            return;
+        // Show payment modal
+        const modal = document.getElementById('paymentModal');
+        const totalEl = document.getElementById('paymentTotal');
+        if (modal && totalEl) {
+            totalEl.textContent = '₹' + Number(rawCart.total).toFixed(2);
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
         }
-
-        // Clear cart
-        try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
-
-        // Show success view with order id and summary
-        form.innerHTML = `\
-            <div class="form-success">\
-                <h3>Thanks, ${first}! Your order is confirmed.</h3>\
-                <p>Order ID: <strong>${order.id}</strong></p>\
-                <p>We've received your payment and will start preparing your order.</p>\
-                <div style="margin-top:0.75rem">\
-                    <a href="order_page.html" class="order-button">Return to menu</a>\
-                    <a href="pookie.html" class="order-button" style="margin-left:0.75rem;">Staff View</a>\
-                </div>\
-            </div>\
-        `;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    // Cancel payment
+    const cancelBtn = document.getElementById('cancelPayment');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            const modal = document.getElementById('paymentModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            pendingOrderData = null;
+        });
+    }
+
+    // Confirm payment and submit order
+    const confirmBtn = document.getElementById('confirmPayment');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            if (!pendingOrderData) return;
+
+            // Build order object
+            const order = createOrderObject(pendingOrderData.customer, pendingOrderData.cart);
+
+            // Save order to MongoDB via Netlify function
+            const saved = await saveOrder(order);
+            if (!saved) {
+                alert('Failed to save order. Please try again.');
+                return;
+            }
+
+            // Clear cart
+            try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
+
+            // Hide modal
+            const modal = document.getElementById('paymentModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            // Show success view with order id and summary
+            const form = document.getElementById('checkoutForm');
+            if (form) {
+                form.innerHTML = `\
+                    <div class="form-success">\
+                        <h3>Thanks, ${pendingOrderData.customer.firstName}! Your order is confirmed.</h3>\
+                        <p>Order ID: <strong>${order.id}</strong></p>\
+                        <p>We've received your payment and will start preparing your order.</p>\
+                        <div style="margin-top:0.75rem">\
+                            <a href="order_page.html" class="order-button">Return to menu</a>\
+                            <a href="pookie.html" class="order-button" style="margin-left:0.75rem;">Staff View</a>\
+                        </div>\
+                    </div>\
+                `;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            pendingOrderData = null;
+        });
+    }
 })();
 
 /* ===== Orders: create/save/manage (client-only simulation) ===== */
@@ -473,16 +523,24 @@ async function getOrders() {
 
 async function saveOrder(order) {
     try {
+        console.log('Saving order to database:', order);
         const response = await fetch('/.netlify/functions/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(order)
         });
+        const result = await response.json();
+        console.log('Server response:', result);
         if (response.ok) {
+            console.log('Order saved successfully!');
             window.dispatchEvent(new Event('ordersUpdated'));
             return true;
+        } else {
+            console.error('Failed to save order:', result);
         }
-    } catch (e) { console.warn('Could not save order', e); }
+    } catch (e) { 
+        console.error('Could not save order', e); 
+    }
     return false;
 }
 
