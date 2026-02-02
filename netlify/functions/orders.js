@@ -158,6 +158,45 @@ async function handlePatch(body, orderId) {
   }
 }
 
+// DELETE: remove an order by id
+async function handleDelete(orderId) {
+  if (!orderId) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Order ID required" }),
+    };
+  }
+
+  try {
+    const client = await getClient();
+    const db = client.db(dbName);
+    const collection = db.collection(collectionName);
+
+    const result = await collection.deleteOne({ id: orderId });
+
+    if (result.deletedCount === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Order not found" }),
+      };
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: true,
+        message: "Order deleted successfully",
+      }),
+    };
+  } catch (err) {
+    console.error("DELETE error:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
+  }
+}
+
 exports.handler = async (event) => {
   const method = event.httpMethod;
   const body = event.body;
@@ -167,7 +206,7 @@ exports.handler = async (event) => {
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
 
@@ -188,6 +227,8 @@ exports.handler = async (event) => {
     response = await handleGet();
   } else if (method === "PATCH") {
     response = await handlePatch(body, orderId);
+  } else if (method === "DELETE") {
+    response = await handleDelete(orderId);
   } else {
     response = {
       statusCode: 405,

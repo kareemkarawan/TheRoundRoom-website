@@ -33,7 +33,7 @@
     </nav>
 
     <main style="padding:var(--spacing-lg) var(--spacing-md);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 2.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 4.5rem;">
             <div>
                 <h2>Staff Orders</h2>
                 <p class="muted">Orders placed. Use this view to mark orders as Preparing/Ready/Completed.</p>
@@ -49,11 +49,12 @@
                         <th>Customer</th>
                         <th>Placed</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th>View</th>
+                        <th>Delete</th>
                     </tr>
                 </thead>
                 <tbody id="ordersTbody">
-                    <tr><td colspan="5" class="muted">Loading orders…</td></tr>
+                    <tr><td colspan="6" class="muted">Loading orders…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -86,7 +87,7 @@
             }
         } catch (e) { console.warn('Could not fetch orders', e); }
         if (!orders || orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="muted">No orders yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
             return;
         }
         tbody.innerHTML = orders.map(o => `
@@ -95,7 +96,12 @@
                 <td>${o.customer.firstName} ${o.customer.lastName}<div class="muted">${o.customer.phone}</div></td>
                 <td>${fmtDate(o.createdAt)}</td>
                 <td><span class="status-pill">${o.status}</span></td>
-                <td><button class="btn small view-order" data-id="${o.id}">View</button></td>
+                <td>
+                    <button class="btn small view-order" data-id="${o.id}">View</button>
+                </td>
+                <td>
+                    <button class="btn small btn-delete" data-id="${o.id}" style="background:#f44336;color:#fff;border:none;">Delete</button>
+                </td>
             </tr>
         `).join('');
 
@@ -104,6 +110,21 @@
             btn.removeEventListener('click', btn._rr);
             btn._rr = function() { openOrderModal(this.dataset.id); };
             btn.addEventListener('click', btn._rr);
+        });
+
+        // attach delete handlers
+        tbody.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.removeEventListener('click', btn._del);
+            btn._del = async function() {
+                if (!confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
+                const success = await deleteOrder(this.dataset.id);
+                if (success) {
+                    await renderStaffOrdersTable();
+                } else {
+                    alert('Failed to delete order.');
+                }
+            };
+            btn.addEventListener('click', btn._del);
         });
     }
 

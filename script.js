@@ -470,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>We've received your payment and will start preparing your order.</p>\
                         <div style="margin-top:0.75rem">\
                             <a href="order_page.html" class="order-button">Return to menu</a>\
-                            <a href="pookie.html" class="order-button" style="margin-left:0.75rem;">Staff View</a>\
                         </div>\
                     </div>\
                 `;
@@ -557,6 +556,21 @@ async function updateOrderStatus(orderId, status) {
             return true;
         }
     } catch (e) { console.warn('Could not update order', e); }
+    return false;
+}
+
+async function deleteOrder(orderId) {
+    try {
+        console.log('Deleting order:', orderId);
+        const response = await fetch(`/.netlify/functions/orders?id=${orderId}`, {
+            method: 'DELETE'
+        });
+        if (response.ok) {
+            console.log('Order deleted successfully');
+            window.dispatchEvent(new Event('ordersUpdated'));
+            return true;
+        }
+    } catch (e) { console.error('Could not delete order', e); }
     return false;
 }
 
