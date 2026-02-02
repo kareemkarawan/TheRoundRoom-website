@@ -9,31 +9,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <style>
-        .admin-container { max-width: 1000px; margin: 0 auto; padding: var(--spacing-lg) var(--spacing-md); }
-        .pincodes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .pincode-card { border: 1px solid #000; padding: 1.5rem; border-radius: 6px; background: #fff; text-align: center; }
-        .pincode-card .code { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .pincode-card .area { font-size: 0.9rem; color: #666; margin-bottom: 1rem; }
-        .pincode-card-actions { display: flex; gap: 0.5rem; }
-        .pincode-card-actions button { flex: 1; padding: 0.5rem; font-size: 0.85rem; }
-        .btn-edit { background: #4CAF50; color: #fff; border: none; }
-        .btn-delete { background: #f44336; color: #fff; border: none; }
-        .btn-add { background: #2196F3; color: #fff; border: none; margin-bottom: 1rem; padding: 0.75rem 1.5rem; }
-        .form-section { border: 1px solid #ddd; padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem; background: #fafafa; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-        .form-group input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 3000; }
-        .modal-overlay.active { display: flex; }
-        .modal-box { background: #fff; padding: 2rem; border-radius: 8px; max-width: 400px; width: 90%; }
-        .modal-box h3 { margin-top: 0; }
-        .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
-        .modal-actions button { flex: 1; padding: 0.75rem; }
-        .btn-cancel { background: #ddd; color: #000; border: none; }
-        .btn-save { background: #2196F3; color: #fff; border: none; }
+        .admin-container { max-width: 900px; margin: 0 auto; padding: var(--spacing-lg) var(--spacing-md); }
+        
+        /* Bulk input section */
+        .bulk-input-section { border: 1px solid #ddd; padding: 1.5rem; border-radius: 6px; margin-bottom: 2rem; background: #f9f9f9; }
+        .bulk-input-section h3 { margin-top: 0; font-size: 1rem; }
+        .bulk-input-section textarea { width: 100%; height: 120px; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 0.9rem; resize: vertical; }
+        .bulk-input-help { font-size: 0.85rem; color: #666; margin: 0.75rem 0 0; }
+        .btn-bulk-add { background: #2196F3; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; margin-top: 1rem; cursor: pointer; }
+        .btn-bulk-add:hover { background: #0b7dda; }
+        
+        /* Table styles */
+        .pincodes-table-wrapper { overflow-x: auto; }
+        .pincodes-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }
+        .pincodes-table thead { background: #f5f5f5; }
+        .pincodes-table th, .pincodes-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        .pincodes-table th { font-weight: 600; border-bottom: 1px solid #ddd; }
+        .pincodes-table tbody tr:hover { background: #fafafa; }
+        .pincodes-table .pincode-code { font-weight: 600; font-family: monospace; }
+        .pincodes-table .action-cell { width: 100px; text-align: center; }
+        .btn-delete-small { background: #f44336; color: #fff; border: none; padding: 0.4rem 0.8rem; border-radius: 3px; cursor: pointer; font-size: 0.85rem; }
+        .btn-delete-small:hover { background: #da190b; }
+        
         .message { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none; }
         .message.success { background: #d4edda; color: #155724; display: block; }
         .message.error { background: #f8d7da; color: #721c24; display: block; }
+        
+        .loading { text-align: center; color: #666; padding: 2rem; }
+        .empty-state { text-align: center; color: #999; padding: 2rem; }
     </style>
 </head>
 <body class="staff-page">
@@ -48,44 +51,39 @@
 
     <main class="admin-container">
         <h2>Delivery Pincodes</h2>
-        <p class="muted">Manage the pincodes and areas where you deliver.</p>
+        <p class="muted">Manage the pincodes where you deliver.</p>
 
         <div id="messageBox" class="message"></div>
 
-        <button class="btn-add" id="addPincodeBtn">+ Add Pincode</button>
+        <!-- Bulk input section -->
+        <div class="bulk-input-section">
+            <h3>📝 Quick Add (Bulk)</h3>
+            <textarea id="bulkPincodeInput" placeholder="Paste or type pincodes separated by newlines or commas. One per line or comma-separated.&#10;Example:&#10;110001&#10;110002&#10;110003"></textarea>
+            <div class="bulk-input-help">💡 Tip: Paste Excel column or comma-separated list. Duplicates are skipped.</div>
+            <button class="btn-bulk-add" id="bulkAddBtn">Add Pincodes</button>
+        </div>
 
-        <div id="pincodesGrid" class="pincodes-grid">
-            <p class="muted">Loading pincodes…</p>
+        <!-- Pincodes table -->
+        <div class="pincodes-table-wrapper">
+            <table class="pincodes-table">
+                <thead>
+                    <tr>
+                        <th>Pincode</th>
+                        <th class="action-cell">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="pincodesTableBody">
+                    <tr><td colspan="2" class="loading">Loading pincodes…</td></tr>
+                </tbody>
+            </table>
         </div>
     </main>
 
-    <!-- Modal for add/edit -->
-    <div id="pincodeModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 id="modalTitle">Add Pincode</h3>
-            <form id="pincodeForm">
-                <div class="form-group">
-                    <label for="pincodeCode">Pincode</label>
-                    <input type="text" id="pincodeCode" name="pincodeCode" required placeholder="e.g., 110001">
-                </div>
-                <div class="form-group">
-                    <label for="pincodeArea">Area/City</label>
-                    <input type="text" id="pincodeArea" name="pincodeArea" placeholder="e.g., New Delhi">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
-                    <button type="submit" class="btn-save">Save Pincode</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
     let allPincodes = [];
-    let editingCode = null;
 
     async function loadPincodes() {
-        const grid = document.getElementById('pincodesGrid');
+        const tbody = document.getElementById('pincodesTableBody');
         try {
             const response = await fetch('/.netlify/functions/pincodes');
             if (response.ok) {
@@ -95,122 +93,113 @@
                 throw new Error('Failed to fetch pincodes');
             }
         } catch (e) {
-            grid.innerHTML = `<p class="muted">Error loading pincodes: ${e.message}</p>`;
+            tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Error loading pincodes: ${e.message}</td></tr>`;
         }
     }
 
     function renderPincodes() {
-        const grid = document.getElementById('pincodesGrid');
+        const tbody = document.getElementById('pincodesTableBody');
         if (!allPincodes || allPincodes.length === 0) {
-            grid.innerHTML = '<p class="muted">No pincodes yet. Add one to get started!</p>';
+            tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No pincodes yet. Add some to get started!</td></tr>';
             return;
         }
-        grid.innerHTML = allPincodes.map(p => `
-            <div class="pincode-card">
-                <div class="code">${p.code}</div>
-                <div class="area">${p.area || '—'}</div>
-                <div class="pincode-card-actions">
-                    <button class="btn-edit" onclick="editPincode('${p.code}')">Edit</button>
-                    <button class="btn-delete" onclick="deletePincode('${p.code}')">Delete</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function showModal(title, code = null) {
-        editingCode = code;
-        const modal = document.getElementById('pincodeModal');
-        const titleEl = document.getElementById('modalTitle');
-        titleEl.textContent = title;
         
-        if (code) {
-            const p = allPincodes.find(x => x.code === code);
-            if (p) {
-                document.getElementById('pincodeCode').value = p.code;
-                document.getElementById('pincodeCode').disabled = true;
-                document.getElementById('pincodeArea').value = p.area || '';
-            }
-        } else {
-            document.getElementById('pincodeCode').disabled = false;
-            document.getElementById('pincodeForm').reset();
-        }
-        modal.classList.add('active');
-    }
-
-    function closeModal() {
-        const modal = document.getElementById('pincodeModal');
-        modal.classList.remove('active');
-        editingCode = null;
+        // Sort pincodes numerically for better display
+        const sorted = [...allPincodes].sort((a, b) => {
+            const codeA = parseInt(a.code) || 0;
+            const codeB = parseInt(b.code) || 0;
+            return codeA - codeB;
+        });
+        
+        tbody.innerHTML = sorted.map(p => `
+            <tr>
+                <td class="pincode-code">${p.code}</td>
+                <td class="action-cell">
+                    <button class="btn-delete-small" onclick="deletePincode('${p.code}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     function showMessage(text, type) {
         const box = document.getElementById('messageBox');
         box.textContent = text;
         box.className = `message ${type}`;
-        setTimeout(() => box.className = 'message', 5000);
-    }
-
-    async function editPincode(code) {
-        showModal('Edit Pincode', code);
+        setTimeout(() => box.className = 'message', 4000);
     }
 
     async function deletePincode(code) {
-        if (!confirm('Are you sure you want to delete this pincode?')) return;
+        if (!confirm(`Delete pincode ${code}?`)) return;
         try {
             const response = await fetch(`/.netlify/functions/pincodes?id=${code}`, {
                 method: 'DELETE'
             });
             if (response.ok) {
-                showMessage('Pincode deleted successfully', 'success');
+                showMessage(`Pincode ${code} deleted`, 'success');
                 await loadPincodes();
             } else {
-                throw new Error('Failed to delete pincode');
+                throw new Error('Failed to delete');
             }
         } catch (e) {
             showMessage(`Error: ${e.message}`, 'error');
         }
     }
 
-    document.getElementById('addPincodeBtn').addEventListener('click', () => {
-        showModal('Add Pincode');
-    });
+    async function addPincodesBulk(text) {
+        // Parse input: split by newlines and commas, clean up
+        const pincodes = text
+            .split(/[\n,]+/)
+            .map(p => p.trim())
+            .filter(p => p && /^\d+$/.test(p)) // Only valid numeric codes
+            .filter((p, i, arr) => arr.indexOf(p) === i); // Remove duplicates
 
-    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+        if (pincodes.length === 0) {
+            showMessage('No valid pincodes found. Use only digits.', 'error');
+            return;
+        }
 
-    document.getElementById('pincodeForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const code = document.getElementById('pincodeCode').value;
-        const area = document.getElementById('pincodeArea').value;
+        let added = 0;
+        let skipped = 0;
 
-        const data = { code, area };
+        for (const code of pincodes) {
+            // Check if already exists
+            if (allPincodes.some(p => p.code === code)) {
+                skipped++;
+                continue;
+            }
 
-        try {
-            let response;
-            if (editingCode) {
-                // Update existing
-                response = await fetch(`/.netlify/functions/pincodes?id=${editingCode}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-            } else {
-                // Add new
-                response = await fetch('/.netlify/functions/pincodes', {
+            try {
+                const response = await fetch('/.netlify/functions/pincodes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({ code, area: '' })
                 });
+                if (response.ok) {
+                    added++;
+                }
+            } catch (e) {
+                console.error(`Failed to add ${code}:`, e);
             }
-            
-            if (response.ok) {
-                showMessage(editingCode ? 'Pincode updated successfully' : 'Pincode added successfully', 'success');
-                closeModal();
-                await loadPincodes();
-            } else {
-                throw new Error('Failed to save pincode');
-            }
-        } catch (e) {
-            showMessage(`Error: ${e.message}`, 'error');
+        }
+
+        document.getElementById('bulkPincodeInput').value = '';
+        showMessage(`✓ Added ${added} pincodes (${skipped} duplicates skipped)`, 'success');
+        await loadPincodes();
+    }
+
+    // Event listeners
+    document.getElementById('bulkAddBtn').addEventListener('click', () => {
+        const text = document.getElementById('bulkPincodeInput').value;
+        if (text.trim()) {
+            addPincodesBulk(text);
+        } else {
+            showMessage('Enter at least one pincode', 'error');
+        }
+    });
+
+    document.getElementById('bulkPincodeInput').addEventListener('keypress', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            document.getElementById('bulkAddBtn').click();
         }
     });
 
