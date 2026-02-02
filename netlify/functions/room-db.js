@@ -14,11 +14,10 @@ exports.handler = async () => {
 
   try {
     client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 5000, // fail fast instead of hanging
+      serverSelectionTimeoutMS: 5000,
     });
 
     await client.connect();
-
     await client.db().command({ ping: 1 });
 
     return {
