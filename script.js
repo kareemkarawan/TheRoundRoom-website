@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
 (function(){
     const checkoutForm = document.getElementById('checkoutForm');
     if (!checkoutForm) return; // not on this page
-    checkoutForm.addEventListener('submit', function (e) {
+    checkoutForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         const form = e.target;
         if (!form.reportValidity()) return;
@@ -404,8 +404,12 @@ document.addEventListener('DOMContentLoaded', function() {
             note: note
         }, rawCart);
 
-        // Save order (persist to rr_orders)
-        saveOrder(order);
+        // Save order to MongoDB via Netlify function
+        const saved = await saveOrder(order);
+        if (!saved) {
+            alert('Failed to save order. Please try again.');
+            return;
+        }
 
         // Clear cart
         try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
@@ -454,29 +458,47 @@ function createOrderObject(customer, cart) {
     };
 }
 
-function getOrders() {
+async function getOrders() {
     try {
-        const raw = localStorage.getItem('rr_orders');
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+        const response = await fetch('/.netlify/functions/orders', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (e) { console.warn('Could not fetch orders', e); }
+    return [];
 }
 
-function saveOrder(order) {
-    const orders = getOrders();
-    orders.unshift(order); // newest first
-    try { localStorage.setItem('rr_orders', JSON.stringify(orders)); } catch (e) { console.warn('Could not save order', e); }
-    // notify other tabs
-    try { window.dispatchEvent(new Event('ordersUpdated')); } catch (e) {}
+async function saveOrder(order) {
+    try {
+        const response = await fetch('/.netlify/functions/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(order)
+        });
+        if (response.ok) {
+            window.dispatchEvent(new Event('ordersUpdated'));
+            return true;
+        }
+    } catch (e) { console.warn('Could not save order', e); }
+    return false;
 }
 
-function updateOrderStatus(orderId, status) {
-    const orders = getOrders();
-    const idx = orders.findIndex(o => o.id === orderId);
-    if (idx === -1) return false;
-    orders[idx].status = status;
-    try { localStorage.setItem('rr_orders', JSON.stringify(orders)); } catch (e) { console.warn(e); }
-    try { window.dispatchEvent(new Event('ordersUpdated')); } catch (e) {}
-    return true;
+async function updateOrderStatus(orderId, status) {
+    try {
+        const response = await fetch(`/.netlify/functions/orders?id=${orderId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        if (response.ok) {
+            window.dispatchEvent(new Event('ordersUpdated'));
+            return true;
+        }
+    } catch (e) { console.warn('Could not update order', e); }
+    return false;
 }
 
 // Small helper to format ISO -> local readable

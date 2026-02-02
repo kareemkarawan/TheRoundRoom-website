@@ -33,8 +33,13 @@
     </nav>
 
     <main style="padding:var(--spacing-lg) var(--spacing-md);">
-        <h2>Staff Orders</h2>
-        <p class="muted">Orders placed (client-side simulation). Use this view to mark orders as Preparing/Ready/Completed.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h2>Staff Orders</h2>
+                <p class="muted">Orders placed. Use this view to mark orders as Preparing/Ready/Completed.</p>
+            </div>
+            <a href="menu-admin.html" class="btn" style="padding: 0.75rem 1.5rem;">Manage Menu</a>
+        </div>
 
         <div id="ordersTableWrapper" style="margin-top:1rem;">
             <table class="orders-table" id="ordersTable" aria-live="polite">
@@ -65,11 +70,16 @@
 
     <script>
     // Render orders for staff as a table and show modal for details
-    function renderStaffOrdersTable() {
+    async function renderStaffOrdersTable() {
         const tbody = document.getElementById('ordersTbody');
         if (!tbody) return;
         let orders = [];
-        try { orders = JSON.parse(localStorage.getItem('rr_orders') || '[]'); } catch (e) { orders = []; }
+        try {
+            const response = await fetch('/.netlify/functions/orders');
+            if (response.ok) {
+                orders = await response.json();
+            }
+        } catch (e) { console.warn('Could not fetch orders', e); }
         if (!orders || orders.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="muted">No orders yet.</td></tr>';
             return;
@@ -92,12 +102,17 @@
         });
     }
 
-    function openOrderModal(orderId) {
+    async function openOrderModal(orderId) {
         const modal = document.getElementById('orderModal');
         const body = document.getElementById('modalBody');
         if (!modal || !body) return;
         let orders = [];
-        try { orders = JSON.parse(localStorage.getItem('rr_orders') || '[]'); } catch (e) { orders = []; }
+        try {
+            const response = await fetch('/.netlify/functions/orders');
+            if (response.ok) {
+                orders = await response.json();
+            }
+        } catch (e) { console.warn('Could not fetch orders', e); }
         const o = orders.find(x => x.id === orderId);
         if (!o) return;
         body.innerHTML = `
@@ -136,7 +151,7 @@
         const saveBtn = document.getElementById('markReady');
         if (sel && saveBtn) {
             saveBtn.removeEventListener('click', saveBtn._rr);
-            saveBtn._rr = function() { updateOrderStatus(o.id, sel.value); modalClose(); };
+            saveBtn._rr = async function() { await updateOrderStatus(o.id, sel.value); modalClose(); };
             saveBtn.addEventListener('click', saveBtn._rr);
         }
     }
@@ -148,10 +163,9 @@
         modal.setAttribute('aria-hidden', 'true');
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        renderStaffOrdersTable();
-        window.addEventListener('ordersUpdated', renderStaffOrdersTable);
-        window.addEventListener('storage', function(evt) { if (evt.key === 'rr_orders') renderStaffOrdersTable(); });
+    document.addEventListener('DOMContentLoaded', async function() {
+        await renderStaffOrdersTable();
+        window.addEventListener('ordersUpdated', () => renderStaffOrdersTable());
 
         // modal close
         const closeBtn = document.getElementById('modalClose');

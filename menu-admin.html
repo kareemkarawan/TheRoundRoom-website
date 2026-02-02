@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Admin - The Round Room</title>   
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+    <style>
+        .admin-container { max-width: 1200px; margin: 0 auto; padding: var(--spacing-lg) var(--spacing-md); }
+        .menu-grid-admin { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .menu-card { border: 1px solid #000; padding: 1rem; border-radius: 6px; background: #fff; }
+        .menu-card h4 { margin: 0 0 0.5rem 0; }
+        .menu-card p { margin: 0.25rem 0; font-size: 0.9rem; }
+        .menu-card-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        .menu-card-actions button { flex: 1; padding: 0.5rem; font-size: 0.85rem; }
+        .btn-edit { background: #4CAF50; color: #fff; border: none; }
+        .btn-delete { background: #f44336; color: #fff; border: none; }
+        .btn-add { background: #2196F3; color: #fff; border: none; margin-bottom: 1rem; padding: 0.75rem 1.5rem; }
+        .form-section { border: 1px solid #ddd; padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem; background: #fafafa; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 3000; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #fff; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; }
+        .modal-box h3 { margin-top: 0; }
+        .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+        .modal-actions button { flex: 1; padding: 0.75rem; }
+        .btn-cancel { background: #ddd; color: #000; border: none; }
+        .btn-save { background: #2196F3; color: #fff; border: none; }
+        .message { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none; }
+        .message.success { background: #d4edda; color: #155724; display: block; }
+        .message.error { background: #f8d7da; color: #721c24; display: block; }
+    </style>
+</head>
+<body class="staff-page">
+    <nav class="top-nav">
+        <div class="container">
+            <div class="logo">
+                <h1>THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="images/Icon.png" alt="Logo">
+        </div>
+    </nav>
+
+    <main class="admin-container">
+        <h2>Menu Management</h2>
+        <p class="muted">Add, edit, or remove menu items from the database.</p>
+
+        <div id="messageBox" class="message"></div>
+
+        <button class="btn-add" id="addItemBtn">+ Add New Item</button>
+
+        <div id="menuGridAdmin" class="menu-grid-admin">
+            <p class="muted">Loading menu items…</p>
+        </div>
+    </main>
+
+    <!-- Modal for add/edit -->
+    <div id="itemModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">Add Menu Item</h3>
+            <form id="itemForm">
+                <div class="form-group">
+                    <label for="itemId">Item ID</label>
+                    <input type="text" id="itemId" name="itemId" required placeholder="e.g., bagel_1">
+                </div>
+                <div class="form-group">
+                    <label for="itemName">Name</label>
+                    <input type="text" id="itemName" name="itemName" required placeholder="e.g., Plain Bagel">
+                </div>
+                <div class="form-group">
+                    <label for="itemCategory">Category</label>
+                    <select id="itemCategory" name="itemCategory" required>
+                        <option value="bagels">Bagels</option>
+                        <option value="schmears">Schmears</option>
+                        <option value="desserts">Desserts</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="itemPrice">Price (in rupees)</label>
+                    <input type="number" id="itemPrice" name="itemPrice" required placeholder="e.g., 300" min="0" step="10">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-save">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    let allItems = [];
+    let editingId = null;
+
+    async function loadMenuItems() {
+        const grid = document.getElementById('menuGridAdmin');
+        try {
+            const response = await fetch('/.netlify/functions/menu');
+            if (response.ok) {
+                allItems = await response.json();
+                renderMenuItems();
+            } else {
+                throw new Error('Failed to fetch menu items');
+            }
+        } catch (e) {
+            grid.innerHTML = `<p class="muted">Error loading menu items: ${e.message}</p>`;
+        }
+    }
+
+    function renderMenuItems() {
+        const grid = document.getElementById('menuGridAdmin');
+        if (!allItems || allItems.length === 0) {
+            grid.innerHTML = '<p class="muted">No menu items yet. Add one to get started!</p>';
+            return;
+        }
+        grid.innerHTML = allItems.map(item => `
+            <div class="menu-card">
+                <h4>${item.name}</h4>
+                <p><strong>ID:</strong> ${item.id}</p>
+                <p><strong>Category:</strong> ${item.category}</p>
+                <p><strong>Price:</strong> ₹${Number(item.price).toFixed(0)}</p>
+                <div class="menu-card-actions">
+                    <button class="btn-edit" onclick="editItem('${item.id}')">Edit</button>
+                    <button class="btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showModal(title, itemId = null) {
+        editingId = itemId;
+        const modal = document.getElementById('itemModal');
+        const titleEl = document.getElementById('modalTitle');
+        titleEl.textContent = title;
+        
+        if (itemId) {
+            const item = allItems.find(i => i.id === itemId);
+            if (item) {
+                document.getElementById('itemId').value = item.id;
+                document.getElementById('itemId').disabled = true;
+                document.getElementById('itemName').value = item.name;
+                document.getElementById('itemCategory').value = item.category;
+                document.getElementById('itemPrice').value = item.price;
+            }
+        } else {
+            document.getElementById('itemId').disabled = false;
+            document.getElementById('itemForm').reset();
+        }
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('itemModal');
+        modal.classList.remove('active');
+        editingId = null;
+    }
+
+    function showMessage(text, type) {
+        const box = document.getElementById('messageBox');
+        box.textContent = text;
+        box.className = `message ${type}`;
+        setTimeout(() => box.className = 'message', 5000);
+    }
+
+    async function editItem(itemId) {
+        showModal('Edit Menu Item', itemId);
+    }
+
+    async function deleteItem(itemId) {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        try {
+            const response = await fetch(`/.netlify/functions/menu?id=${itemId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                showMessage('Item deleted successfully', 'success');
+                await loadMenuItems();
+            } else {
+                throw new Error('Failed to delete item');
+            }
+        } catch (e) {
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+        showModal('Add Menu Item');
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+
+    document.getElementById('itemForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const itemId = document.getElementById('itemId').value;
+        const name = document.getElementById('itemName').value;
+        const category = document.getElementById('itemCategory').value;
+        const price = Number(document.getElementById('itemPrice').value);
+
+        const data = { id: itemId, name, category, price };
+
+        try {
+            let response;
+            if (editingId) {
+                // Update existing
+                response = await fetch(`/.netlify/functions/menu?id=${editingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // Add new
+                response = await fetch('/.netlify/functions/menu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+            
+            if (response.ok) {
+                showMessage(editingId ? 'Item updated successfully' : 'Item added successfully', 'success');
+                closeModal();
+                await loadMenuItems();
+            } else {
+                throw new Error('Failed to save item');
+            }
+        } catch (e) {
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    });
+
+    // Load menu items on page load
+    document.addEventListener('DOMContentLoaded', loadMenuItems);
+    </script>
+</body>
+</html>

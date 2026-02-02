@@ -21,13 +21,13 @@ async function renderMenu() {
   }
 
   try {
-    // Use a relative path and a timeout to avoid hanging fetches (file:// and network issues)
+    // Fetch from MongoDB API instead of JSON file
     const controller = new AbortController();
     const timeoutMs = 8000; // 8s
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res;
     try {
-      res = await fetch('data/menu.json', { signal: controller.signal });
+      res = await fetch('/.netlify/functions/menu', { signal: controller.signal });
     } finally {
       clearTimeout(timer);
     }
