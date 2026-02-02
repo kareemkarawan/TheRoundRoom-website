@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Round Room</title>   
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="container">
+            <div class="nav-toggle" onclick="changeHamburger(this)">
+                <div class = "bar1"></div>
+                <div class = "bar2"></div>
+                <div class = "bar3"></div>
+            </div>
+            <ul class="nav-links" id="TopNav">
+                <li><a href="#story">STORY</a></li>
+                <li><a href="#bagels">BAGELS</a></li>
+                <li><a href="#schmear">SCHMEARS</a></li>
+                <li><a href="#dessert">DESSERTS</a></li>
+                <li><a href="#order">ORDER</a></li>
+            </ul>
+            <div class="logo">
+                <h1 href="#story">THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="images/Icon.png" alt="Logo">
+        </div>
+    </nav>
+    <div class="video-container"> 
+        <video width=100% height="100%" autoplay muted loop playsinline webkit-playsinline>
+        <source src="videos/front.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+        </video>
+    </div>
+    <section class="section-ss" id="story">
+        <h2>OUR STORY</h2>
+        <div class="ss">
+            <p>The Round Room began as an idea rooted in comfort, ritual, and roundness - the kind that brings people together. What started in home kitchens and intimate pop-ups has grown into a space defined by thoughtful food and quiet intention.</p>
+            <p>At its heart, The Round Room is about circles. Shared boxes passed across tables, conversations that linger, and moments that don’t need a reason to exist. It’s about bringing a little of that New York ease into your hands, where food, ritual, and everyday indulgence quietly blur into one.</p>
+            <p>We craft handmade New York–style bagels, slow-whipped schmears, and dessert pots that feel familiar yet considered. Every element is made to be shared, from weekend pop-ups to curated home deliveries designed for moments that feel personal, not rushed. The Round Room isn’t just about what’s on the table. It’s about creating small pauses in the day, where food becomes a reason to gather, talk, and stay a little longer.</p>
+            <p>With love,<br>Jia Kini<br>Founder, The Round Room</p>
+        </div>
+    </section>
+    <section class="section-m" id="bagels">
+        <h2>OUR BAGELS</h2>
+        <!-- Carousel product browser -->
+        <div class="carousel" id="bagelCarousel" aria-label="Bagel carousel">
+            <button class="carousel-btn prev" aria-label="Previous">‹</button>
+            <div class="carousel-track-wrapper">
+                <ul class="carousel-track">
+                    <li class="carousel-slide"><img src="images/Bagel.png" alt="Bagel"><h3>PLAIN</h3></li>
+                    <li class="carousel-slide"><img src="images/Bagel.png" alt="Bagel"><h3>EVERYTHING</h3></li>
+                    <li class="carousel-slide"><img src="images/Bagel.png" alt="Bagel"><h3>SESAME</h3></li>
+                    <li class="carousel-slide"><img src="images/Bagel.png" alt="Bagel"><h3>POPPY</h3></li>
+                    <li class="carousel-slide"><img src="images/Bagel.png" alt="Bagel"><h3>JALAPENO AND OLIVE</h3></li>
+                </ul>
+            </div>
+            <button class="carousel-btn next" aria-label="Next">›</button>
+        </div>
+        <!--    
+        <div class="menu">
+
+            <div class="menu-item">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+            <div class="menu-item">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+            <div class="menu-item">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+            <div class="menu-item">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+        </div>
+        -->
+        <!--
+        <div class="menu-p">
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>SESAME</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>PLAIN</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>JALEPENO</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+        </div>
+        -->
+    </section>
+    <section class="section-s" id="schmear">
+        <h2>OUR SCHMEAR</h2>
+        <div class="menu">
+            <div class="menu-item-w">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+            <div class="menu-item-w">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+            <div class="menu-item-w">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+            <div class="menu-item-w">
+                <img src="images/Bagel.png" alt="Bagel">
+            </div>
+        </div>
+        <div class="menu-p">
+            <div class="section-line"></div>
+            <div class="menu-item-p-w">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line"></div>
+            <div class="menu-item-p-w">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line"></div>
+            <div class="menu-item-p-w">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line"></div>
+            <div class="menu-item-p-w">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+        </div>
+    </section>
+    <section class="section-ms" id="dessert">
+        <h2>DESSERTS</h2>
+        <div class="menu-p">
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>EVERYTHING</h3>
+                <img src="images/Bagel.png" alt="Bagel" style="border: none">
+            </div>
+        </div>
+    </section>
+    <section class="section-ss" id="order">
+        <h2>ORDER</h2>
+        <div class="ss">
+            <p>To place an order, simply message us through the WhatsApp link below and we'll take care of everything. Whether you're craving our freshly baked, hand-rolled bagels or planning a treat for friends and family, our team will confirm your order, availability, and pickup details right away. It's quick, personal, and the best way to secure your favourite bagels—just tap the order button and send us a message!</p>
+            <div class="section-line-e"></div>
+        </div>
+        <div><a class="order-button" href="order_page.html">ORDER NOW</a></div>
+        <div><p style="margin: 0px;">Established 2025 | @TheRoundRoomMumbai | Velvet Lounge Enterprises Pvt.Ltd</p></div>
+    </section>
+</body>
+</html>

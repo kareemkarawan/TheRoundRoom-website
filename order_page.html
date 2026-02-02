@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Round Room</title>   
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="script.js"></script>
+    <script type="module" src="js/renderMenu.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='index.html'">
+                <div class = "bar4"></div>
+                <div class = "bar5"></div>
+            </button>
+            <div class="logo">
+                <h1 href="#story">THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="images/Icon.png" alt="Logo">
+        </div>
+    </nav>
+    <div class="order-page">
+        <!-- MENU SECTION -->
+        <section class="section-menu">
+            <div class="big-menu-title">
+                <h2>MENU</h2>
+            </div>
+            <div id="menuLoader" class="menu-loader" role="status" aria-live="polite">Loading menu…</div>
+            <div class="menu-grid">
+                <div class="small-menu-title">
+                    <h3>BAGELS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div id="bagelMenu" class="category-grid">
+
+                </div>
+
+                <div class="small-menu-title">
+                    <h3>SCHMEARS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div id="schmearMenu" class="category-grid">
+                    
+                </div>
+
+                <div class="small-menu-title">
+                    <h3>DESSERTS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div id="dessertMenu" class="category-grid">
+
+                </div>
+            </div>
+        </section>
+
+        <!-- CART SUMMARY (Sticky on mobile, side panel on desktop) -->
+        <aside class="cart-sidebar">
+            <div class="cart-header">
+                <h3>YOUR CART</h3>
+                <button class="cart-toggle" id="cartToggle" aria-expanded="true" aria-controls="cartItems" aria-label="Toggle cart">
+                    <span class="cart-toggle-total" id="toggleTotal">₹0.00</span>
+                    <span class="cart-toggle-chevron" aria-hidden="true">▾</span>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <p class="empty-cart">No items added</p>
+            </div>
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="subtotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (5%)</span>
+                    <span id="tax">₹0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="total">₹0.00</span>
+                </div>
+            </div>
+            <button class="checkout-btn" onclick="window.location.href='checkout.html'">Checkout</button>
+        </aside>
+    </div>
+</body>

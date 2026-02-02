@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Round Room</title>   
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body class="staff-page">
+    <nav class="top-nav">
+        <div class="container">
+            <div class="nav-toggle" onclick="changeHamburger(this)">
+                <div class = "bar1"></div>
+                <div class = "bar2"></div>
+                <div class = "bar3"></div>
+            </div>
+            <ul class="nav-links" id="TopNav">
+                <li><a href="#story">STORY</a></li>
+                <li><a href="#bagels">BAGELS</a></li>
+                <li><a href="#schmear">SCHMEARS</a></li>
+                <li><a href="#dessert">DESSERTS</a></li>
+                <li><a href="#order">ORDER</a></li>
+            </ul>
+            <div class="logo">
+                <h1 href="#story">THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="images/Icon.png" alt="Logo">
+        </div>
+    </nav>
+
+    <main style="padding:var(--spacing-lg) var(--spacing-md);">
+        <h2>Staff Orders</h2>
+        <p class="muted">Orders placed (client-side simulation). Use this view to mark orders as Preparing/Ready/Completed.</p>
+
+        <div id="ordersTableWrapper" style="margin-top:1rem;">
+            <table class="orders-table" id="ordersTable" aria-live="polite">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Placed</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTbody">
+                    <tr><td colspan="5" class="muted">Loading orders…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Order details modal -->
+        <div id="orderModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
+            <div class="modal-content" role="document">
+                <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+                <div id="modalBody"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+    // Render orders for staff as a table and show modal for details
+    function renderStaffOrdersTable() {
+        const tbody = document.getElementById('ordersTbody');
+        if (!tbody) return;
+        let orders = [];
+        try { orders = JSON.parse(localStorage.getItem('rr_orders') || '[]'); } catch (e) { orders = []; }
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="muted">No orders yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = orders.map(o => `
+            <tr data-id="${o.id}">
+                <td><strong>${o.id}</strong></td>
+                <td>${o.customer.firstName} ${o.customer.lastName}<div class="muted">${o.customer.phone}</div></td>
+                <td>${fmtDate(o.createdAt)}</td>
+                <td><span class="status-pill">${o.status}</span></td>
+                <td><button class="btn small view-order" data-id="${o.id}">View</button></td>
+            </tr>
+        `).join('');
+
+        // attach view handlers
+        tbody.querySelectorAll('.view-order').forEach(btn => {
+            btn.removeEventListener('click', btn._rr);
+            btn._rr = function() { openOrderModal(this.dataset.id); };
+            btn.addEventListener('click', btn._rr);
+        });
+    }
+
+    function openOrderModal(orderId) {
+        const modal = document.getElementById('orderModal');
+        const body = document.getElementById('modalBody');
+        if (!modal || !body) return;
+        let orders = [];
+        try { orders = JSON.parse(localStorage.getItem('rr_orders') || '[]'); } catch (e) { orders = []; }
+        const o = orders.find(x => x.id === orderId);
+        if (!o) return;
+        body.innerHTML = `
+            <h3>Order ${o.id}</h3>
+            <div class="muted">Placed: ${fmtDate(o.createdAt)}</div>
+            <div style="margin-top:0.5rem;"><strong>Customer</strong><div>${o.customer.firstName} ${o.customer.lastName}</div><div class="muted">${o.customer.phone}</div><div>${o.customer.address}</div></div>
+            <div style="margin-top:0.75rem;"><strong>Items</strong>
+                <div style="margin-top:0.5rem;">${o.items.map(it => `<div style=\"display:flex;justify-content:space-between\"><span>${it.qty}x ${it.name}</span><span>₹${Number(it.itemTotal).toFixed(2)}</span></div>`).join('')}</div>
+            </div>
+            <div class="checkout-breakdown" style="margin-top:0.75rem;">
+                <div class="row"><span>Subtotal</span><span>₹${Number(o.subtotal).toFixed(2)}</span></div>
+                <div class="row"><span>Tax</span><span>₹${Number(o.tax).toFixed(2)}</span></div>
+                <div class="row total"><span>Total</span><span>₹${Number(o.total).toFixed(2)}</span></div>
+            </div>
+            <div style="margin-top:0.75rem; display:flex; gap:0.5rem; align-items:center; justify-content:space-between;">
+                <div>
+                    <label for="statusSelect">Status</label>
+                    <select id="statusSelect">
+                        <option ${o.status==='Placed'? 'selected':''}>Placed</option>
+                        <option ${o.status==='Preparing'? 'selected':''}>Preparing</option>
+                        <option ${o.status==='Ready'? 'selected':''}>Ready</option>
+                        <option ${o.status==='Completed'? 'selected':''}>Completed</option>
+                        <option ${o.status==='Cancelled'? 'selected':''}>Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn" id="markReady">Save</button>
+                </div>
+            </div>
+        `;
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+
+        // attach save handler
+        const sel = document.getElementById('statusSelect');
+        const saveBtn = document.getElementById('markReady');
+        if (sel && saveBtn) {
+            saveBtn.removeEventListener('click', saveBtn._rr);
+            saveBtn._rr = function() { updateOrderStatus(o.id, sel.value); modalClose(); };
+            saveBtn.addEventListener('click', saveBtn._rr);
+        }
+    }
+
+    function modalClose() {
+        const modal = document.getElementById('orderModal');
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        renderStaffOrdersTable();
+        window.addEventListener('ordersUpdated', renderStaffOrdersTable);
+        window.addEventListener('storage', function(evt) { if (evt.key === 'rr_orders') renderStaffOrdersTable(); });
+
+        // modal close
+        const closeBtn = document.getElementById('modalClose');
+        if (closeBtn) closeBtn.addEventListener('click', modalClose);
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') modalClose(); });
+
+        // click outside to close
+        const modal = document.getElementById('orderModal');
+        if (modal) modal.addEventListener('click', function(e){ if (e.target === modal) modalClose(); });
+    });
+    </script>
+
+
+mongodb+srv://kkarawan9:<pookieroom>@theroundroom.cyrnalm.mongodb.net/roomdb?appName=TheRoundRoom
