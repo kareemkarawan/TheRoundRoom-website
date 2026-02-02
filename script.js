@@ -378,6 +378,53 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!checkoutForm) return; // not on this page
     
     let pendingOrderData = null;
+    let validPincodes = [];
+
+    // Load valid pincodes on page load
+    async function loadValidPincodes() {
+        try {
+            const response = await fetch('/.netlify/functions/pincodes');
+            if (response.ok) {
+                const pincodes = await response.json();
+                validPincodes = pincodes.map(p => p.code.toString());
+                console.log('Valid pincodes loaded:', validPincodes);
+            }
+        } catch (e) { console.error('Could not load pincodes', e); }
+    }
+
+    // Validate pincode
+    async function validatePincode(code) {
+        const errorEl = document.getElementById('pincodeError');
+        const successEl = document.getElementById('pincodeSuccess');
+        if (!errorEl || !successEl) return false;
+
+        if (!code || code.trim() === '') {
+            errorEl.textContent = 'Pincode is required';
+            errorEl.style.display = 'block';
+            successEl.style.display = 'none';
+            return false;
+        }
+
+        if (validPincodes.includes(code.trim())) {
+            successEl.textContent = '✓ Delivery available in this area';
+            successEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            return true;
+        } else {
+            errorEl.textContent = 'Sorry, we cannot deliver to this pincode area.';
+            errorEl.style.display = 'block';
+            successEl.style.display = 'none';
+            return false;
+        }
+    }
+
+    // Real-time pincode validation
+    const pincodeInput = document.getElementById('pincode');
+    if (pincodeInput) {
+        pincodeInput.addEventListener('blur', async (e) => {
+            await validatePincode(e.target.value);
+        });
+    }
 
     checkoutForm.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -389,7 +436,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const last = data.get('lastName').trim();
         const phone = data.get('phone').trim();
         const address = data.get('address').trim();
+        const pincode = data.get('pincode').trim();
         const note = data.get('note').trim();
+
+        // Validate pincode
+        const pincodeValid = await validatePincode(pincode);
+        if (!pincodeValid) {
+            return;
+        }
 
         // Get the saved cart
         let rawCart = null;
@@ -406,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 lastName: last,
                 phone: phone,
                 address: address,
+                pincode: pincode,
                 note: note
             },
             cart: rawCart
@@ -478,6 +533,9 @@ document.addEventListener('DOMContentLoaded', function() {
             pendingOrderData = null;
         });
     }
+
+    // Load pincodes when form is ready
+    loadValidPincodes();
 });
 
 /* ===== Orders: create/save/manage (client-only simulation) ===== */

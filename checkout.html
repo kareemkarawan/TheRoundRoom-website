@@ -60,6 +60,13 @@
             </div>
 
             <div class="form-section">
+                <label for="pincode">Delivery Pincode *</label>
+                <input id="pincode" name="pincode" type="text" required aria-required="true" placeholder="e.g., 110001">
+                <div id="pincodeError" class="error-message" style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
+                <div id="pincodeSuccess" class="success-message" style="display:none; color:#4CAF50; margin-top:0.5rem; font-size:0.9rem;"></div>
+            </div>
+
+            <div class="form-section">
                 <label for="note">Order note (optional)</label>
                 <textarea id="note" name="note" placeholder="Any special instructions (optional)"></textarea>
             </div>
