@@ -454,11 +454,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Store order data and show payment modal
+        const email = form.email.value.trim();
         pendingOrderData = {
             customer: {
                 firstName: first,
                 lastName: last,
                 phone: phone,
+                email: email,
                 address: address,
                 pincode: pincode,
                 note: note
