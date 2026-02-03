@@ -3,7 +3,7 @@
 /* Force site background red and all text white */
 :root {
 	--rr-bg: #6d2430;
-	--rr-text: #f1eae2; /* white */
+	--rr-text: #f2e9e4; /* white */
 	--rr-muted: rgba(255,255,255,0.85);
 	--rr-link: #ffecec; /* slightly warm link color */
 	--rr-link-hover: #fff5f5;
@@ -181,7 +181,7 @@ footer {
 	width: 30%;
 }
 .top-nav .nav-links li {
-    margin-left: 1.5rem;
+    margin-left: 1rem;
 }
 .top-nav .nav-links a {
     text-decoration: none;
@@ -643,6 +643,7 @@ footer {
 	display: grid;
 	margin-bottom: 3rem;
 	align-items: stretch;
+	margin: 1.5rem;
 }
 
 /* Category grid - specific sections for Bagels, Schmears, Desserts */
@@ -656,7 +657,7 @@ footer {
 
 /* When contained inside a category grid, menu items should stretch to the column width */
 .category-grid .menu-item {
-	margin: 0; /* grid gap manages spacing */
+	margin: 0.5rem; /* grid gap manages spacing */
 	max-width: none;
 	width: 100%;
 }
@@ -1434,6 +1435,27 @@ footer {
 		margin-bottom: 0;
 		padding-bottom: 0;
 		border-bottom: none;
+	}
+
+	.form-success {
+		max-width: 720px;
+		margin: 2rem auto 3rem;
+		padding: 2.5rem 3rem;
+		border-radius: 10px;
+		text-align: left;
+		box-shadow: 0 10px 24px rgba(27,27,27,0.08);
+	}
+	.form-success h3 {
+		font-size: 1.6rem;
+		margin-bottom: 0.75rem;
+	}
+	.form-success p {
+		font-size: 1.05rem;
+		line-height: 1.6;
+		margin: 0.35rem 0;
+	}
+	.form-success .order-button {
+		margin: 1.5rem 0 0;
 	}
 
 	.checkout-form .form-section:nth-child(3),
