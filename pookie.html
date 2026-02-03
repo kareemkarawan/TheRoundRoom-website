@@ -140,7 +140,8 @@
         body.innerHTML = `
             <h3>Order ${o.id}</h3>
             <div class="muted">Placed: ${fmtDate(o.createdAt)}</div>
-            <div style="margin-top:0.5rem;"><strong>Customer</strong><div>${o.customer.firstName} ${o.customer.lastName}</div><div class="muted">${o.customer.phone}</div><div>${o.customer.address}</div></div>
+            <div style="margin-top:0.5rem;"><strong>Customer</strong><div>${o.customer.firstName} ${o.customer.lastName}</div><div class="muted">${o.customer.phone}</div><div class="muted">${o.customer.email || 'No email'}</div><div>${o.customer.address}</div><div class="muted">Pincode: ${o.customer.pincode}</div></div>
+            ${o.customer.note ? `<div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,0,0.1); border-left:3px solid #FFC107; border-radius:4px;"><strong>📝 Order Note</strong><div style="margin-top:0.35rem; color:#333;">${o.customer.note}</div></div>` : ''}
             <div style="margin-top:0.75rem;"><strong>Items</strong>
                 <div style="margin-top:0.5rem;">${o.items.map(it => `<div style=\"display:flex;justify-content:space-between\"><span>${it.qty}x ${it.name}</span><span>₹${Number(it.itemTotal).toFixed(2)}</span></div>`).join('')}</div>
             </div>

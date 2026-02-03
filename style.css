@@ -1438,24 +1438,29 @@ footer {
 	}
 
 	.form-success {
-		max-width: 720px;
-		margin: 2rem auto 3rem;
-		padding: 2.5rem 3rem;
-		border-radius: 10px;
-		text-align: left;
-		box-shadow: 0 10px 24px rgba(27,27,27,0.08);
+		max-width: 90%;
+		margin: 3rem auto;
+		padding: 3rem;
+		border-radius: 12px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		align-items: center;
+		box-shadow: 0 12px 32px rgba(27,27,27,0.1);
 	}
 	.form-success h3 {
-		font-size: 1.6rem;
-		margin-bottom: 0.75rem;
+		grid-column: 1 / -1;
+		margin: 0 0 1rem 0;
+		font-size: 1.8rem;
+		text-align: center;
 	}
-	.form-success p {
+	.form-success > div:not(:first-child) {
 		font-size: 1.05rem;
-		line-height: 1.6;
-		margin: 0.35rem 0;
+		line-height: 1.7;
 	}
 	.form-success .order-button {
-		margin: 1.5rem 0 0;
+		grid-column: 1 / -1;
+		margin: 1.5rem auto 0;
 	}
 
 	.checkout-form .form-section:nth-child(3),
