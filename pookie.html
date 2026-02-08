@@ -144,6 +144,8 @@
             <p><strong>Customer:</strong> ${order.customer?.name || '—'}</p>
             <p><strong>Phone:</strong> ${order.customer?.phone || '—'}</p>
             <p><strong>Email:</strong> ${order.customer?.email || '—'}</p>
+            <p><strong>Address:</strong> ${order.customer?.address || '—'}</p>
+            <p><strong>Note:</strong> ${order.customer?.note || '—'}</p>
             <div class="checkout-items" style="margin-top:1rem;">${itemsHtml || '<p>No items.</p>'}</div>
             <div class="checkout-breakdown" style="margin-top:1rem;">
                 <div class="row"><span>Subtotal</span><span>₹${Number(order.pricing?.subtotal || 0).toFixed(2)}</span></div>

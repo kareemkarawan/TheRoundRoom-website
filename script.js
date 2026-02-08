@@ -388,6 +388,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = e.target;
         if (!form.reportValidity()) return;
 
+        const paymentLoading = document.getElementById('paymentLoading');
+        if (paymentLoading) paymentLoading.style.display = 'flex';
+
         if (window._rr_storeOpen === false) {
             alert('Store is currently closed. Please try again later.');
             return;
@@ -404,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate pincode
         const pincodeValid = await validatePincode(pincode);
         if (!pincodeValid) {
+            if (paymentLoading) paymentLoading.style.display = 'none';
             return;
         }
 
@@ -411,6 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let rawCart = null;
         try { rawCart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (err) { rawCart = null; }
         if (!rawCart || !rawCart.items || rawCart.items.length === 0) {
+            if (paymentLoading) paymentLoading.style.display = 'none';
             alert('Your cart is empty. Please add items before placing an order.');
             return;
         }
@@ -421,7 +426,9 @@ document.addEventListener('DOMContentLoaded', function() {
             customer: {
                 name: `${first} ${last}`.trim(),
                 phone: phone,
-                email: email
+                email: email,
+                address: address,
+                note: note
             },
             items: (rawCart.items || []).map(i => ({
                 menuItemId: i.id,
@@ -432,6 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create order and Razorpay order server-side before opening payment modal
         const created = await saveOrder(orderPayload);
         if (!created || !created.orderNumber) {
+            if (paymentLoading) paymentLoading.style.display = 'none';
             const errMsg = created?.error || 'Failed to create order. Please try again.';
             alert(errMsg);
             return;
@@ -446,7 +454,9 @@ document.addEventListener('DOMContentLoaded', function() {
             customer: {
                 name: `${first} ${last}`.trim(),
                 phone: phone,
-                email: email
+                email: email,
+                address: address,
+                note: note
             },
             cart: rawCart
         };
@@ -460,6 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
         }
+
+        if (paymentLoading) paymentLoading.style.display = 'none';
     });
 
     // Cancel payment
@@ -636,10 +648,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="row"><span>Tax</span><span>₹${Number(cart.tax || 0).toFixed(2)}</span></div>
             <div class="row total"><span>Total</span><span>₹${Number(cart.total || 0).toFixed(2)}</span></div>
         </div>
-        <div style="margin-top:0.75rem">
+        <div class="order-actions">
             <a class="order-button" href="${data.receiptUrl}" download="receipt-${data.orderNumber}.pdf">Download receipt (PDF)</a>
-        </div>
-        <div style="margin-top:0.75rem">
             <a href="/order_page" class="order-button">Return to menu</a>
         </div>
     `;

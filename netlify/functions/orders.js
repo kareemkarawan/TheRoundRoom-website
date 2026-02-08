@@ -207,6 +207,8 @@ async function handlePost(body) {
         name: order.customer?.name || "",
         phone: order.customer?.phone || "",
         email: order.customer?.email || "",
+        address: order.customer?.address || "",
+        note: order.customer?.note || "",
       },
       payment: {
         provider: "razorpay",
