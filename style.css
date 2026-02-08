@@ -1512,7 +1512,8 @@ footer {
 
 	.section-checkout {
 		flex: 1;
-		margin-right: 350px;
+		align-items: center;
+		margin: auto;
 		padding: var(--spacing-lg) 2rem;
 		max-height: none;
 		overflow-y: visible;

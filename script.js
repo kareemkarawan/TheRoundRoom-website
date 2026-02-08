@@ -530,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     // Redirect to thank you page
-                    window.location.href = 'thankyou.html';
+                    window.location.href = '/thankyou';
                     pendingOrderData = null;
                 },
                 modal: {
@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let data = null;
     try { data = JSON.parse(sessionStorage.getItem('rr_thankyou') || 'null'); } catch (e) { data = null; }
     if (!data) {
-        container.innerHTML = '<h3>Thanks!</h3><p>Your order is confirmed.</p><div style="margin-top:0.75rem"><a href="order_page.html" class="order-button">Return to menu</a></div>';
+        container.innerHTML = '<h3>Thanks!</h3><p>Your order is confirmed.</p><div style="margin-top:0.75rem"><a href="/order_page" class="order-button">Return to menu</a></div>';
         return;
     }
 
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a class="order-button" href="${data.receiptUrl}" download="receipt-${data.orderNumber}.pdf">Download receipt (PDF)</a>
         </div>
         <div style="margin-top:0.75rem">
-            <a href="order_page.html" class="order-button">Return to menu</a>
+            <a href="/order_page" class="order-button">Return to menu</a>
         </div>
     `;
 });
