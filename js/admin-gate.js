@@ -32,14 +32,14 @@
 
     gate = document.createElement('div');
     gate.id = 'adminGate';
-    gate.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.85); color:#fff; z-index:5000; display:flex; align-items:center; justify-content:center;';
+    gate.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); color:#111; z-index:5000; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(2px);';
     gate.innerHTML = `
-      <div style="max-width:360px; width:90%; background:#111; padding:1.5rem; border-radius:8px; text-align:center;">
-        <h3 style="margin-top:0;">Admin Access</h3>
-        <p class="muted" style="color:#ccc;">Enter admin token to continue.</p>
-        <input type="password" id="adminTokenInput" placeholder="Admin token" style="width:100%; padding:0.6rem; margin:0.75rem 0;">
+      <div style="max-width:380px; width:92%; background:#fff; padding:1.5rem; border-radius:12px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+        <h3 style="margin-top:0; color:#111;">Admin Access</h3>
+        <p class="muted" style="color:#666;">Enter admin token to continue.</p>
+        <input type="password" id="adminTokenInput" placeholder="Admin token" style="width:100%; padding:0.7rem; margin:0.75rem 0; border:1px solid #ddd; border-radius:6px;">
         <button id="adminTokenBtn" class="btn" style="width:100%;">Unlock</button>
-        <p id="adminGateError" style="color:#ffb3b3; margin-top:0.75rem; display:none;">Invalid token.</p>
+        <p id="adminGateError" style="color:#b00020; margin-top:0.75rem; display:none;">Invalid token.</p>
       </div>
     `;
 
@@ -50,22 +50,23 @@
   function showGate() {
     const gate = ensureGate();
     gate.style.display = 'flex';
+    document.body.classList.add('admin-locked');
   }
 
   function hideGate() {
     const gate = ensureGate();
     gate.style.display = 'none';
+    document.body.classList.remove('admin-locked');
   }
 
   async function requireAdminAccess(onUnlock) {
     const token = getStoredToken();
+    showGate();
     if (token && await verifyAdminToken(token)) {
       hideGate();
       if (typeof onUnlock === 'function') onUnlock();
       return;
     }
-
-    showGate();
     const input = document.getElementById('adminTokenInput');
     const error = document.getElementById('adminGateError');
     const btn = document.getElementById('adminTokenBtn');

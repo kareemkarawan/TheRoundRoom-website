@@ -92,9 +92,122 @@
 
     <script src="js/admin-gate.js"></script>
     <script>
+    function fmtDate(iso) {
+        try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+    }
+
+    function renderOrders(orders) {
+        const tbody = document.getElementById('ordersTbody');
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = orders.map(o => {
+            const customer = o.customer?.name || '—';
+            const placed = o.createdAt ? fmtDate(o.createdAt) : '—';
+            const status = o.status || 'CREATED';
+            return `
+                <tr>
+                    <td>${o.orderNumber || '—'}</td>
+                    <td>${customer}</td>
+                    <td>${placed}</td>
+                    <td>
+                        <select data-order="${o.orderNumber}" class="order-status-select">
+                            ${['CREATED','PAYMENT_PENDING','PAID','PREPARING','COMPLETED','CANCELLED'].map(s =>
+                                `<option value="${s}" ${s === status ? 'selected' : ''}>${s}</option>`
+                            ).join('')}
+                        </select>
+                    </td>
+                    <td><button class="btn" data-view="${o.orderNumber}">View</button></td>
+                    <td><button class="btn btn-delete" data-delete="${o.orderNumber}">Delete</button></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function showOrderModal(order) {
+        const modal = document.getElementById('orderModal');
+        const body = document.getElementById('modalBody');
+        if (!modal || !body) return;
+
+        const itemsHtml = (order.items || []).map(i => `
+            <div class="checkout-item">
+                <div class="left"><span class="qty">${i.qty}x</span><span class="name">${i.name}</span></div>
+                <div>₹${Number(i.lineTotal || 0).toFixed(2)}</div>
+            </div>
+        `).join('');
+
+        body.innerHTML = `
+            <h3>Order ${order.orderNumber}</h3>
+            <p><strong>Status:</strong> ${order.status}</p>
+            <p><strong>Customer:</strong> ${order.customer?.name || '—'}</p>
+            <p><strong>Phone:</strong> ${order.customer?.phone || '—'}</p>
+            <p><strong>Email:</strong> ${order.customer?.email || '—'}</p>
+            <div class="checkout-items" style="margin-top:1rem;">${itemsHtml || '<p>No items.</p>'}</div>
+            <div class="checkout-breakdown" style="margin-top:1rem;">
+                <div class="row"><span>Subtotal</span><span>₹${Number(order.pricing?.subtotal || 0).toFixed(2)}</span></div>
+                <div class="row"><span>Tax</span><span>₹${Number(order.pricing?.tax || 0).toFixed(2)}</span></div>
+                <div class="row total"><span>Total</span><span>₹${Number(order.pricing?.total || 0).toFixed(2)}</span></div>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    async function loadOrders() {
+        const tbody = document.getElementById('ordersTbody');
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">Loading orders…</td></tr>';
+        const orders = await getOrders();
+        renderOrders(orders);
+    }
+
+    function bindOrdersTable() {
+        const table = document.getElementById('ordersTable');
+        if (!table) return;
+
+        table.addEventListener('change', async (e) => {
+            const select = e.target.closest('.order-status-select');
+            if (!select) return;
+            const orderNumber = select.getAttribute('data-order');
+            await updateOrderStatus(orderNumber, select.value);
+        });
+
+        table.addEventListener('click', async (e) => {
+            const viewBtn = e.target.closest('[data-view]');
+            const delBtn = e.target.closest('[data-delete]');
+            if (viewBtn) {
+                const orderNumber = viewBtn.getAttribute('data-view');
+                const orders = await getOrders();
+                const order = orders.find(o => o.orderNumber === orderNumber);
+                if (order) showOrderModal(order);
+            }
+            if (delBtn) {
+                const orderNumber = delBtn.getAttribute('data-delete');
+                if (confirm(`Delete order ${orderNumber}?`)) {
+                    await deleteOrder(orderNumber);
+                    await loadOrders();
+                }
+            }
+        });
+    }
+
+    document.getElementById('modalClose').addEventListener('click', () => {
+        const modal = document.getElementById('orderModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         if (window.AdminGate) {
-            window.AdminGate.requireAdminAccess();
+            window.AdminGate.requireAdminAccess(() => {
+                bindOrdersTable();
+                loadOrders();
+                window.addEventListener('ordersUpdated', loadOrders);
+            });
         }
     });
     </script>
