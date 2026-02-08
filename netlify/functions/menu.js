@@ -241,7 +241,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 401,
       headers,
-      body: JSON.stringify({ error: "Unauthorized" }),
+      body: JSON.stringify({ error: "Unauthorized: invalid or missing admin token" }),
     };
   }
 
