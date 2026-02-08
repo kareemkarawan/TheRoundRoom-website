@@ -578,11 +578,13 @@ document.addEventListener('DOMContentLoaded', initStoreStatus);
 async function getOrders() {
     try {
         const token = localStorage.getItem('rr_admin_token');
+        console.debug('[admin] Fetching orders');
         const response = await fetch('/.netlify/functions/orders', {
             method: 'GET',
             headers: { 'Content-Type': 'application/json', 'x-admin-token': token || '' }
         });
         if (response.ok) {
+            console.debug('[admin] Orders fetched');
             return await response.json();
         }
     } catch (e) { console.warn('Could not fetch orders', e); }
@@ -656,12 +658,14 @@ async function markPaymentFailed(orderNumber, razorpayResponse) {
 async function updateOrderStatus(orderNumber, status) {
     try {
         const token = localStorage.getItem('rr_admin_token');
+        console.debug('[admin] Update order status', orderNumber, status);
         const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'x-admin-token': token || '' },
             body: JSON.stringify({ status })
         });
         if (response.ok) {
+            console.debug('[admin] Status update success', orderNumber);
             window.dispatchEvent(new Event('ordersUpdated'));
             return true;
         }
@@ -673,12 +677,14 @@ async function deleteOrder(orderNumber) {
     try {
         const token = localStorage.getItem('rr_admin_token');
         console.log('Deleting order:', orderNumber);
+        console.debug('[admin] Delete order', orderNumber);
         const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
             method: 'DELETE',
             headers: { 'x-admin-token': token || '' }
         });
         if (response.ok) {
             console.log('Order deleted successfully');
+            console.debug('[admin] Delete success', orderNumber);
             window.dispatchEvent(new Event('ordersUpdated'));
             return true;
         }

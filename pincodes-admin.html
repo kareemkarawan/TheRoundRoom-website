@@ -87,25 +87,30 @@
     let allPincodes = [];
 
     function getAdminToken() {
+        console.debug('[pincodes-admin] Requesting admin token');
         let token = localStorage.getItem('rr_admin_token');
         if (!token) {
             token = prompt('Enter admin token');
             if (token) localStorage.setItem('rr_admin_token', token);
         }
+        console.debug('[pincodes-admin] Admin token present:', Boolean(token));
         return token;
     }
 
     async function loadPincodes() {
         const tbody = document.getElementById('pincodesTableBody');
+        console.debug('[pincodes-admin] Loading pincodes');
         try {
             const response = await fetch('/.netlify/functions/pincodes');
             if (response.ok) {
                 allPincodes = await response.json();
+                console.debug('[pincodes-admin] Loaded pincodes:', allPincodes.length);
                 renderPincodes();
             } else {
                 throw new Error('Failed to fetch pincodes');
             }
         } catch (e) {
+            console.error('[pincodes-admin] Load failed:', e);
             tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Error loading pincodes: ${e.message}</td></tr>`;
         }
     }
@@ -113,9 +118,12 @@
     function renderPincodes() {
         const tbody = document.getElementById('pincodesTableBody');
         if (!allPincodes || allPincodes.length === 0) {
+            console.debug('[pincodes-admin] No pincodes to render');
             tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No pincodes yet. Add some to get started!</td></tr>';
             return;
         }
+
+        console.debug('[pincodes-admin] Rendering pincodes:', allPincodes.length);
         
         // Sort pincodes numerically for better display
         const sorted = [...allPincodes].sort((a, b) => {
@@ -135,6 +143,7 @@
     }
 
     function showMessage(text, type) {
+        console.debug('[pincodes-admin] Message:', type, text);
         const box = document.getElementById('messageBox');
         box.textContent = text;
         box.className = `message ${type}`;
@@ -142,6 +151,7 @@
     }
 
     async function deletePincode(code) {
+        console.debug('[pincodes-admin] Delete pincode:', code);
         if (!confirm(`Delete pincode ${code}?`)) return;
         try {
             const response = await fetch(`/.netlify/functions/pincodes?id=${code}`, {
@@ -149,17 +159,20 @@
                 headers: { 'x-admin-token': getAdminToken() || '' }
             });
             if (response.ok) {
+                console.debug('[pincodes-admin] Delete success:', code);
                 showMessage(`Pincode ${code} deleted`, 'success');
                 await loadPincodes();
             } else {
                 throw new Error('Failed to delete');
             }
         } catch (e) {
+            console.error('[pincodes-admin] Delete failed:', e);
             showMessage(`Error: ${e.message}`, 'error');
         }
     }
 
     async function addPincodesBulk(text) {
+        console.debug('[pincodes-admin] Bulk add start');
         // Parse input: split by newlines and commas, clean up
         const pincodes = text
             .split(/[\n,]+/)
@@ -168,6 +181,7 @@
             .filter((p, i, arr) => arr.indexOf(p) === i); // Remove duplicates
 
         if (pincodes.length === 0) {
+            console.warn('[pincodes-admin] No valid pincodes in bulk input');
             showMessage('No valid pincodes found. Use only digits.', 'error');
             return;
         }
@@ -189,9 +203,11 @@
                     body: JSON.stringify({ code, area: '' })
                 });
                 if (response.ok) {
+                    console.debug('[pincodes-admin] Added pincode:', code);
                     added++;
                 }
             } catch (e) {
+                console.error('[pincodes-admin] Add failed:', code, e);
                 console.error(`Failed to add ${code}:`, e);
             }
         }
@@ -205,14 +221,17 @@
     document.getElementById('bulkAddBtn').addEventListener('click', () => {
         const text = document.getElementById('bulkPincodeInput').value;
         if (text.trim()) {
+            console.debug('[pincodes-admin] Bulk add triggered');
             addPincodesBulk(text);
         } else {
+            console.warn('[pincodes-admin] Bulk add empty input');
             showMessage('Enter at least one pincode', 'error');
         }
     });
 
     document.getElementById('bulkPincodeInput').addEventListener('keypress', (e) => {
         if (e.ctrlKey && e.key === 'Enter') {
+            console.debug('[pincodes-admin] Bulk add Ctrl+Enter');
             document.getElementById('bulkAddBtn').click();
         }
     });

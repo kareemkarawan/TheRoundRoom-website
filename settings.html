@@ -66,17 +66,20 @@
 
     <script>
     function getAdminToken() {
+        console.debug('[settings] Requesting admin token');
         let token = localStorage.getItem('rr_admin_token');
         if (!token) {
             token = prompt('Enter admin token');
             if (token) localStorage.setItem('rr_admin_token', token);
         }
+        console.debug('[settings] Admin token present:', Boolean(token));
         return token;
     }
 
     async function loadSettings() {
         const token = getAdminToken();
         if (!token) return;
+        console.debug('[settings] Loading settings');
         try {
             const response = await fetch('/.netlify/functions/settings', {
                 method: 'GET',
@@ -85,12 +88,15 @@
             if (!response.ok) throw new Error('Failed to load settings');
             const data = await response.json();
 
+            console.debug('[settings] Loaded settings');
+
             document.getElementById('taxRate').value = data.taxRate ?? '';
             document.getElementById('currency').value = data.currency || 'INR';
             document.getElementById('invoicePrefix').value = data.invoicePrefix || 'ORD';
             document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
             document.getElementById('minOrder').value = data.minOrder ?? '';
         } catch (e) {
+            console.error('[settings] Load failed:', e);
             alert(`Error loading settings: ${e.message}`);
         }
     }
@@ -98,6 +104,7 @@
     async function saveSettings() {
         const token = getAdminToken();
         if (!token) return;
+        console.debug('[settings] Saving settings');
         const payload = {
             taxRate: Number(document.getElementById('taxRate').value || 0),
             currency: document.getElementById('currency').value.trim() || 'INR',
@@ -113,8 +120,10 @@
                 body: JSON.stringify(payload)
             });
             if (!response.ok) throw new Error('Failed to save settings');
+            console.debug('[settings] Save success');
             alert('Settings saved');
         } catch (e) {
+            console.error('[settings] Save failed:', e);
             alert(`Error saving settings: ${e.message}`);
         }
     }
