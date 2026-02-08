@@ -266,81 +266,6 @@ function updateCart() {
     const toggleTotalEl = document.getElementById('toggleTotal');
     if (toggleTotalEl) toggleTotalEl.textContent = document.getElementById('total').textContent; }
 
-function scrollToCheckout() {
-    const checkoutSection = document.getElementById('checkoutSection');
-    if (checkoutSection) {
-        checkoutSection.scrollIntoView({ behavior: 'smooth' });
-    }
-}
-
-function submitOrder() {
-    // Collect form data
-    const order = {
-        name: document.getElementById('fullName').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        address: document.getElementById('address').value,
-        city: document.getElementById('city').value,
-        postal: document.getElementById('postal').value,
-        instructions: document.getElementById('instructions').value,
-        delivery: document.querySelector('input[name="delivery"]:checked').value,
-        payment: document.querySelector('input[name="payment"]:checked').value,
-    };
-
-    // Get cart items
-    const cartItems = [];
-    document.querySelectorAll('.menu-item').forEach(item => {
-        const id = item.dataset.id;
-        const qty = parseInt(document.querySelector(`.qty[data-id="${id}"]`).textContent);
-        if (qty > 0) {
-            cartItems.push({
-                name: item.dataset.name,
-                qty: qty,
-                price: item.dataset.price
-            });
-        }
-    });
-
-    if (cartItems.length === 0) {
-        alert('Please add items to your cart');
-        return;
-    }
-
-    if (!order.name || !order.phone) {
-        alert('Please fill in all required fields');
-        return;
-    }
-
-    // Prepare WhatsApp message
-    let message = `*Order from The Round Room*\n\n`;
-    message += `*Customer:* ${order.name}\n`;
-    message += `*Phone:* ${order.phone}\n`;
-    message += `*Email:* ${order.email}\n\n`;
-    message += `*Items:*\n`;
-            
-    let total = 0;
-    cartItems.forEach(item => {
-        const itemTotal = item.qty * parseFloat(item.price);
-        message += `• ${item.qty}x ${item.name} - $${itemTotal.toFixed(2)}\n`;
-        total += itemTotal;
-    });
-
-    const tax = total * 0.05;
-    message += `\n*Subtotal:* ₹${total.toFixed(2)}\n`;
-    message += `*Tax:* ₹${tax.toFixed(2)}\n`;
-    message += `*Total:* ₹{(total + tax).toFixed(2)}\n\n`;
-    message += `*Delivery:* ${order.delivery}\n`;
-    message += `*Address:* ${order.address}, ${order.city} ${order.postal}\n`;
-    if (order.instructions) {
-        message += `*Instructions:* ${order.instructions}\n`;
-    }
-    message += `*Payment:* ${order.payment}`;
-
-    // Open WhatsApp
-    const whatsappUrl = `https://wa.me/YOUR_PHONE_NUMBER?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     const cartSidebar = document.querySelector('.cart-sidebar');
     const cartToggle = document.getElementById('cartToggle');
@@ -649,56 +574,6 @@ document.addEventListener('DOMContentLoaded', initStoreStatus);
 
 /* ===== Orders: create/save/manage (client-only simulation) ===== */
 
-function createOrderObject(customer, cart) {
-    if (window.OrderModel && typeof window.OrderModel.fromCheckout === 'function') {
-        return window.OrderModel.fromCheckout(customer, cart).toPlainObject();
-    }
-
-    const orderNumber = `ORD-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-    const createdAt = new Date().toISOString();
-    const subtotal = Number((cart.subtotal || 0).toFixed(2));
-    const tax = Number((cart.tax || 0).toFixed(2));
-    const total = Number((cart.total || 0).toFixed(2));
-    return {
-        orderNumber,
-        status: 'PAID',
-        items: (cart.items || []).map(i => ({
-            menuItemId: i.id,
-            name: i.name,
-            price: Number(i.price),
-            qty: Number(i.qty),
-            lineTotal: Number((Number(i.itemTotal) || (Number(i.price) * Number(i.qty))).toFixed(2))
-        })),
-        pricing: {
-            subtotal,
-            tax,
-            total,
-            currency: 'INR'
-        },
-        customer: {
-            name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
-            phone: customer.phone || '',
-            email: customer.email || ''
-        },
-        payment: {
-            provider: 'razorpay',
-            providerOrderId: null,
-            providerPaymentId: `SIM-${Math.random().toString(36).slice(2,9)}`,
-            method: 'Online',
-            status: 'PAID',
-            paidAt: createdAt
-        },
-        accounting: {
-            provider: null,
-            invoiceId: null,
-            invoiceNumber: null,
-            invoiceUrl: null,
-            syncedAt: null
-        },
-        createdAt,
-        updatedAt: createdAt
-    };
-}
 
 async function getOrders() {
     try {
@@ -811,7 +686,3 @@ async function deleteOrder(orderNumber) {
     return false;
 }
 
-// Small helper to format ISO -> local readable
-function fmtDate(iso) {
-    try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
-}
