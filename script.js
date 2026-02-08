@@ -501,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
-                    const receiptUrl = createReceiptDownload(pendingOrderData, response);
+                    const receiptUrl = await createReceiptDownload(pendingOrderData, response);
 
                     // Clear cart
                     try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p>Order ID: <strong>${pendingOrderData.orderNumber}</strong></p>\
                                 <p>We'll start preparing your order now.</p>\
                                 <div style="margin-top:0.75rem">\
-                                    <a id="downloadReceiptLink" class="order-button" href="${receiptUrl}" download="receipt-${pendingOrderData.orderNumber}.html">Download receipt</a>\
+                                    <a id="downloadReceiptLink" class="order-button" href="${receiptUrl}" download="receipt-${pendingOrderData.orderNumber}.pdf">Download receipt (PDF)</a>\
                                 </div>\
                                 <div style="margin-top:0.75rem">\
                                     <a href="order_page.html" class="order-button">Return to menu</a>\
@@ -694,64 +694,83 @@ async function markPaymentFailed(orderNumber, razorpayResponse) {
     return false;
 }
 
-function createReceiptDownload(orderData, razorpayResponse) {
+async function createReceiptDownload(orderData, razorpayResponse) {
         const now = new Date();
         const cart = orderData.cart || { items: [], subtotal: 0, tax: 0, total: 0 };
         const totalPaid = Number(orderData.amount || 0) / 100;
+        const taxRate = cart.subtotal > 0 ? (Number(cart.tax || 0) / Number(cart.subtotal || 1)) * 100 : 0;
 
-        const itemsHtml = (cart.items || []).map(i => `
-                <tr>
-                        <td>${i.name}</td>
-                        <td>${i.qty}</td>
-                        <td>₹${Number(i.price || 0).toFixed(2)}</td>
-                        <td>₹${Number(i.itemTotal || 0).toFixed(2)}</td>
-                </tr>
-        `).join('');
+    async function loadImageDataUrl(url) {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
 
-        const receiptHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Receipt ${orderData.orderNumber}</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
-        h1 { margin: 0 0 8px; }
-        .meta { margin-bottom: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
-        .total { font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>The Round Room — Receipt</h1>
-    <div class="meta">
-        <div><strong>Order ID:</strong> ${orderData.orderNumber}</div>
-        <div><strong>Date:</strong> ${now.toLocaleString()}</div>
-        <div><strong>Customer:</strong> ${orderData.customer?.name || ''}</div>
-        <div><strong>Email:</strong> ${orderData.customer?.email || ''}</div>
-        <div><strong>Phone:</strong> ${orderData.customer?.phone || ''}</div>
-        <div><strong>Payment ID:</strong> ${razorpayResponse?.razorpay_payment_id || ''}</div>
-        <div><strong>Razorpay Order ID:</strong> ${razorpayResponse?.razorpay_order_id || ''}</div>
-    </div>
-    <table>
-        <thead>
-            <tr><th>Item</th><th>Qty</th><th>Price</th><th>Line Total</th></tr>
-        </thead>
-        <tbody>
-            ${itemsHtml || '<tr><td colspan="4">No items</td></tr>'}
-        </tbody>
-        <tfoot>
-            <tr><td colspan="3">Subtotal</td><td>₹${Number(cart.subtotal || 0).toFixed(2)}</td></tr>
-            <tr><td colspan="3">Tax</td><td>₹${Number(cart.tax || 0).toFixed(2)}</td></tr>
-            <tr class="total"><td colspan="3">Total Paid</td><td>₹${totalPaid.toFixed(2)}</td></tr>
-        </tfoot>
-    </table>
-</body>
-</html>`;
+        if (window.jspdf && window.jspdf.jsPDF) {
+                const doc = new window.jspdf.jsPDF();
+                let y = 14;
+                const burgundy = [109, 36, 48];
 
-        const blob = new Blob([receiptHtml], { type: 'text/html' });
-        return URL.createObjectURL(blob);
+                doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
+                doc.rect(0, 0, 210, 18, 'F');
+
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(14);
+                doc.text('THE ROUND ROOM', 14, 12);
+
+                try {
+                    const logoDataUrl = await loadImageDataUrl('images/Icon.png');
+                    doc.addImage(logoDataUrl, 'PNG', 170, 3, 10, 10);
+                } catch (e) {
+                    // ignore logo failures
+                }
+
+                doc.setTextColor(0, 0, 0);
+                y = 26;
+                doc.setFontSize(11);
+                doc.text('Velvet Lounge Enterprises Pvt. Ltd.', 14, y);
+                y += 6;
+                doc.setTextColor(burgundy[0], burgundy[1], burgundy[2]);
+                doc.setFontSize(12);
+                doc.text('Receipt', 14, y);
+                doc.setTextColor(0, 0, 0);
+                y += 8;
+
+                doc.setFontSize(11);
+                doc.text(`Order ID: ${orderData.orderNumber}`, 14, y); y += 6;
+                doc.text(`Date: ${now.toLocaleString()}`, 14, y); y += 6;
+                doc.text(`Customer: ${orderData.customer?.name || ''}`, 14, y); y += 6;
+                doc.text(`Email: ${orderData.customer?.email || ''}`, 14, y); y += 6;
+                doc.text(`Phone: ${orderData.customer?.phone || ''}`, 14, y); y += 6;
+                doc.text(`Payment ID: ${razorpayResponse?.razorpay_payment_id || ''}`, 14, y); y += 6;
+                doc.text(`Razorpay Order ID: ${razorpayResponse?.razorpay_order_id || ''}`, 14, y); y += 8;
+
+                doc.text('Items:', 14, y); y += 6;
+                doc.setFontSize(10);
+                (cart.items || []).forEach(item => {
+                        const line = `${item.qty}x ${item.name} — ₹${Number(item.itemTotal || 0).toFixed(2)}`;
+                        doc.text(line, 16, y);
+                        y += 5;
+                        if (y > 270) { doc.addPage(); y = 14; }
+                });
+
+                y += 4;
+                doc.setFontSize(11);
+                doc.text(`Subtotal: ₹${Number(cart.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
+                doc.text(`Tax (${taxRate.toFixed(2)}%): ₹${Number(cart.tax || 0).toFixed(2)}`, 14, y); y += 6;
+                doc.text(`Total Paid: ₹${totalPaid.toFixed(2)}`, 14, y);
+
+                const pdfBlob = doc.output('blob');
+                return URL.createObjectURL(pdfBlob);
+        }
+
+        const fallback = new Blob(['Receipt unavailable'], { type: 'text/plain' });
+        return URL.createObjectURL(fallback);
 }
 
 async function updateOrderStatus(orderNumber, status) {

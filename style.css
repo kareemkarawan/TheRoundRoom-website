@@ -1530,6 +1530,8 @@ footer {
 	.form-success.single {
 		grid-template-columns: 1fr;
 		text-align: center;
+		justify-items: center;
+		max-width: 720px;
 	}
 	.form-success h3 {
 		grid-column: 1 / -1;
