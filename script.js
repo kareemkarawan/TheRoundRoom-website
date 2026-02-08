@@ -305,6 +305,35 @@ document.addEventListener('DOMContentLoaded', function() {
     let pendingOrderData = null;
     let validPincodes = [];
 
+    function renderCheckoutSummary() {
+        const itemsEl = document.getElementById('checkoutItems');
+        const subtotalEl = document.getElementById('checkoutSubtotal');
+        const taxEl = document.getElementById('checkoutTax');
+        const totalEl = document.getElementById('checkoutTotal');
+        if (!itemsEl || !subtotalEl || !taxEl || !totalEl) return;
+
+        let cart = null;
+        try { cart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (e) { cart = null; }
+        if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
+            itemsEl.innerHTML = '<p class="empty-cart">No items in your cart.</p>';
+            subtotalEl.textContent = '₹0.00';
+            taxEl.textContent = '₹0.00';
+            totalEl.textContent = '₹0.00';
+            return;
+        }
+
+        itemsEl.innerHTML = cart.items.map(item => `
+            <div class="checkout-item">
+                <div class="left"><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
+                <div>₹${Number(item.itemTotal || 0).toFixed(2)}</div>
+            </div>
+        `).join('');
+
+        subtotalEl.textContent = `₹${Number(cart.subtotal || 0).toFixed(2)}`;
+        taxEl.textContent = `₹${Number(cart.tax || 0).toFixed(2)}`;
+        totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
+    }
+
     // Load valid pincodes on page load
     async function loadValidPincodes() {
         try {
@@ -415,7 +444,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: `${first} ${last}`.trim(),
                 phone: phone,
                 email: email
-            }
+            },
+            cart: rawCart
         };
 
         // Show payment modal with server-calculated amount
@@ -471,6 +501,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
+                    const receiptUrl = createReceiptDownload(pendingOrderData, response);
+
                     // Clear cart
                     try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
 
@@ -485,10 +517,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const form = document.getElementById('checkoutForm');
                     if (form) {
                         form.innerHTML = `\
-                            <div class="form-success">\
+                            <div class="form-success single">\
                                 <h3>Thanks! Your payment is confirmed.</h3>\
                                 <p>Order ID: <strong>${pendingOrderData.orderNumber}</strong></p>\
                                 <p>We'll start preparing your order now.</p>\
+                                <div style="margin-top:0.75rem">\
+                                    <a id="downloadReceiptLink" class="order-button" href="${receiptUrl}" download="receipt-${pendingOrderData.orderNumber}.html">Download receipt</a>\
+                                </div>\
                                 <div style="margin-top:0.75rem">\
                                     <a href="order_page.html" class="order-button">Return to menu</a>\
                                 </div>\
@@ -514,7 +549,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Load pincodes when form is ready
+    // Load checkout summary and pincodes when form is ready
+    renderCheckoutSummary();
     loadValidPincodes();
 });
 
@@ -656,6 +692,66 @@ async function markPaymentFailed(orderNumber, razorpayResponse) {
         console.error('Mark payment failed error', e);
     }
     return false;
+}
+
+function createReceiptDownload(orderData, razorpayResponse) {
+        const now = new Date();
+        const cart = orderData.cart || { items: [], subtotal: 0, tax: 0, total: 0 };
+        const totalPaid = Number(orderData.amount || 0) / 100;
+
+        const itemsHtml = (cart.items || []).map(i => `
+                <tr>
+                        <td>${i.name}</td>
+                        <td>${i.qty}</td>
+                        <td>₹${Number(i.price || 0).toFixed(2)}</td>
+                        <td>₹${Number(i.itemTotal || 0).toFixed(2)}</td>
+                </tr>
+        `).join('');
+
+        const receiptHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt ${orderData.orderNumber}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+        h1 { margin: 0 0 8px; }
+        .meta { margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+        .total { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>The Round Room — Receipt</h1>
+    <div class="meta">
+        <div><strong>Order ID:</strong> ${orderData.orderNumber}</div>
+        <div><strong>Date:</strong> ${now.toLocaleString()}</div>
+        <div><strong>Customer:</strong> ${orderData.customer?.name || ''}</div>
+        <div><strong>Email:</strong> ${orderData.customer?.email || ''}</div>
+        <div><strong>Phone:</strong> ${orderData.customer?.phone || ''}</div>
+        <div><strong>Payment ID:</strong> ${razorpayResponse?.razorpay_payment_id || ''}</div>
+        <div><strong>Razorpay Order ID:</strong> ${razorpayResponse?.razorpay_order_id || ''}</div>
+    </div>
+    <table>
+        <thead>
+            <tr><th>Item</th><th>Qty</th><th>Price</th><th>Line Total</th></tr>
+        </thead>
+        <tbody>
+            ${itemsHtml || '<tr><td colspan="4">No items</td></tr>'}
+        </tbody>
+        <tfoot>
+            <tr><td colspan="3">Subtotal</td><td>₹${Number(cart.subtotal || 0).toFixed(2)}</td></tr>
+            <tr><td colspan="3">Tax</td><td>₹${Number(cart.tax || 0).toFixed(2)}</td></tr>
+            <tr class="total"><td colspan="3">Total Paid</td><td>₹${totalPaid.toFixed(2)}</td></tr>
+        </tfoot>
+    </table>
+</body>
+</html>`;
+
+        const blob = new Blob([receiptHtml], { type: 'text/html' });
+        return URL.createObjectURL(blob);
 }
 
 async function updateOrderStatus(orderNumber, status) {
