@@ -301,6 +301,12 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const checkoutForm = document.getElementById('checkoutForm');
     if (!checkoutForm) return; // not on this page
+
+    if (localStorage.getItem('rr_redirect_thankyou') === '1') {
+        localStorage.removeItem('rr_redirect_thankyou');
+        window.location.replace('/thankyou');
+        return;
+    }
     
     let pendingOrderData = null;
     let validPincodes = [];
@@ -542,6 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     // Redirect to thank you page (mobile-safe)
+                    localStorage.setItem('rr_redirect_thankyou', '1');
                     window.location.replace('/thankyou');
                     setTimeout(() => {
                         if (!location.pathname.endsWith('/thankyou')) {

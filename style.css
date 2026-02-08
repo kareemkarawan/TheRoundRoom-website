@@ -1199,6 +1199,17 @@ footer {
 	color: #000;
 	padding: 2rem;
 }
+
+@media (max-width: 600px) {
+	.modal {
+		padding: 1rem;
+	}
+	.payment-modal {
+		width: 100%;
+		max-width: 100%;
+		margin: 0 auto;
+	}
+}
 .payment-modal h3 {
 	margin: 0 0 1.5rem 0;
 	text-align: center;
