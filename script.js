@@ -525,15 +525,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
-                    const receiptUrl = await createReceiptDownload(pendingOrderData, response);
-
                     const summary = {
                         orderNumber: pendingOrderData.orderNumber,
                         customer: pendingOrderData.customer,
                         cart: pendingOrderData.cart,
                         amount: pendingOrderData.amount,
                         currency: pendingOrderData.currency,
-                        receiptUrl
+                        payment: {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id
+                        }
                     };
                     try { sessionStorage.setItem('rr_thankyou', JSON.stringify(summary)); } catch (e) { /* ignore */ }
 
@@ -661,10 +662,25 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="row total"><span>Total</span><span>₹${Number(cart.total || 0).toFixed(2)}</span></div>
         </div>
         <div class="order-actions">
-            <a class="order-button" href="${data.receiptUrl}" download="receipt-${data.orderNumber}.pdf">Download receipt (PDF)</a>
+            <button class="order-button" id="downloadReceiptBtn" type="button">Download receipt (PDF)</button>
             <a href="/order_page" class="order-button">Return to menu</a>
         </div>
     `;
+
+    const downloadBtn = document.getElementById('downloadReceiptBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', async () => {
+            const thankyouLoading = document.getElementById('thankyouLoading');
+            if (thankyouLoading) thankyouLoading.style.display = 'flex';
+            await generateReceiptPdf({
+                orderNumber: data.orderNumber,
+                customer: data.customer,
+                cart: data.cart,
+                amount: data.amount
+            }, data.payment || {});
+            if (thankyouLoading) thankyouLoading.style.display = 'none';
+        });
+    }
 });
 
 
@@ -754,7 +770,7 @@ async function markPaymentFailed(orderNumber, razorpayResponse) {
     return false;
 }
 
-async function createReceiptDownload(orderData, razorpayResponse) {
+async function generateReceiptPdf(orderData, razorpayResponse) {
         const now = new Date();
         const cart = orderData.cart || { items: [], subtotal: 0, tax: 0, total: 0 };
         const totalPaid = Number(orderData.amount || 0) / 100;
@@ -772,65 +788,64 @@ async function createReceiptDownload(orderData, razorpayResponse) {
     }
 
         if (window.jspdf && window.jspdf.jsPDF) {
-                const doc = new window.jspdf.jsPDF();
-                let y = 14;
-                const burgundy = [109, 36, 48];
+            const doc = new window.jspdf.jsPDF();
+            let y = 14;
+            const burgundy = [109, 36, 48];
 
-                doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
-                doc.rect(0, 0, 210, 18, 'F');
+            doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
+            doc.rect(0, 0, 210, 18, 'F');
 
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(14);
-                doc.text('THE ROUND ROOM', 14, 12);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.text('THE ROUND ROOM', 14, 12);
 
-                try {
-                    const logoDataUrl = await loadImageDataUrl('images/Icon.png');
-                    doc.addImage(logoDataUrl, 'PNG', 170, 3, 10, 10);
-                } catch (e) {
-                    // ignore logo failures
-                }
+            try {
+                const logoDataUrl = await loadImageDataUrl('images/Icon.png');
+                doc.addImage(logoDataUrl, 'PNG', 170, 3, 10, 10);
+            } catch (e) {
+                // ignore logo failures
+            }
 
-                doc.setTextColor(0, 0, 0);
-                y = 26;
-                doc.setFontSize(11);
-                doc.text('Velvet Lounge Enterprises Pvt. Ltd.', 14, y);
-                y += 6;
-                doc.setTextColor(burgundy[0], burgundy[1], burgundy[2]);
-                doc.setFontSize(12);
-                doc.text('Receipt', 14, y);
-                doc.setTextColor(0, 0, 0);
-                y += 8;
+            doc.setTextColor(0, 0, 0);
+            y = 26;
+            doc.setFontSize(11);
+            doc.text('Velvet Lounge Enterprises Pvt. Ltd.', 14, y);
+            y += 6;
+            doc.setTextColor(burgundy[0], burgundy[1], burgundy[2]);
+            doc.setFontSize(12);
+            doc.text('Receipt', 14, y);
+            doc.setTextColor(0, 0, 0);
+            y += 8;
 
-                doc.setFontSize(11);
-                doc.text(`Order ID: ${orderData.orderNumber}`, 14, y); y += 6;
-                doc.text(`Date: ${now.toLocaleString()}`, 14, y); y += 6;
-                doc.text(`Customer: ${orderData.customer?.name || ''}`, 14, y); y += 6;
-                doc.text(`Email: ${orderData.customer?.email || ''}`, 14, y); y += 6;
-                doc.text(`Phone: ${orderData.customer?.phone || ''}`, 14, y); y += 6;
-                doc.text(`Payment ID: ${razorpayResponse?.razorpay_payment_id || ''}`, 14, y); y += 6;
-                doc.text(`Razorpay Order ID: ${razorpayResponse?.razorpay_order_id || ''}`, 14, y); y += 8;
+            doc.setFontSize(11);
+            doc.text(`Order ID: ${orderData.orderNumber}`, 14, y); y += 6;
+            doc.text(`Date: ${now.toLocaleString()}`, 14, y); y += 6;
+            doc.text(`Customer: ${orderData.customer?.name || ''}`, 14, y); y += 6;
+            doc.text(`Email: ${orderData.customer?.email || ''}`, 14, y); y += 6;
+            doc.text(`Phone: ${orderData.customer?.phone || ''}`, 14, y); y += 6;
+            doc.text(`Payment ID: ${razorpayResponse?.razorpay_payment_id || ''}`, 14, y); y += 6;
+            doc.text(`Razorpay Order ID: ${razorpayResponse?.razorpay_order_id || ''}`, 14, y); y += 8;
 
-                doc.text('Items:', 14, y); y += 6;
-                doc.setFontSize(10);
-                (cart.items || []).forEach(item => {
-                        const line = `${item.qty}x ${item.name} — ₹${Number(item.itemTotal || 0).toFixed(2)}`;
-                        doc.text(line, 16, y);
-                        y += 5;
-                        if (y > 270) { doc.addPage(); y = 14; }
-                });
+            doc.text('Items:', 14, y); y += 6;
+            doc.setFontSize(10);
+            (cart.items || []).forEach(item => {
+                const line = `${item.qty}x ${item.name} — ₹${Number(item.itemTotal || 0).toFixed(2)}`;
+                doc.text(line, 16, y);
+                y += 5;
+                if (y > 270) { doc.addPage(); y = 14; }
+            });
 
-                y += 4;
-                doc.setFontSize(11);
-                doc.text(`Subtotal: ₹${Number(cart.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
-                doc.text(`Tax (${taxRate.toFixed(2)}%): ₹${Number(cart.tax || 0).toFixed(2)}`, 14, y); y += 6;
-                doc.text(`Total Paid: ₹${totalPaid.toFixed(2)}`, 14, y);
+            y += 4;
+            doc.setFontSize(11);
+            doc.text(`Subtotal: ₹${Number(cart.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
+            doc.text(`Tax (${taxRate.toFixed(2)}%): ₹${Number(cart.tax || 0).toFixed(2)}`, 14, y); y += 6;
+            doc.text(`Total Paid: ₹${totalPaid.toFixed(2)}`, 14, y);
 
-                const pdfBlob = doc.output('blob');
-                return URL.createObjectURL(pdfBlob);
+            doc.save(`receipt-${orderData.orderNumber}.pdf`);
+            return;
         }
 
-        const fallback = new Blob(['Receipt unavailable'], { type: 'text/plain' });
-        return URL.createObjectURL(fallback);
+        alert('Receipt download is unavailable right now.');
 }
 
 async function updateOrderStatus(orderNumber, status) {

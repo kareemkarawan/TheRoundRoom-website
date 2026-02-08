@@ -6,6 +6,7 @@
     <title>Thank You - The Round Room</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
@@ -28,6 +29,9 @@
         <div class="form-success single" id="thankyouContainer">
             <h3>Thanks! Your payment is confirmed.</h3>
             <p>Loading your order summary…</p>
+        </div>
+        <div id="thankyouLoading" class="loading-overlay" style="display:none;">
+            <div class="loading-card">Preparing your receipt…</div>
         </div>
     </main>
 

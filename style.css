@@ -1033,6 +1033,7 @@ footer {
 	padding: var(--spacing-lg) var(--spacing-md);
 	background-color: var(--rr-text);
 	color: var(--rr-bg);
+	margin-top: 6rem;
 }
 
 .section-checkout h2 {
