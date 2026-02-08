@@ -90,46 +90,13 @@
         </div>
     </footer>
 
+    <script src="js/admin-gate.js"></script>
     <script>
-    async function verifyAdminToken(token) {
-        try {
-            const response = await fetch('/.netlify/functions/settings', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
-            });
-            return response.ok;
-        } catch (e) {
-            console.error('[pookie] Token verification failed:', e);
-            return false;
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.AdminGate) {
+            window.AdminGate.requireAdminAccess();
         }
-    }
-
-    async function unlockAdmin() {
-        const input = document.getElementById('adminTokenInput');
-        const error = document.getElementById('adminGateError');
-        const token = input.value.trim();
-        if (!token) return;
-        const ok = await verifyAdminToken(token);
-        if (ok) {
-            localStorage.setItem('rr_admin_token', token);
-            document.getElementById('adminGate').style.display = 'none';
-            console.debug('[pookie] Admin unlocked');
-            return;
-        }
-        error.style.display = 'block';
-    }
-
-    document.getElementById('adminTokenBtn').addEventListener('click', unlockAdmin);
-    document.getElementById('adminTokenInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') unlockAdmin();
     });
-
-    (async function gateOnLoad() {
-        const token = localStorage.getItem('rr_admin_token');
-        if (token && await verifyAdminToken(token)) {
-            document.getElementById('adminGate').style.display = 'none';
-        }
-    })();
     </script>
 
 </body>

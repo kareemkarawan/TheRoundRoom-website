@@ -587,6 +587,9 @@ async function getOrders() {
             console.debug('[admin] Orders fetched');
             return await response.json();
         }
+        if (response.status === 401 && window.AdminGate) {
+            window.AdminGate.lock();
+        }
     } catch (e) { console.warn('Could not fetch orders', e); }
     return [];
 }
@@ -669,6 +672,9 @@ async function updateOrderStatus(orderNumber, status) {
             window.dispatchEvent(new Event('ordersUpdated'));
             return true;
         }
+        if (response.status === 401 && window.AdminGate) {
+            window.AdminGate.lock();
+        }
     } catch (e) { console.warn('Could not update order', e); }
     return false;
 }
@@ -687,6 +693,9 @@ async function deleteOrder(orderNumber) {
             console.debug('[admin] Delete success', orderNumber);
             window.dispatchEvent(new Event('ordersUpdated'));
             return true;
+        }
+        if (response.status === 401 && window.AdminGate) {
+            window.AdminGate.lock();
         }
     } catch (e) { console.error('Could not delete order', e); }
     return false;

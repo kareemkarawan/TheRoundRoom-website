@@ -39,15 +39,6 @@
     </style>
 </head>
 <body class="staff-page">
-    <div id="adminGate" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); color:#fff; z-index:5000; display:flex; align-items:center; justify-content:center;">
-        <div style="max-width:360px; width:90%; background:#111; padding:1.5rem; border-radius:8px; text-align:center;">
-            <h3 style="margin-top:0;">Admin Access</h3>
-            <p class="muted" style="color:#ccc;">Enter admin token to continue.</p>
-            <input type="password" id="adminTokenInput" placeholder="Admin token" style="width:100%; padding:0.6rem; margin:0.75rem 0;">
-            <button id="adminTokenBtn" class="btn" style="width:100%;">Unlock</button>
-            <p id="adminGateError" style="color:#ffb3b3; margin-top:0.75rem; display:none;">Invalid token.</p>
-        </div>
-    </div>
     <nav class="top-nav">
         <div class="container">
             <button class="arrow" onclick="window.location.href='pookie.html'">
@@ -131,59 +122,16 @@
         </div>
     </div>
 
+    <script src="js/admin-gate.js"></script>
     <script>
     let allItems = [];
     let editingId = null;
     let currentImageUrl = '';
     let currentImageMode = 'url';
 
-    async function verifyAdminToken(token) {
-        try {
-            const response = await fetch('/.netlify/functions/settings', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
-            });
-            return response.ok;
-        } catch (e) {
-            console.error('[menu-admin] Token verification failed:', e);
-            return false;
-        }
-    }
-
-    async function unlockAdmin() {
-        const input = document.getElementById('adminTokenInput');
-        const error = document.getElementById('adminGateError');
-        const token = input.value.trim();
-        if (!token) return;
-        const ok = await verifyAdminToken(token);
-        if (ok) {
-            localStorage.setItem('rr_admin_token', token);
-            document.getElementById('adminGate').style.display = 'none';
-            console.debug('[menu-admin] Admin unlocked');
-            return;
-        }
-        error.style.display = 'block';
-    }
-
-    document.getElementById('adminTokenBtn').addEventListener('click', unlockAdmin);
-    document.getElementById('adminTokenInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') unlockAdmin();
-    });
-
-    (async function gateOnLoad() {
-        const token = localStorage.getItem('rr_admin_token');
-        if (token && await verifyAdminToken(token)) {
-            document.getElementById('adminGate').style.display = 'none';
-        }
-    })();
-
     function getAdminToken() {
         console.debug('[menu-admin] Requesting admin token');
-        let token = localStorage.getItem('rr_admin_token');
-        if (!token) {
-            token = prompt('Enter admin token');
-            if (token) localStorage.setItem('rr_admin_token', token);
-        }
+        const token = window.AdminGate ? window.AdminGate.getToken() : '';
         console.debug('[menu-admin] Admin token present:', Boolean(token));
         return token;
     }
@@ -362,6 +310,7 @@
         const token = getAdminToken();
         if (!token) {
             showMessage('Admin token required. Please try again.', 'error');
+            if (window.AdminGate) window.AdminGate.lock();
             return;
         }
         try {
@@ -375,7 +324,7 @@
                 await loadMenuItems();
             } else {
                 if (response.status === 401) {
-                    localStorage.removeItem('rr_admin_token');
+                    if (window.AdminGate) window.AdminGate.lock();
                     showMessage('Unauthorized. Please re-enter admin token.', 'error');
                     return;
                 }
@@ -443,6 +392,7 @@
         const token = getAdminToken();
         if (!token) {
             showMessage('Admin token required. Please try again.', 'error');
+            if (window.AdminGate) window.AdminGate.lock();
             return;
         }
         const itemId = document.getElementById('itemId').value;
@@ -484,7 +434,7 @@
                 await loadMenuItems();
             } else {
                 if (response.status === 401) {
-                    localStorage.removeItem('rr_admin_token');
+                    if (window.AdminGate) window.AdminGate.lock();
                     showMessage('Unauthorized. Please re-enter admin token.', 'error');
                     return;
                 }
@@ -496,8 +446,12 @@
         }
     });
 
-    // Load menu items on page load
-    document.addEventListener('DOMContentLoaded', loadMenuItems);
+    // Load menu items only after admin gate unlocks
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.AdminGate) {
+            window.AdminGate.requireAdminAccess(loadMenuItems);
+        }
+    });
     </script>
     <footer class="site-footer">
         <div class="footer-inner">

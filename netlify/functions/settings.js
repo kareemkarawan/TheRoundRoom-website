@@ -119,14 +119,22 @@ async function handlePut(body) {
 exports.handler = async (event) => {
   const method = event.httpMethod;
   const isAdmin = isAdminAuthorized(event.headers);
-  const headers = buildHeaders(!isAdmin);
+  const isAdminRequest = event.queryStringParameters?.admin === "1";
+  const headers = buildHeaders(!(isAdmin && isAdminRequest));
 
   if (method === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
   }
 
   if (method === "GET") {
-    return { ...(await handleGet(isAdmin)), headers };
+    if (isAdminRequest && !isAdmin) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: "Unauthorized" }),
+      };
+    }
+    return { ...(await handleGet(isAdmin && isAdminRequest)), headers };
   }
 
   if (!isAdmin) {
