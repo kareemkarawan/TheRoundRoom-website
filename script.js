@@ -541,8 +541,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         modal.setAttribute('aria-hidden', 'true');
                     }
 
-                    // Redirect to thank you page
-                    window.location.href = '/thankyou';
+                    // Redirect to thank you page (mobile-safe)
+                    window.location.replace('/thankyou');
+                    setTimeout(() => {
+                        if (!location.pathname.endsWith('/thankyou')) {
+                            window.location.replace('/thankyou');
+                        }
+                    }, 600);
                     pendingOrderData = null;
                 },
                 modal: {
