@@ -86,6 +86,15 @@
     <script>
     let allPincodes = [];
 
+    function getAdminToken() {
+        let token = localStorage.getItem('rr_admin_token');
+        if (!token) {
+            token = prompt('Enter admin token');
+            if (token) localStorage.setItem('rr_admin_token', token);
+        }
+        return token;
+    }
+
     async function loadPincodes() {
         const tbody = document.getElementById('pincodesTableBody');
         try {
@@ -136,7 +145,8 @@
         if (!confirm(`Delete pincode ${code}?`)) return;
         try {
             const response = await fetch(`/.netlify/functions/pincodes?id=${code}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'x-admin-token': getAdminToken() || '' }
             });
             if (response.ok) {
                 showMessage(`Pincode ${code} deleted`, 'success');
@@ -175,7 +185,7 @@
             try {
                 const response = await fetch('/.netlify/functions/pincodes', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': getAdminToken() || '' },
                     body: JSON.stringify({ code, area: '' })
                 });
                 if (response.ok) {
@@ -210,5 +220,19 @@
     // Load pincodes on page load
     document.addEventListener('DOMContentLoaded', loadPincodes);
     </script>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="terms.html">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="refund.html">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Velvet Lounge Enterprises Pvt.Ltd</div>
+        </div>
+    </footer>
 </body>
 </html>

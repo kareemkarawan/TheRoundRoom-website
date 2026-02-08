@@ -6,6 +6,7 @@
     <title>The Round Room</title>   
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="js/models/Order.js"></script>
     <script src="script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
@@ -21,6 +22,7 @@
             <ul class="nav-links" id="TopNav">
                 <li><a href="menu-admin.html">Manage Menu</a></li>
                 <li><a href="pincodes-admin.html">Pincodes</a></li>
+                <li><a href="settings.html">Settings</a></li>
             </ul>
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
@@ -65,140 +67,22 @@
 
     </main>
 
-    <script>
-    // Render orders for staff as a table and show modal for details
-    async function renderStaffOrdersTable() {
-        const tbody = document.getElementById('ordersTbody');
-        if (!tbody) return;
-        let orders = [];
-        try {
-            console.log('Fetching orders from database...');
-            const response = await fetch('/.netlify/functions/orders');
-            console.log('Response status:', response.status);
-            if (response.ok) {
-                orders = await response.json();
-                console.log('Fetched orders:', orders);
-            } else {
-                console.error('Failed to fetch orders:', response.status);
-            }
-        } catch (e) { console.warn('Could not fetch orders', e); }
-        if (!orders || orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = orders.map(o => `
-            <tr data-id="${o.id}">
-                <td><strong>${o.id}</strong></td>
-                <td>${o.customer.firstName} ${o.customer.lastName}<div class="muted">${o.customer.phone}</div></td>
-                <td>${fmtDate(o.createdAt)}</td>
-                <td><span class="status-pill">${o.status}</span></td>
-                <td>
-                    <button class="btn small view-order" data-id="${o.id}">View</button>
-                </td>
-                <td>
-                    <button class="btn small btn-delete" data-id="${o.id}" style="background:#f44336;color:#fff;border:none;">Delete</button>
-                </td>
-            </tr>
-        `).join('');
-
-        // attach view handlers
-        tbody.querySelectorAll('.view-order').forEach(btn => {
-            btn.removeEventListener('click', btn._rr);
-            btn._rr = function() { openOrderModal(this.dataset.id); };
-            btn.addEventListener('click', btn._rr);
-        });
-
-        // attach delete handlers
-        tbody.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.removeEventListener('click', btn._del);
-            btn._del = async function() {
-                if (!confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
-                const success = await deleteOrder(this.dataset.id);
-                if (success) {
-                    await renderStaffOrdersTable();
-                } else {
-                    alert('Failed to delete order.');
-                }
-            };
-            btn.addEventListener('click', btn._del);
-        });
-    }
-
-    async function openOrderModal(orderId) {
-        const modal = document.getElementById('orderModal');
-        const body = document.getElementById('modalBody');
-        if (!modal || !body) return;
-        let orders = [];
-        try {
-            const response = await fetch('/.netlify/functions/orders');
-            if (response.ok) {
-                orders = await response.json();
-            }
-        } catch (e) { console.warn('Could not fetch orders', e); }
-        const o = orders.find(x => x.id === orderId);
-        if (!o) return;
-        body.innerHTML = `
-            <h3>Order ${o.id}</h3>
-            <div class="muted">Placed: ${fmtDate(o.createdAt)}</div>
-            <div style="margin-top:0.5rem;"><strong>Customer</strong><div>${o.customer.firstName} ${o.customer.lastName}</div><div class="muted">${o.customer.phone}</div><div class="muted">${o.customer.email || 'No email'}</div><div>${o.customer.address}</div><div class="muted">Pincode: ${o.customer.pincode}</div></div>
-            ${o.customer.note ? `<div style="margin-top:0.75rem; padding:0.75rem; background:rgba(255,255,0,0.1); border-left:3px solid #FFC107; border-radius:4px;"><strong>📝 Order Note</strong><div style="margin-top:0.35rem; color:#333;">${o.customer.note}</div></div>` : ''}
-            <div style="margin-top:0.75rem;"><strong>Items</strong>
-                <div style="margin-top:0.5rem;">${o.items.map(it => `<div style=\"display:flex;justify-content:space-between\"><span>${it.qty}x ${it.name}</span><span>₹${Number(it.itemTotal).toFixed(2)}</span></div>`).join('')}</div>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="terms.html">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="refund.html">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="contact.html">Contact</a>
             </div>
-            <div class="checkout-breakdown" style="margin-top:0.75rem;">
-                <div class="row"><span>Subtotal</span><span>₹${Number(o.subtotal).toFixed(2)}</span></div>
-                <div class="row"><span>Tax</span><span>₹${Number(o.tax).toFixed(2)}</span></div>
-                <div class="row total"><span>Total</span><span>₹${Number(o.total).toFixed(2)}</span></div>
-            </div>
-            <div style="margin-top:0.75rem; display:flex; gap:0.5rem; align-items:center; justify-content:space-between;">
-                <div>
-                    <label for="statusSelect">Status</label>
-                    <select id="statusSelect">
-                        <option ${o.status==='Placed'? 'selected':''}>Placed</option>
-                        <option ${o.status==='Preparing'? 'selected':''}>Preparing</option>
-                        <option ${o.status==='Ready'? 'selected':''}>Ready</option>
-                        <option ${o.status==='Completed'? 'selected':''}>Completed</option>
-                        <option ${o.status==='Cancelled'? 'selected':''}>Cancelled</option>
-                    </select>
-                </div>
-                <div>
-                    <button class="btn" id="markReady">Save</button>
-                </div>
-            </div>
-        `;
-        modal.style.display = 'block';
-        modal.setAttribute('aria-hidden', 'false');
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Velvet Lounge Enterprises Pvt.Ltd</div>
+        </div>
+    </footer>
 
-        // attach save handler
-        const sel = document.getElementById('statusSelect');
-        const saveBtn = document.getElementById('markReady');
-        if (sel && saveBtn) {
-            saveBtn.removeEventListener('click', saveBtn._rr);
-            saveBtn._rr = async function() { await updateOrderStatus(o.id, sel.value); modalClose(); };
-            saveBtn.addEventListener('click', saveBtn._rr);
-        }
-    }
-
-    function modalClose() {
-        const modal = document.getElementById('orderModal');
-        if (!modal) return;
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-    }
-
-    document.addEventListener('DOMContentLoaded', async function() {
-        await renderStaffOrdersTable();
-        window.addEventListener('ordersUpdated', () => renderStaffOrdersTable());
-
-        // modal close
-        const closeBtn = document.getElementById('modalClose');
-        if (closeBtn) closeBtn.addEventListener('click', modalClose);
-        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') modalClose(); });
-
-        // click outside to close
-        const modal = document.getElementById('orderModal');
-        if (modal) modal.addEventListener('click', function(e){ if (e.target === modal) modalClose(); });
-    });
-    </script>
+</body>
+</html>
 
 

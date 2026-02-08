@@ -431,6 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = e.target;
         if (!form.reportValidity()) return;
 
+        if (window._rr_storeOpen === false) {
+            alert('Store is currently closed. Please try again later.');
+            return;
+        }
+
         const data = new FormData(form);
         const first = data.get('firstName').trim();
         const last = data.get('lastName').trim();
@@ -453,26 +458,47 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Store order data and show payment modal
+        // Build minimal order payload (backend owns pricing/status/payment)
         const email = form.email.value.trim();
-        pendingOrderData = {
+        const orderPayload = {
             customer: {
-                firstName: first,
-                lastName: last,
+                name: `${first} ${last}`.trim(),
                 phone: phone,
-                email: email,
-                address: address,
-                pincode: pincode,
-                note: note
+                email: email
             },
-            cart: rawCart
+            items: (rawCart.items || []).map(i => ({
+                menuItemId: i.id,
+                qty: Number(i.qty)
+            }))
         };
 
-        // Show payment modal
+        // Create order and Razorpay order server-side before opening payment modal
+        const created = await saveOrder(orderPayload);
+        if (!created || !created.orderNumber) {
+            const errMsg = created?.error || 'Failed to create order. Please try again.';
+            alert(errMsg);
+            return;
+        }
+
+        pendingOrderData = {
+            orderNumber: created.orderNumber,
+            razorpayOrderId: created.razorpay_order_id,
+            amount: created.amount,
+            currency: created.currency,
+            keyId: created.key_id,
+            customer: {
+                name: `${first} ${last}`.trim(),
+                phone: phone,
+                email: email
+            }
+        };
+
+        // Show payment modal with server-calculated amount
         const modal = document.getElementById('paymentModal');
         const totalEl = document.getElementById('paymentTotal');
         if (modal && totalEl) {
-            totalEl.textContent = '₹' + Number(rawCart.total).toFixed(2);
+            const amountRupees = Number(created.amount) / 100;
+            totalEl.textContent = '₹' + amountRupees.toFixed(2);
             modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
         }
@@ -496,43 +522,70 @@ document.addEventListener('DOMContentLoaded', function() {
     if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {
             if (!pendingOrderData) return;
-
-            // Build order object
-            const order = createOrderObject(pendingOrderData.customer, pendingOrderData.cart);
-
-            // Save order to MongoDB via Netlify function
-            const saved = await saveOrder(order);
-            if (!saved) {
-                alert('Failed to save order. Please try again.');
+            if (typeof Razorpay !== 'function') {
+                alert('Razorpay checkout is not available. Please try again.');
                 return;
             }
 
-            // Clear cart
-            try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
+            const options = {
+                key: pendingOrderData.keyId,
+                amount: pendingOrderData.amount,
+                currency: pendingOrderData.currency || 'INR',
+                order_id: pendingOrderData.razorpayOrderId,
+                name: 'The Round Room',
+                description: 'Order payment',
+                prefill: {
+                    name: pendingOrderData.customer?.name || '',
+                    email: pendingOrderData.customer?.email || '',
+                    contact: pendingOrderData.customer?.phone || ''
+                },
+                handler: async function (response) {
+                    const verified = await verifyPayment(pendingOrderData.orderNumber, response);
+                    if (!verified) {
+                        alert('Payment verification failed. Please contact support with your order ID.');
+                        return;
+                    }
 
-            // Hide modal
-            const modal = document.getElementById('paymentModal');
-            if (modal) {
-                modal.style.display = 'none';
-                modal.setAttribute('aria-hidden', 'true');
-            }
+                    // Clear cart
+                    try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
 
-            // Show success view with order id and summary
-            const form = document.getElementById('checkoutForm');
-            if (form) {
-                form.innerHTML = `\
-                    <div class="form-success">\
-                        <h3>Thanks, ${pendingOrderData.customer.firstName}! Your order is confirmed.</h3>\
-                        <p>Order ID: <strong>${order.id}</strong></p>\
-                        <p>We've received your payment and will start preparing your order.</p>\
-                        <div style="margin-top:0.75rem">\
-                            <a href="order_page.html" class="order-button">Return to menu</a>\
-                        </div>\
-                    </div>\
-                `;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-            pendingOrderData = null;
+                    // Hide modal
+                    const modal = document.getElementById('paymentModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.setAttribute('aria-hidden', 'true');
+                    }
+
+                    // Show success view with order id and summary
+                    const form = document.getElementById('checkoutForm');
+                    if (form) {
+                        form.innerHTML = `\
+                            <div class="form-success">\
+                                <h3>Thanks! Your payment is confirmed.</h3>\
+                                <p>Order ID: <strong>${pendingOrderData.orderNumber}</strong></p>\
+                                <p>We'll start preparing your order now.</p>\
+                                <div style="margin-top:0.75rem">\
+                                    <a href="order_page.html" class="order-button">Return to menu</a>\
+                                </div>\
+                            </div>\
+                        `;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                    pendingOrderData = null;
+                },
+                modal: {
+                    ondismiss: function () {
+                        // Payment cancelled by user
+                    }
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', async function (response) {
+                await markPaymentFailed(pendingOrderData.orderNumber, response);
+                alert('Payment failed. Please try again.');
+            });
+            rzp.open();
         });
     }
 
@@ -540,39 +593,119 @@ document.addEventListener('DOMContentLoaded', function() {
     loadValidPincodes();
 });
 
+/* ===== Store status (open/closed) ===== */
+async function initStoreStatus() {
+    try {
+        const response = await fetch('/.netlify/functions/settings');
+        if (!response.ok) return;
+        const data = await response.json();
+        const isOpen = data.storeOpen !== false;
+        window._rr_storeOpen = isOpen;
+
+        const banner = document.getElementById('storeStatusBanner');
+        if (banner) {
+            if (!isOpen) {
+                banner.textContent = 'Store is currently closed. We are not accepting orders right now.';
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        if (checkoutBtn) {
+            if (!isOpen) {
+                checkoutBtn.dataset.originalText = checkoutBtn.textContent;
+                checkoutBtn.textContent = 'Orders closed';
+                checkoutBtn.disabled = true;
+                checkoutBtn.setAttribute('aria-disabled', 'true');
+            } else if (checkoutBtn.dataset.originalText) {
+                checkoutBtn.textContent = checkoutBtn.dataset.originalText;
+                checkoutBtn.disabled = false;
+                checkoutBtn.setAttribute('aria-disabled', 'false');
+            }
+        }
+
+        const submitBtn = document.querySelector('.btn-submit');
+        if (submitBtn) {
+            if (!isOpen) {
+                submitBtn.dataset.originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Store closed';
+                submitBtn.disabled = true;
+                submitBtn.setAttribute('aria-disabled', 'true');
+            } else if (submitBtn.dataset.originalText) {
+                submitBtn.textContent = submitBtn.dataset.originalText;
+                submitBtn.disabled = false;
+                submitBtn.setAttribute('aria-disabled', 'false');
+            }
+        }
+    } catch (e) {
+        console.warn('Could not load store status', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initStoreStatus);
+
+
 /* ===== Orders: create/save/manage (client-only simulation) ===== */
 
 function createOrderObject(customer, cart) {
-    const id = `ORD-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    if (window.OrderModel && typeof window.OrderModel.fromCheckout === 'function') {
+        return window.OrderModel.fromCheckout(customer, cart).toPlainObject();
+    }
+
+    const orderNumber = `ORD-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
     const createdAt = new Date().toISOString();
+    const subtotal = Number((cart.subtotal || 0).toFixed(2));
+    const tax = Number((cart.tax || 0).toFixed(2));
+    const total = Number((cart.total || 0).toFixed(2));
     return {
-        id,
-        createdAt,
+        orderNumber,
+        status: 'PAID',
+        items: (cart.items || []).map(i => ({
+            menuItemId: i.id,
+            name: i.name,
+            price: Number(i.price),
+            qty: Number(i.qty),
+            lineTotal: Number((Number(i.itemTotal) || (Number(i.price) * Number(i.qty))).toFixed(2))
+        })),
+        pricing: {
+            subtotal,
+            tax,
+            total,
+            currency: 'INR'
+        },
         customer: {
-            firstName: customer.firstName || '',
-            lastName: customer.lastName || '',
+            name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
             phone: customer.phone || '',
-            address: customer.address || '',
-            note: customer.note || ''
+            email: customer.email || ''
         },
-        items: (cart.items || []).map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, itemTotal: Number(i.itemTotal) })),
-        subtotal: Number((cart.subtotal || 0).toFixed(2)),
-        tax: Number((cart.tax || 0).toFixed(2)),
-        total: Number((cart.total || 0).toFixed(2)),
         payment: {
+            provider: 'razorpay',
+            providerOrderId: null,
+            providerPaymentId: `SIM-${Math.random().toString(36).slice(2,9)}`,
             method: 'Online',
-            status: 'Paid',
-            ref: `PAY-${Math.random().toString(36).slice(2,9)}`
+            status: 'PAID',
+            paidAt: createdAt
         },
-        status: 'Placed' // statuses: Placed -> Preparing -> Ready -> Completed / Cancelled
+        accounting: {
+            provider: null,
+            invoiceId: null,
+            invoiceNumber: null,
+            invoiceUrl: null,
+            syncedAt: null
+        },
+        createdAt,
+        updatedAt: createdAt
     };
 }
 
 async function getOrders() {
     try {
+        const token = localStorage.getItem('rr_admin_token');
         const response = await fetch('/.netlify/functions/orders', {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': token || '' }
         });
         if (response.ok) {
             return await response.json();
@@ -581,34 +714,76 @@ async function getOrders() {
     return [];
 }
 
-async function saveOrder(order) {
+async function saveOrder(orderPayload) {
     try {
-        console.log('Saving order to database:', order);
+        console.log('Saving order to database:', orderPayload);
         const response = await fetch('/.netlify/functions/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(order)
+            body: JSON.stringify(orderPayload)
         });
         const result = await response.json();
         console.log('Server response:', result);
         if (response.ok) {
             console.log('Order saved successfully!');
             window.dispatchEvent(new Event('ordersUpdated'));
-            return true;
+            return result;
         } else {
             console.error('Failed to save order:', result);
+            return result;
         }
     } catch (e) { 
         console.error('Could not save order', e); 
     }
+    return null;
+}
+
+async function verifyPayment(orderNumber, razorpayResponse) {
+    if (!orderNumber || !razorpayResponse) return false;
+    try {
+        const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'VERIFY_PAYMENT',
+                razorpay_order_id: razorpayResponse.razorpay_order_id,
+                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+                razorpay_signature: razorpayResponse.razorpay_signature
+            })
+        });
+        if (response.ok) return true;
+    } catch (e) {
+        console.error('Payment verification failed', e);
+    }
     return false;
 }
 
-async function updateOrderStatus(orderId, status) {
+async function markPaymentFailed(orderNumber, razorpayResponse) {
+    if (!orderNumber || !razorpayResponse) return false;
     try {
-        const response = await fetch(`/.netlify/functions/orders?id=${orderId}`, {
+        const meta = razorpayResponse?.error?.metadata || {};
+        const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'MARK_PAYMENT_FAILED',
+                razorpay_order_id: meta.order_id,
+                razorpay_payment_id: meta.payment_id || null
+            })
+        });
+        if (response.ok) return true;
+    } catch (e) {
+        console.error('Mark payment failed error', e);
+    }
+    return false;
+}
+
+async function updateOrderStatus(orderNumber, status) {
+    try {
+        const token = localStorage.getItem('rr_admin_token');
+        const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': token || '' },
             body: JSON.stringify({ status })
         });
         if (response.ok) {
@@ -619,11 +794,13 @@ async function updateOrderStatus(orderId, status) {
     return false;
 }
 
-async function deleteOrder(orderId) {
+async function deleteOrder(orderNumber) {
     try {
-        console.log('Deleting order:', orderId);
-        const response = await fetch(`/.netlify/functions/orders?id=${orderId}`, {
-            method: 'DELETE'
+        const token = localStorage.getItem('rr_admin_token');
+        console.log('Deleting order:', orderNumber);
+        const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
+            method: 'DELETE',
+            headers: { 'x-admin-token': token || '' }
         });
         if (response.ok) {
             console.log('Order deleted successfully');

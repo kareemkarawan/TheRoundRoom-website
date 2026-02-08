@@ -13,15 +13,16 @@ class MenuItem {
    * @param {string|number} opts.id
    * @param {string} opts.name
    * @param {number} opts.price
-   * @param {string} [opts.image]
+  * @param {string} [opts.image]
+  * @param {string} [opts.imageUrl]
    * @param {string} [opts.description]
    * @param {number} [opts.stock]
    */
-  constructor({ id, name, price, image = '', description = '', stock = Infinity } = {}) {
+  constructor({ id, name, price, image = '', imageUrl = '', description = '', stock = Infinity } = {}) {
     this.id = String(id);
     this.name = name || '';
     this.price = Number(price) || 0;
-    this.image = image;
+    this.image = imageUrl || image;
     this.description = description;
     this.stock = typeof stock === 'number' ? stock : Infinity;
   }

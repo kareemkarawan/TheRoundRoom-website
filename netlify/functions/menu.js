@@ -3,6 +3,8 @@ const { MongoClient } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "menu";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
 let cachedClient = null;
 
@@ -16,6 +18,26 @@ async function getClient() {
   await client.connect();
   cachedClient = client;
   return client;
+}
+
+function getAdminToken(headers = {}) {
+  return headers["x-admin-token"] || headers["X-Admin-Token"] || headers["x-admin-token".toLowerCase()];
+}
+
+function isAdminAuthorized(headers = {}) {
+  if (!ADMIN_TOKEN) return false;
+  const token = getAdminToken(headers);
+  return token && token === ADMIN_TOKEN;
+}
+
+function buildHeaders(isAdminRoute = false) {
+  const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
+  return {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, x-admin-token",
+  };
 }
 
 // GET: fetch all menu items
@@ -59,8 +81,11 @@ async function handlePost(body) {
     };
   }
 
+  const priceValue = Number(item.price);
+  const availability = typeof item.isAvailable === "boolean" ? item.isAvailable : true;
+
   // Validate required fields
-  if (!item.id || !item.name || !item.category || !item.price) {
+  if (!item.id || !item.name || !item.category || Number.isNaN(priceValue)) {
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -74,9 +99,16 @@ async function handlePost(body) {
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
 
+    const now = new Date();
     const result = await collection.insertOne({
-      ...item,
-      createdAt: new Date(),
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      price: priceValue,
+      imageUrl: item.imageUrl || "",
+      isAvailable: availability,
+      createdAt: now,
+      updatedAt: now,
     });
 
     return {
@@ -122,7 +154,7 @@ async function handlePut(body, itemId) {
 
     const result = await collection.updateOne(
       { id: itemId },
-      { $set: updates }
+      { $set: { ...updates, updatedAt: new Date() } }
     );
 
     if (result.matchedCount === 0) {
@@ -191,14 +223,10 @@ exports.handler = async (event) => {
   const method = event.httpMethod;
   const body = event.body;
   const itemId = event.queryStringParameters?.id;
+  const isAdminRoute = method !== "GET" && method !== "OPTIONS";
 
   // CORS headers
-  const headers = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+  const headers = buildHeaders(isAdminRoute);
 
   // Handle preflight
   if (method === "OPTIONS") {
@@ -206,6 +234,14 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers,
       body: "",
+    };
+  }
+
+  if (isAdminRoute && !isAdminAuthorized(event.headers)) {
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: "Unauthorized" }),
     };
   }
 

@@ -44,7 +44,9 @@ async function renderMenu() {
       'desserts': 'dessertMenu'
     };
 
-    items.forEach(data => {
+    items
+      .filter(data => data.isAvailable !== false)
+      .forEach(data => {
       let html;
       if (MenuItemClass && MenuItemClass.fromData) {
         const mi = MenuItemClass.fromData(data);
@@ -52,7 +54,7 @@ async function renderMenu() {
       } else {
         // fallback minimal HTML if MenuItem isn't available
         html = `<div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">` +
-          `${data.image ? `<img src="${data.image}" alt="${data.name}">` : ''}` +
+          `${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}">` : ''}` +
           `<div class="menu-item-info"><h3>${data.name}</h3><p class="price">₹${Number(data.price).toFixed(2)}</p>` +
           `<div class="item-controls"><button class="qty-btn minus" data-id="${data.id}">−</button>` +
           `<span class="qty" data-id="${data.id}">0</span>` +

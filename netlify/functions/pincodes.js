@@ -3,6 +3,8 @@ const { MongoClient } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "pincodes";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
 let cachedClient = null;
 
@@ -16,6 +18,26 @@ async function getClient() {
   await client.connect();
   cachedClient = client;
   return client;
+}
+
+function getAdminToken(headers = {}) {
+  return headers["x-admin-token"] || headers["X-Admin-Token"] || headers["x-admin-token".toLowerCase()];
+}
+
+function isAdminAuthorized(headers = {}) {
+  if (!ADMIN_TOKEN) return false;
+  const token = getAdminToken(headers);
+  return token && token === ADMIN_TOKEN;
+}
+
+function buildHeaders(isAdminRoute = false) {
+  const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
+  return {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, x-admin-token",
+  };
 }
 
 // GET: fetch all pincodes
@@ -191,14 +213,10 @@ exports.handler = async (event) => {
   const method = event.httpMethod;
   const body = event.body;
   const pincodeId = event.queryStringParameters?.id;
+  const isAdminRoute = method !== "GET" && method !== "OPTIONS";
 
   // CORS headers
-  const headers = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+  const headers = buildHeaders(isAdminRoute);
 
   // Handle preflight
   if (method === "OPTIONS") {
@@ -206,6 +224,14 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers,
       body: "",
+    };
+  }
+
+  if (isAdminRoute && !isAdminAuthorized(event.headers)) {
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: "Unauthorized" }),
     };
   }
 

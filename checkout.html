@@ -6,6 +6,9 @@
     <title>The Round Room</title>   
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="js/models/Order.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="js/models/Order.js"></script>
     <script src="script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
@@ -24,6 +27,7 @@
         </div>
     </nav>
     <main class="section-checkout">
+        <div id="storeStatusBanner" class="store-status-banner" style="display:none;"></div>
         <aside class="checkout-summary" id="checkoutSummary">
             <h3>Your order</h3>
             <div id="checkoutItems" class="checkout-items">
@@ -90,7 +94,7 @@
                     </div>
                     <div class="payment-info">
                         <p><strong>Payment Method:</strong> Online Payment</p>
-                        <p class="muted" style="margin-top:0.5rem;">This is a simulated payment portal. Click "Pay Now" to confirm your order.</p>
+                        <p class="muted" style="margin-top:0.5rem;">You will complete payment securely via Razorpay Checkout.</p>
                     </div>
                 </div>
                 <div class="payment-actions">
@@ -101,62 +105,20 @@
         </div>
     </main>
 
-    <script>
-    // Render saved cart into the checkout summary and enable/disable submit
-    (function() {
-      function renderCartSummary() {
-        const raw = localStorage.getItem('rr_cart');
-        const itemsEl = document.getElementById('checkoutItems');
-        const subEl = document.getElementById('checkoutSubtotal');
-        const taxEl = document.getElementById('checkoutTax');
-        const totalEl = document.getElementById('checkoutTotal');
-        const submitBtn = document.querySelector('#checkoutForm .btn-submit');
-
-        if (!raw) {
-          if (itemsEl) itemsEl.innerHTML = '<p class="empty-cart">Your cart is empty. Please add items first.</p>';
-          if (submitBtn) submitBtn.disabled = true;
-          return;
-        }
-        try {
-          const cart = JSON.parse(raw);
-          if (!cart.items || cart.items.length === 0) {
-            if (itemsEl) itemsEl.innerHTML = '<p class="empty-cart">Your cart is empty. Please add items first.</p>';
-            if (submitBtn) submitBtn.disabled = true;
-            return;
-          }
-
-          if (itemsEl) {
-            itemsEl.innerHTML = cart.items.map(it => `
-              <div class="checkout-item">
-                <div class="left"><span class="qty">${it.qty}x</span><span class="name">${it.name}</span></div>
-                <div class="right">₹${it.itemTotal.toFixed(2)}</div>
-              </div>
-            `).join('');
-          }
-
-          if (subEl) subEl.textContent = `₹${cart.subtotal.toFixed(2)}`;
-          if (taxEl) taxEl.textContent = `₹${cart.tax.toFixed(2)}`;
-          if (totalEl) totalEl.textContent = `₹${cart.total.toFixed(2)}`;
-          if (submitBtn) submitBtn.disabled = false;
-        } catch (err) {
-          console.warn('Could not parse cart', err);
-          if (itemsEl) itemsEl.innerHTML = '<p class="empty-cart">Your cart could not be loaded.</p>';
-          if (submitBtn) submitBtn.disabled = true;
-        }
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderCartSummary);
-      } else {
-        renderCartSummary();
-      }
-
-      // Also re-render when storage changes in another tab
-      window.addEventListener('storage', function(e) {
-        if (e.key === 'rr_cart') renderCartSummary();
-      });
-    })();
-    </script>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="terms.html">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="refund.html">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Velvet Lounge Enterprises Pvt.Ltd</div>
+        </div>
+    </footer>
 
 </body>
 </html>
