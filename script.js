@@ -306,6 +306,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let validPincodes = [];
 
     function renderCheckoutSummary() {
+        const loadingEl = document.getElementById('checkoutLoading');
+        if (loadingEl) loadingEl.style.display = 'block';
         const itemsEl = document.getElementById('checkoutItems');
         const subtotalEl = document.getElementById('checkoutSubtotal');
         const taxEl = document.getElementById('checkoutTax');
@@ -332,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
         subtotalEl.textContent = `₹${Number(cart.subtotal || 0).toFixed(2)}`;
         taxEl.textContent = `₹${Number(cart.tax || 0).toFixed(2)}`;
         totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
+        if (loadingEl) loadingEl.style.display = 'none';
     }
 
     // Load valid pincodes on page load
@@ -495,13 +498,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     contact: pendingOrderData.customer?.phone || ''
                 },
                 handler: async function (response) {
+                    const paymentLoading = document.getElementById('paymentLoading');
+                    if (paymentLoading) paymentLoading.style.display = 'flex';
                     const verified = await verifyPayment(pendingOrderData.orderNumber, response);
                     if (!verified) {
+                        if (paymentLoading) paymentLoading.style.display = 'none';
                         alert('Payment verification failed. Please contact support with your order ID.');
                         return;
                     }
 
                     const receiptUrl = await createReceiptDownload(pendingOrderData, response);
+
+                    const summary = {
+                        orderNumber: pendingOrderData.orderNumber,
+                        customer: pendingOrderData.customer,
+                        cart: pendingOrderData.cart,
+                        amount: pendingOrderData.amount,
+                        currency: pendingOrderData.currency,
+                        receiptUrl
+                    };
+                    try { sessionStorage.setItem('rr_thankyou', JSON.stringify(summary)); } catch (e) { /* ignore */ }
 
                     // Clear cart
                     try { localStorage.removeItem('rr_cart'); } catch (e) { /* ignore */ }
@@ -513,24 +529,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         modal.setAttribute('aria-hidden', 'true');
                     }
 
-                    // Show success view with order id and summary
-                    const form = document.getElementById('checkoutForm');
-                    if (form) {
-                        form.innerHTML = `\
-                            <div class="form-success single">\
-                                <h3>Thanks! Your payment is confirmed.</h3>\
-                                <p>Order ID: <strong>${pendingOrderData.orderNumber}</strong></p>\
-                                <p>We'll start preparing your order now.</p>\
-                                <div style="margin-top:0.75rem">\
-                                    <a id="downloadReceiptLink" class="order-button" href="${receiptUrl}" download="receipt-${pendingOrderData.orderNumber}.pdf">Download receipt (PDF)</a>\
-                                </div>\
-                                <div style="margin-top:0.75rem">\
-                                    <a href="order_page.html" class="order-button">Return to menu</a>\
-                                </div>\
-                            </div>\
-                        `;
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
+                    // Redirect to thank you page
+                    window.location.href = 'thankyou.html';
                     pendingOrderData = null;
                 },
                 modal: {
@@ -606,6 +606,44 @@ async function initStoreStatus() {
 }
 
 document.addEventListener('DOMContentLoaded', initStoreStatus);
+
+/* ===== Thank you page ===== */
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('thankyouContainer');
+    if (!container) return;
+    let data = null;
+    try { data = JSON.parse(sessionStorage.getItem('rr_thankyou') || 'null'); } catch (e) { data = null; }
+    if (!data) {
+        container.innerHTML = '<h3>Thanks!</h3><p>Your order is confirmed.</p><div style="margin-top:0.75rem"><a href="order_page.html" class="order-button">Return to menu</a></div>';
+        return;
+    }
+
+    const cart = data.cart || { items: [], subtotal: 0, tax: 0, total: 0 };
+    const itemsHtml = (cart.items || []).map(item => `
+        <div class="checkout-item">
+            <div class="left"><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
+            <div>₹${Number(item.itemTotal || 0).toFixed(2)}</div>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <h3>Thanks! Your payment is confirmed.</h3>
+        <p>Order ID: <strong>${data.orderNumber}</strong></p>
+        <p>We'll start preparing your order now.</p>
+        <div class="checkout-items" style="margin-top:1rem;">${itemsHtml || '<p>No items.</p>'}</div>
+        <div class="checkout-breakdown" style="margin-top:1rem;">
+            <div class="row"><span>Subtotal</span><span>₹${Number(cart.subtotal || 0).toFixed(2)}</span></div>
+            <div class="row"><span>Tax</span><span>₹${Number(cart.tax || 0).toFixed(2)}</span></div>
+            <div class="row total"><span>Total</span><span>₹${Number(cart.total || 0).toFixed(2)}</span></div>
+        </div>
+        <div style="margin-top:0.75rem">
+            <a class="order-button" href="${data.receiptUrl}" download="receipt-${data.orderNumber}.pdf">Download receipt (PDF)</a>
+        </div>
+        <div style="margin-top:0.75rem">
+            <a href="order_page.html" class="order-button">Return to menu</a>
+        </div>
+    `;
+});
 
 
 /* ===== Orders: create/save/manage (client-only simulation) ===== */

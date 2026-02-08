@@ -27,6 +27,7 @@
     </nav>
     <main class="section-checkout">
         <div id="storeStatusBanner" class="store-status-banner" style="display:none;"></div>
+        <div id="checkoutLoading" class="loading-inline" style="display:none;">Calculating totals…</div>
         <aside class="checkout-summary" id="checkoutSummary">
             <h3>Your order</h3>
             <div id="checkoutItems" class="checkout-items">
@@ -101,6 +102,9 @@
                     <button type="button" class="btn btn-pay" id="confirmPayment">Pay Now</button>
                 </div>
             </div>
+        </div>
+        <div id="paymentLoading" class="loading-overlay" style="display:none;">
+            <div class="loading-card">Processing your payment…</div>
         </div>
     </main>
 
