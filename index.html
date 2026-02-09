@@ -177,7 +177,9 @@
         </div>
     </footer>
     <script>
-    
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/.netlify/functions/menu', { cache: 'force-cache' }).catch(function () {});
+    });
     </script>
 </body>
 </html>
