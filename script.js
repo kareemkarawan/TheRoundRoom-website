@@ -546,13 +546,38 @@ async function initStoreStatus() {
         const isOpen = data.storeOpen !== false;
         window._rr_storeOpen = isOpen;
 
-        const banner = document.getElementById('storeStatusBanner');
-        if (banner) {
-            if (!isOpen) {
-                banner.textContent = 'Store is currently closed. We are not accepting orders right now.';
-                banner.style.display = 'block';
+        const modal = document.getElementById('storeStatusModal');
+        const modalMessage = document.getElementById('storeStatusMessage');
+        const modalClose = modal ? modal.querySelector('.store-status-close') : null;
+        const dismissed = sessionStorage.getItem('rr_store_closed_dismissed') === '1';
+        const messageText = 'Store is currently closed. We are not accepting orders right now.';
+
+        function closeModal() {
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            try { sessionStorage.setItem('rr_store_closed_dismissed', '1'); } catch (e) { /* ignore */ }
+        }
+
+        if (modalClose && !modalClose.dataset.bound) {
+            modalClose.dataset.bound = 'true';
+            modalClose.addEventListener('click', closeModal);
+        }
+        if (modal && !modal.dataset.bound) {
+            modal.dataset.bound = 'true';
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) closeModal();
+            });
+        }
+
+        if (modal) {
+            if (!isOpen && !dismissed) {
+                if (modalMessage) modalMessage.textContent = messageText;
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
             } else {
-                banner.style.display = 'none';
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
             }
         }
 

@@ -1674,17 +1674,6 @@ footer {
 	opacity: 0.85;
 }
 
-/* Store status banner */
-.store-status-banner {
-	background: #fff3cd;
-	color: #7a5a00;
-	border: 1px solid #ffe69c;
-	padding: 0.75rem 1rem;
-	border-radius: 6px;
-	margin: 1rem 0;
-	font-weight: 600;
-}
-
 .store-status-modal {
 	position: fixed;
 	inset: 0;
