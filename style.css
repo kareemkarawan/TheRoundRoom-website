@@ -1727,29 +1727,18 @@ footer {
 	}
 
 	.menu-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(220px, 1fr));
-		grid-auto-rows: auto;
-		column-gap: 2rem;
-		row-gap: 1.5rem;
-		align-items: start;
-		align-content: start;
+		display: block;
+		margin: 1.5rem;
+	}
+
+	.category-grid {
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1.5rem;
+		margin: 1rem 0 2.5rem;
 	}
 
 	.menu-grid .small-menu-title {
 		margin-top: 0;
-	}
-	.menu-grid .small-menu-title:nth-child(1) { grid-column: 1; grid-row: 1; }
-	.menu-grid #bagelMenu { grid-column: 1; grid-row: 2; }
-	.menu-grid .small-menu-title:nth-child(3) { grid-column: 2; grid-row: 1; }
-	.menu-grid #schmearMenu { grid-column: 2; grid-row: 2; }
-	.menu-grid .small-menu-title:nth-child(5) { grid-column: 3; grid-row: 1; }
-	.menu-grid #dessertMenu { grid-column: 3; grid-row: 2; }
-
-	.category-grid {
-		grid-template-columns: 1fr;
-		gap: 1rem;
-		margin: 1rem 0 2rem;
 	}
 
 	.menu-item img {
