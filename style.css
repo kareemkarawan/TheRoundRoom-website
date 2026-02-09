@@ -1685,6 +1685,57 @@ footer {
 	font-weight: 600;
 }
 
+.store-status-modal {
+	position: fixed;
+	inset: 0;
+	background: rgba(18, 18, 18, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5rem;
+	z-index: 2500;
+}
+
+.store-status-card {
+	position: relative;
+	max-width: 420px;
+	width: 100%;
+	background: #fff;
+	color: #1b1b1b;
+	border: 1px solid rgba(109, 36, 48, 0.12);
+	border-radius: 14px;
+	padding: 1.75rem 1.75rem 1.5rem;
+	box-shadow: 0 18px 40px rgba(0,0,0,0.2);
+	text-align: center;
+}
+
+.store-status-card h3 {
+	margin: 0 0 0.5rem;
+	color: var(--rr-bg);
+	letter-spacing: 0.03em;
+}
+
+.store-status-card p {
+	margin: 0;
+	color: #2b2b2b;
+	line-height: 1.5;
+}
+
+.store-status-close {
+	position: absolute;
+	top: 0.6rem;
+	right: 0.6rem;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	border: 1px solid rgba(27, 27, 27, 0.1);
+	background: #fff;
+	color: #1b1b1b;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
 .order-actions {
 	display: flex;
 	flex-direction: column;

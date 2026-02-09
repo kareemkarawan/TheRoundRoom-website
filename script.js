@@ -14,20 +14,18 @@ document.addEventListener('DOMContentLoaded', function () {
     var topNav = document.getElementById('TopNav');
     var hamburger = document.querySelector('.nav-toggle');
 
-    if (navLinks && navLinks.length) {
-        navLinks.forEach(function (link) {
-            link.addEventListener('click', function () {
-                // Only attempt to close if the panel is active
-                if (topNav && topNav.classList.contains('active')) {
-                    topNav.classList.remove('active');
-                }
-                // Reset hamburger animation if present
-                if (hamburger && hamburger.classList.contains('change')) {
-                    hamburger.classList.remove('change');
-                }
-            });
+    navLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+            // Only attempt to close if the panel is active
+            if (topNav && topNav.classList.contains('active')) {
+                topNav.classList.remove('active');
+            }
+            // Reset hamburger animation if present
+            if (hamburger && hamburger.classList.contains('change')) {
+                hamburger.classList.remove('change');
+            }
         });
-    }
+    });
 
     /* --- Carousel initialization --- */
     function initCarousel(carouselId) {
