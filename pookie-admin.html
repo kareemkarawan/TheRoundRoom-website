@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0; url=/admin">
+    <title>Admin Tools - The Round Room</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body class="staff-page">
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='/pookie'">
+                <div class="bar4"></div>
+                <div class="bar5"></div>
+            </button>
+            <div class="logo">
+                <h1>THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="images/Icon.png" alt="Logo">
+        </div>
+    </nav>
+
+    <main class="settings-page admin-tools-page">
+        <div class="settings-card admin-card">
+            <div class="settings-header">
+                <h2>Admin Tools</h2>
+                <p class="muted">System health, audit logging, exports, and diagnostics.</p>
+            </div>
+
+            <div class="admin-grid">
+                <section class="admin-panel">
+                    <h3>Quick Actions</h3>
+                    <div class="admin-actions">
+                        <button class="btn" id="refreshAllBtn" type="button">Refresh all data</button>
+                        <button class="btn" id="exportOrdersCsvBtn" type="button">Export orders (CSV)</button>
+                        <button class="btn" id="exportOrdersJsonBtn" type="button">Export orders (JSON)</button>
+                        <button class="btn" id="exportAuditJsonBtn" type="button">Export audit log (JSON)</button>
+                        <button class="btn btn-delete" id="clearOrdersBtn" type="button">Clear orders & payments</button>
+                        <button class="btn btn-delete" id="clearAuditBtn" type="button">Clear audit log</button>
+                    </div>
+                </section>
+
+                <section class="admin-panel">
+                    <h3>System Health</h3>
+                    <div class="health-controls">
+                        <button class="btn" id="runHealthChecksBtn" type="button">Run health checks</button>
+                        <span class="muted" id="healthUpdated">Not checked yet.</span>
+                    </div>
+                    <ul class="health-list" id="healthList"></ul>
+                </section>
+
+                <section class="admin-panel">
+                    <h3>Store Snapshot</h3>
+                    <div class="snapshot-grid" id="snapshotGrid">
+                        <div class="snapshot-card">
+                            <span class="label">Store Status</span>
+                            <span class="value" id="snapshotStoreStatus">—</span>
+                        </div>
+                        <div class="snapshot-card">
+                            <span class="label">Orders (total)</span>
+                            <span class="value" id="snapshotOrders">—</span>
+                        </div>
+                        <div class="snapshot-card">
+                            <span class="label">Menu Items</span>
+                            <span class="value" id="snapshotMenu">—</span>
+                        </div>
+                        <div class="snapshot-card">
+                            <span class="label">Revenue (paid)</span>
+                            <span class="value" id="snapshotRevenue">—</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-panel admin-panel-wide">
+                    <h3>Audit Log</h3>
+                    <div class="audit-controls">
+                        <div class="audit-filters">
+                            <div class="form-group">
+                                <label for="auditType">Type</label>
+                                <select id="auditType">
+                                    <option value="">All</option>
+                                    <option value="action">Action</option>
+                                    <option value="health">Health</option>
+                                    <option value="client-error">Client Error</option>
+                                    <option value="system">System</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="auditLevel">Level</label>
+                                <select id="auditLevel">
+                                    <option value="">All</option>
+                                    <option value="info">Info</option>
+                                    <option value="warn">Warn</option>
+                                    <option value="error">Error</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="auditSearch">Search</label>
+                                <input id="auditSearch" type="text" placeholder="Search message or source">
+                            </div>
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button class="btn" id="auditRefreshBtn" type="button">Refresh log</button>
+                            </div>
+                        </div>
+                        <div class="audit-note">
+                            <div class="form-group">
+                                <label for="auditNote">Add admin note</label>
+                                <textarea id="auditNote" rows="3" placeholder="Write a note for the audit log..."></textarea>
+                            </div>
+                            <button class="btn" id="auditNoteBtn" type="button">Save note</button>
+                        </div>
+                    </div>
+
+                    <div class="audit-table-wrapper">
+                        <table class="orders-table audit-table" id="auditTable" aria-live="polite">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Level</th>
+                                    <th>Type</th>
+                                    <th>Message</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTbody">
+                                <tr><td colspan="5" class="muted">Loading audit log…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin-gate.js"></script>
+    <script>
+    function fmtDate(iso) {
+        try { return new Date(iso).toLocaleString(); } catch (e) { return iso || '—'; }
+    }
+
+    function getAdminToken() {
+        return window.AdminGate ? window.AdminGate.getToken() : '';
+    }
+
+    async function apiFetch(url, options = {}) {
+        const token = getAdminToken();
+        const headers = Object.assign({ 'Content-Type': 'application/json', 'x-admin-token': token || '' }, options.headers || {});
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401 && window.AdminGate) {
+            window.AdminGate.lock();
+        }
+        return response;
+    }
+
+    async function logAudit(entry) {
+        try {
+            await apiFetch('/.netlify/functions/audit', {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: entry.type || 'action',
+                    level: entry.level || 'info',
+                    message: entry.message || 'Admin activity',
+                    details: entry.details || null,
+                    source: entry.source || 'admin-tools',
+                    url: location.href,
+                    userAgent: navigator.userAgent,
+                    meta: entry.meta || null
+                })
+            });
+        } catch (e) {
+            console.warn('Audit log failed', e);
+        }
+    }
+
+    function setupErrorMonitoring() {
+        window.addEventListener('error', (event) => {
+            logAudit({
+                type: 'client-error',
+                level: 'error',
+                message: event.message || 'Unhandled error',
+                details: {
+                    filename: event.filename,
+                    lineno: event.lineno,
+                    colno: event.colno,
+                    stack: event.error?.stack || null
+                }
+            });
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event.reason || {};
+            logAudit({
+                type: 'client-error',
+                level: 'error',
+                message: reason.message || 'Unhandled promise rejection',
+                details: { stack: reason.stack || null }
+            });
+        });
+    }
+
+    async function loadSnapshot() {
+        const snapshot = {
+            storeOpen: '—',
+            orders: '—',
+            menu: '—',
+            revenue: '—'
+        };
+
+        try {
+            const settingsRes = await apiFetch('/.netlify/functions/settings?admin=1', { method: 'GET' });
+            if (settingsRes.ok) {
+                const data = await settingsRes.json();
+                snapshot.storeOpen = data.storeOpen === false ? 'Closed' : 'Open';
+            }
+        } catch (e) {
+            snapshot.storeOpen = 'Unavailable';
+        }
+
+        try {
+            const ordersRes = await apiFetch('/.netlify/functions/orders', { method: 'GET' });
+            if (ordersRes.ok) {
+                const orders = await ordersRes.json();
+                snapshot.orders = Array.isArray(orders) ? orders.length : 0;
+                const revenue = (orders || [])
+                    .filter(o => o.status === 'PAID' || o.status === 'PREPARING' || o.status === 'COMPLETED')
+                    .reduce((sum, o) => sum + Number(o.pricing?.total || 0), 0);
+                snapshot.revenue = `₹${revenue.toFixed(2)}`;
+            }
+        } catch (e) {
+            snapshot.orders = 'Unavailable';
+            snapshot.revenue = 'Unavailable';
+        }
+
+        try {
+            const menuRes = await fetch('/.netlify/functions/menu');
+            if (menuRes.ok) {
+                const menu = await menuRes.json();
+                snapshot.menu = Array.isArray(menu) ? menu.length : 0;
+            }
+        } catch (e) {
+            snapshot.menu = 'Unavailable';
+        }
+
+        document.getElementById('snapshotStoreStatus').textContent = snapshot.storeOpen;
+        document.getElementById('snapshotOrders').textContent = snapshot.orders;
+        document.getElementById('snapshotMenu').textContent = snapshot.menu;
+        document.getElementById('snapshotRevenue').textContent = snapshot.revenue;
+    }
+
+    async function runHealthChecks() {
+        const items = [
+            { name: 'Database', url: '/.netlify/functions/room-db', method: 'GET', admin: false },
+            { name: 'Settings (admin)', url: '/.netlify/functions/settings?admin=1', method: 'GET', admin: true },
+            { name: 'Orders API', url: '/.netlify/functions/orders', method: 'GET', admin: true },
+            { name: 'Menu API', url: '/.netlify/functions/menu', method: 'GET', admin: false },
+            { name: 'Audit API', url: '/.netlify/functions/audit', method: 'GET', admin: true }
+        ];
+
+        const list = document.getElementById('healthList');
+        list.innerHTML = '';
+
+        for (const item of items) {
+            const li = document.createElement('li');
+            li.className = 'health-item';
+            li.innerHTML = `<span>${item.name}</span><span class="status-pill" data-status="pending">Checking…</span>`;
+            list.appendChild(li);
+
+            try {
+                const res = item.admin
+                    ? await apiFetch(item.url, { method: item.method })
+                    : await fetch(item.url, { method: item.method });
+                const ok = res.ok;
+                const statusEl = li.querySelector('.status-pill');
+                statusEl.textContent = ok ? 'OK' : `Error (${res.status})`;
+                statusEl.dataset.status = ok ? 'ok' : 'error';
+
+                if (!ok) {
+                    logAudit({
+                        type: 'health',
+                        level: 'error',
+                        message: `${item.name} failed`,
+                        details: { status: res.status }
+                    });
+                }
+            } catch (e) {
+                const statusEl = li.querySelector('.status-pill');
+                statusEl.textContent = 'Failed';
+                statusEl.dataset.status = 'error';
+                logAudit({
+                    type: 'health',
+                    level: 'error',
+                    message: `${item.name} failed`,
+                    details: { error: e.message }
+                });
+            }
+        }
+
+        document.getElementById('healthUpdated').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+    }
+
+    function buildCsvRow(values) {
+        return values.map(value => {
+            const str = String(value ?? '');
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }).join(',');
+    }
+
+    async function exportOrders(format) {
+        const res = await apiFetch('/.netlify/functions/orders', { method: 'GET' });
+        if (!res.ok) {
+            alert('Failed to load orders for export.');
+            return;
+        }
+        const orders = await res.json();
+        if (!Array.isArray(orders)) {
+            alert('Orders export unavailable.');
+            return;
+        }
+
+        if (format === 'json') {
+            const blob = new Blob([JSON.stringify(orders, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `orders-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            const header = buildCsvRow(['Order Number', 'Status', 'Customer', 'Phone', 'Email', 'Subtotal', 'Tax', 'Total', 'Created At']);
+            const rows = orders.map(o => buildCsvRow([
+                o.orderNumber,
+                o.status,
+                o.customer?.name,
+                o.customer?.phone,
+                o.customer?.email,
+                o.pricing?.subtotal,
+                o.pricing?.tax,
+                o.pricing?.total,
+                o.createdAt
+            ]));
+            const csv = [header, ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `orders-${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        logAudit({ type: 'action', level: 'info', message: `Exported orders (${format})` });
+    }
+
+    async function exportAuditLog() {
+        const res = await apiFetch('/.netlify/functions/audit', { method: 'GET' });
+        if (!res.ok) {
+            alert('Failed to export audit log.');
+            return;
+        }
+        const logs = await res.json();
+        const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit-log-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        logAudit({ type: 'action', level: 'info', message: 'Exported audit log' });
+    }
+
+    async function clearAuditLog() {
+        if (!confirm('Clear all audit logs? This cannot be undone.')) return;
+        const res = await apiFetch('/.netlify/functions/audit?all=1', { method: 'DELETE' });
+        if (!res.ok) {
+            alert('Failed to clear audit log.');
+            return;
+        }
+        await loadAuditLog();
+        logAudit({ type: 'action', level: 'warn', message: 'Cleared audit log' });
+    }
+
+    async function clearOrdersAndPayments() {
+        if (!confirm('Delete ALL orders and payment history? This cannot be undone.')) return;
+        const res = await apiFetch('/.netlify/functions/orders?all=1', { method: 'DELETE' });
+        if (!res.ok) {
+            alert('Failed to clear orders.');
+            return;
+        }
+        logAudit({ type: 'action', level: 'warn', message: 'Cleared all orders and payments' });
+        alert('All orders and payments cleared.');
+        await loadSnapshot();
+    }
+
+    async function loadAuditLog() {
+        const type = document.getElementById('auditType').value;
+        const level = document.getElementById('auditLevel').value;
+        const search = document.getElementById('auditSearch').value.trim().toLowerCase();
+
+        const params = new URLSearchParams();
+        if (type) params.set('type', type);
+        if (level) params.set('level', level);
+        params.set('limit', '150');
+
+        const res = await apiFetch(`/.netlify/functions/audit?${params.toString()}`, { method: 'GET' });
+        if (!res.ok) {
+            document.getElementById('auditTbody').innerHTML = '<tr><td colspan="5" class="muted">Failed to load audit log.</td></tr>';
+            return;
+        }
+        const logs = await res.json();
+        const filtered = (logs || []).filter(log => {
+            if (!search) return true;
+            return String(log.message || '').toLowerCase().includes(search) || String(log.source || '').toLowerCase().includes(search);
+        });
+
+        if (!filtered.length) {
+            document.getElementById('auditTbody').innerHTML = '<tr><td colspan="5" class="muted">No audit logs found.</td></tr>';
+            return;
+        }
+
+        document.getElementById('auditTbody').innerHTML = filtered.map(log => `
+            <tr>
+                <td>${fmtDate(log.createdAt)}</td>
+                <td><span class="status-pill" data-status="${log.level || 'info'}">${(log.level || 'info').toUpperCase()}</span></td>
+                <td>${log.type || 'action'}</td>
+                <td title="${String(log.message || '').replace(/"/g, '&quot;')}">${log.message || '—'}</td>
+                <td>${log.source || '—'}</td>
+            </tr>
+        `).join('');
+    }
+
+    async function saveAuditNote() {
+        const textarea = document.getElementById('auditNote');
+        const note = textarea.value.trim();
+        if (!note) {
+            alert('Please enter a note first.');
+            return;
+        }
+        await logAudit({ type: 'action', level: 'info', message: note, source: 'admin-note' });
+        textarea.value = '';
+        await loadAuditLog();
+    }
+
+    function bindEvents() {
+        document.getElementById('refreshAllBtn').addEventListener('click', async () => {
+            await Promise.all([loadSnapshot(), runHealthChecks(), loadAuditLog()]);
+            logAudit({ type: 'action', level: 'info', message: 'Refreshed admin tools' });
+        });
+        document.getElementById('runHealthChecksBtn').addEventListener('click', runHealthChecks);
+        document.getElementById('auditRefreshBtn').addEventListener('click', loadAuditLog);
+        document.getElementById('auditNoteBtn').addEventListener('click', saveAuditNote);
+        document.getElementById('exportOrdersCsvBtn').addEventListener('click', () => exportOrders('csv'));
+        document.getElementById('exportOrdersJsonBtn').addEventListener('click', () => exportOrders('json'));
+        document.getElementById('exportAuditJsonBtn').addEventListener('click', exportAuditLog);
+        document.getElementById('clearOrdersBtn').addEventListener('click', clearOrdersAndPayments);
+        document.getElementById('clearAuditBtn').addEventListener('click', clearAuditLog);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.AdminGate) return;
+        window.AdminGate.requireAdminAccess(async () => {
+            setupErrorMonitoring();
+            bindEvents();
+            await Promise.all([loadSnapshot(), runHealthChecks(), loadAuditLog()]);
+            logAudit({ type: 'action', level: 'info', message: 'Admin tools opened' });
+        });
+    });
+    </script>
+</body>
+</html>

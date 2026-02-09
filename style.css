@@ -1348,6 +1348,148 @@ footer {
 	gap: 1rem;
 }
 
+/* Admin tools page */
+.admin-tools-page {
+	margin-top: 8rem;
+}
+
+.admin-card {
+	max-width: 1100px;
+}
+
+.admin-grid {
+	display: grid;
+	gap: 1.5rem;
+}
+
+.admin-panel {
+	border: 1px solid #000;
+	border-radius: 10px;
+	padding: 1rem;
+	background: #fff;
+}
+
+.admin-panel-wide {
+	grid-column: 1 / -1;
+}
+
+.admin-actions {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.health-controls {
+	display: flex;
+	gap: 0.75rem;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.health-list {
+	list-style: none;
+	padding: 0;
+	margin: 1rem 0 0;
+	display: grid;
+	gap: 0.75rem;
+}
+
+.health-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid #000;
+	border-radius: 8px;
+}
+
+.snapshot-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 0.75rem;
+}
+
+.snapshot-card {
+	border: 1px solid #000;
+	border-radius: 8px;
+	padding: 0.75rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.snapshot-card .label {
+	font-size: 0.85rem;
+	opacity: 0.7;
+}
+
+.snapshot-card .value {
+	font-size: 1.1rem;
+	font-weight: 600;
+}
+
+.audit-controls {
+	display: grid;
+	gap: 1.5rem;
+}
+
+.audit-filters {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.audit-note textarea {
+	width: 100%;
+	min-height: 90px;
+}
+
+.audit-table-wrapper {
+	margin-top: 1rem;
+	overflow-x: auto;
+}
+
+.audit-table td {
+	max-width: 320px;
+	word-break: break-word;
+}
+
+.admin-tools-page .status-pill {
+	padding: 0.25rem 0.6rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: #fff !important;
+	border: none !important;
+	background: #333 !important;
+}
+
+.admin-tools-page .status-pill[data-status="ok"] {
+	background: #1b7f3c !important;
+}
+
+.admin-tools-page .status-pill[data-status="error"] {
+	background: #b00020 !important;
+}
+
+.admin-tools-page .status-pill[data-status="warn"] {
+	background: #b76e00 !important;
+}
+
+.admin-tools-page .status-pill[data-status="info"] {
+	background: #2f4f9b !important;
+}
+
+.admin-tools-page .status-pill[data-status="pending"] {
+	background: #555 !important;
+}
+
+@media (min-width: 900px) {
+	.admin-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
 /* ORDER REVIEW */
 .order-review {
 	background-color: rgba(109, 36, 48, 0.05);

@@ -2,6 +2,8 @@
 /checkout /checkout.html 200
 /thankyou /thankyou.html 200
 /pookie /pookie.html 200
+/admin /admin.html 200
+/pookie-admin /admin 301
 /menu-admin /menu-admin.html 200
 /pincodes-admin /pincodes-admin.html 200
 /settings /settings.html 200

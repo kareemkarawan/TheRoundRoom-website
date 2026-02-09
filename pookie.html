@@ -31,6 +31,7 @@
                 <li><a href="/menu-admin">Manage Menu</a></li>
                 <li><a href="/pincodes-admin">Pincodes</a></li>
                 <li><a href="/settings">Settings</a></li>
+                <li><a href="/admin">Admin Tools</a></li>
             </ul>
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
@@ -97,13 +98,15 @@
     }
 
     function renderOrders(orders) {
+        const hidden = getHiddenOrders();
+        const visibleOrders = (orders || []).filter(o => !hidden.has(o.orderNumber));
         const tbody = document.getElementById('ordersTbody');
-        if (!orders || orders.length === 0) {
+        if (!visibleOrders || visibleOrders.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = orders.map(o => {
+        tbody.innerHTML = visibleOrders.map(o => {
             const customer = o.customer?.name || '—';
             const placed = o.createdAt ? fmtDate(o.createdAt) : '—';
             const status = o.status || 'CREATED';
@@ -187,12 +190,31 @@
             }
             if (delBtn) {
                 const orderNumber = delBtn.getAttribute('data-delete');
-                if (confirm(`Delete order ${orderNumber}?`)) {
-                    await deleteOrder(orderNumber);
+                if (confirm(`Remove order ${orderNumber} from this view?`)) {
+                    hideOrderLocally(orderNumber);
                     await loadOrders();
                 }
             }
         });
+    }
+
+    function getHiddenOrders() {
+        try {
+            const raw = localStorage.getItem('rr_hidden_orders') || '[]';
+            const parsed = JSON.parse(raw);
+            return new Set(Array.isArray(parsed) ? parsed : []);
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    function hideOrderLocally(orderNumber) {
+        if (!orderNumber) return;
+        const hidden = getHiddenOrders();
+        hidden.add(orderNumber);
+        try {
+            localStorage.setItem('rr_hidden_orders', JSON.stringify(Array.from(hidden)));
+        } catch (e) { /* ignore */ }
     }
 
     document.getElementById('modalClose').addEventListener('click', () => {

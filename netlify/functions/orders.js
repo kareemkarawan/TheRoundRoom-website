@@ -579,6 +579,29 @@ async function handlePatch(body, orderNumber) {
 
 // DELETE: remove an order by id
 async function handleDelete(orderNumber) {
+  if (orderNumber === "__all__") {
+    try {
+      const client = await getClient();
+      const db = client.db(dbName);
+      const collection = db.collection(collectionName);
+
+      const result = await collection.deleteMany({});
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          success: true,
+          deletedCount: result.deletedCount,
+        }),
+      };
+    } catch (err) {
+      console.error("DELETE all error:", err);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: err.message }),
+      };
+    }
+  }
   if (!orderNumber) {
     return {
       statusCode: 400,
@@ -653,7 +676,8 @@ exports.handler = async (event) => {
   } else if (method === "PATCH") {
     response = await handlePatch(body, orderNumber);
   } else if (method === "DELETE") {
-    response = await handleDelete(orderNumber);
+    const isDeleteAll = event.queryStringParameters?.all === "1";
+    response = await handleDelete(isDeleteAll ? "__all__" : orderNumber);
   } else {
     response = {
       statusCode: 405,
