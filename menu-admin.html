@@ -10,7 +10,10 @@
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <style>
         .admin-container { max-width: 1200px; margin: 2rem; padding: var(--spacing-lg) var(--spacing-md); }
-        .menu-grid-admin { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .menu-grid-admin { display: grid; gap: 1.5rem; margin-top: 1rem; }
+        .menu-category-block { border: 1px solid #000; border-radius: 8px; padding: 1rem; background: #fff; }
+        .menu-category-title { margin: 0 0 1rem 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .menu-category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; }
         .menu-card { border: 1px solid #000; padding: 1rem; border-radius: 6px; background: #fff; }
         .menu-card h4 { margin: 0 0 0.5rem 0; }
         .menu-card p { margin: 0.25rem 0; font-size: 0.9rem; }
@@ -172,71 +175,101 @@
 
         console.debug('[menu-admin] Rendering items:', allItems.length);
 
+        const order = ['bagels', 'schmears', 'desserts'];
+        const groups = {};
+
         allItems.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'menu-card';
+            const key = (item.category || 'other').toLowerCase();
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        });
 
-            if (item.imageUrl) {
-                const img = document.createElement('img');
-                img.src = item.imageUrl;
-                img.style.width = '100%';
-                img.style.height = '150px';
-                img.style.objectFit = 'cover';
-                img.style.borderRadius = '4px';
-                img.style.marginBottom = '0.5rem';
-                card.appendChild(img);
-            }
+        const orderedKeys = [...order, ...Object.keys(groups).filter(k => !order.includes(k))];
 
-            const title = document.createElement('h4');
-            title.textContent = item.name;
-            card.appendChild(title);
+        orderedKeys.forEach(categoryKey => {
+            const items = groups[categoryKey];
+            if (!items || items.length === 0) return;
 
-            const idP = document.createElement('p');
-            const idStrong = document.createElement('strong');
-            idStrong.textContent = 'ID:';
-            idP.appendChild(idStrong);
-            idP.appendChild(document.createTextNode(` ${item.id}`));
-            card.appendChild(idP);
+            const block = document.createElement('section');
+            block.className = 'menu-category-block';
 
-            const catP = document.createElement('p');
-            const catStrong = document.createElement('strong');
-            catStrong.textContent = 'Category:';
-            catP.appendChild(catStrong);
-            catP.appendChild(document.createTextNode(` ${item.category}`));
-            card.appendChild(catP);
+            const title = document.createElement('h3');
+            title.className = 'menu-category-title';
+            title.textContent = categoryKey;
+            block.appendChild(title);
 
-            const priceP = document.createElement('p');
-            const priceStrong = document.createElement('strong');
-            priceStrong.textContent = 'Price:';
-            priceP.appendChild(priceStrong);
-            priceP.appendChild(document.createTextNode(` ₹${Number(item.price).toFixed(0)}`));
-            card.appendChild(priceP);
+            const categoryGrid = document.createElement('div');
+            categoryGrid.className = 'menu-category-grid';
 
-            const availabilityP = document.createElement('p');
-            const availabilityStrong = document.createElement('strong');
-            availabilityStrong.textContent = 'Availability:';
-            availabilityP.appendChild(availabilityStrong);
-            availabilityP.appendChild(document.createTextNode(` ${item.isAvailable === false ? 'Unavailable' : 'Available'}`));
-            card.appendChild(availabilityP);
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'menu-card';
 
-            const actions = document.createElement('div');
-            actions.className = 'menu-card-actions';
+                if (item.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = item.imageUrl;
+                    img.style.width = '100%';
+                    img.style.height = '150px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '4px';
+                    img.style.marginBottom = '0.5rem';
+                    card.appendChild(img);
+                }
 
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-edit';
-            editBtn.textContent = 'Edit';
-            editBtn.addEventListener('click', () => editItem(item.id));
+                const title = document.createElement('h4');
+                title.textContent = item.name;
+                card.appendChild(title);
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn-delete';
-            delBtn.textContent = 'Delete';
-            delBtn.addEventListener('click', () => deleteItem(item.id));
+                const idP = document.createElement('p');
+                const idStrong = document.createElement('strong');
+                idStrong.textContent = 'ID:';
+                idP.appendChild(idStrong);
+                idP.appendChild(document.createTextNode(` ${item.id}`));
+                card.appendChild(idP);
 
-            actions.appendChild(editBtn);
-            actions.appendChild(delBtn);
-            card.appendChild(actions);
+                const catP = document.createElement('p');
+                const catStrong = document.createElement('strong');
+                catStrong.textContent = 'Category:';
+                catP.appendChild(catStrong);
+                catP.appendChild(document.createTextNode(` ${item.category}`));
+                card.appendChild(catP);
 
-            grid.appendChild(card);
+                const priceP = document.createElement('p');
+                const priceStrong = document.createElement('strong');
+                priceStrong.textContent = 'Price:';
+                priceP.appendChild(priceStrong);
+                priceP.appendChild(document.createTextNode(` ₹${Number(item.price).toFixed(0)}`));
+                card.appendChild(priceP);
+
+                const availabilityP = document.createElement('p');
+                const availabilityStrong = document.createElement('strong');
+                availabilityStrong.textContent = 'Availability:';
+                availabilityP.appendChild(availabilityStrong);
+                availabilityP.appendChild(document.createTextNode(` ${item.isAvailable === false ? 'Unavailable' : 'Available'}`));
+                card.appendChild(availabilityP);
+
+                const actions = document.createElement('div');
+                actions.className = 'menu-card-actions';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-edit';
+                editBtn.textContent = 'Edit';
+                editBtn.addEventListener('click', () => editItem(item.id));
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-delete';
+                delBtn.textContent = 'Delete';
+                delBtn.addEventListener('click', () => deleteItem(item.id));
+
+                actions.appendChild(editBtn);
+                actions.appendChild(delBtn);
+                card.appendChild(actions);
+
+                categoryGrid.appendChild(card);
+            });
+
+            block.appendChild(categoryGrid);
+            grid.appendChild(block);
         });
     }
 
