@@ -832,3 +832,26 @@ async function deleteOrder(orderNumber) {
     return false;
 }
 
+document.addEventListener('DOMContentLoaded', function () {
+        var orderSection = document.getElementById('order');
+        if (!orderSection) return;
+
+        function prefetchMenu() {
+            fetch('/.netlify/functions/menu', { cache: 'force-cache' }).catch(function () {});
+        }
+
+        if ('IntersectionObserver' in window) {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        prefetchMenu();
+                        observer.disconnect();
+                    }
+                });
+            }, { rootMargin: '200px 0px' });
+            observer.observe(orderSection);
+        } else {
+            // Fallback: prefetch after a short delay
+            setTimeout(prefetchMenu, 1200);
+        }
+    });

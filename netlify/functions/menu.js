@@ -227,6 +227,9 @@ exports.handler = async (event) => {
 
   // CORS headers
   const headers = buildHeaders(isAdminRoute);
+  if (method === "GET") {
+    headers["Cache-Control"] = "public, s-maxage=300, stale-while-revalidate=60";
+  }
 
   // Handle preflight
   if (method === "OPTIONS") {
