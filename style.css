@@ -5,8 +5,8 @@
 	--rr-bg: #6d2430;
 	--rr-text: #f2e9e4; /* white */
 	--rr-muted: rgba(255,255,255,0.85);
-	--rr-link: #ffecec; /* slightly warm link color */
-	--rr-link-hover: #fff5f5;
+	--rr-link: #6d2430; /* burgundy for cream background contrast */
+	--rr-link-hover: #4f1a23;
 	--top-nav-height: 7%; /* fallback; JS will overwrite with actual value */
 	/* Standardized spacing */
 	--spacing-lg: 1.5rem; /* 24px - section padding */
@@ -846,7 +846,7 @@ footer {
 }
 .big-menu-title {
 	background-image: linear-gradient(rgba(10, 10, 10, 0.65), rgba(10, 10, 10, 0.65)),
-	url("images/menu-bg.JPG");
+	url("webpimages/menu-bg.webp");
 	background-blend-mode: multiply;  /* try multiply|overlay|screen */
   	background-size: cover;
   	background-position: center;

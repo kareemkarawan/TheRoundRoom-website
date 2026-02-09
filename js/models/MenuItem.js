@@ -42,7 +42,7 @@ class MenuItem {
   renderHTML() {
     return `
       <div class="menu-item" data-id="${this.id}" data-name="${this.name}" data-price="${this.price}">
-        ${this.image ? `<img src="${this.image}" alt="${this.name}">` : ''}
+        ${this.image ? `<img src="${this.image}" alt="${this.name}" loading="lazy">` : ''}
         <div class="menu-item-info">
           <h3>${this.name}</h3>
           <p class="price">₹${this.price.toFixed(2)}</p>
