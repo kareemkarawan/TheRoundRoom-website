@@ -130,66 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (loaded === imgs.length) centerIndex(currentIndex, false);
         }
 
-        /* --- Drag / Swipe Support (pointer events) --- */
-        var isDragging = false;
-        var startX = 0;
-        var currentTranslate = 0;
-        var lastTranslate = 0;
-        var pointerId = null;
-
-        function getWrapperTranslate() {
-            var style = window.getComputedStyle(track);
-            var matrix = new WebKitCSSMatrix(style.transform);
-            return matrix.m41; // translateX value
-        }
-
-        function onPointerDown(e) {
-            isDragging = true;
-            pointerId = e.pointerId;
-            startX = e.clientX;
-            lastTranslate = getWrapperTranslate();
-            track.style.transition = 'none';
-            // Pause autoplay
-            if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
-            // Capture pointer
-            track.setPointerCapture(pointerId);
-        }
-
-        function onPointerMove(e) {
-            if (!isDragging || e.pointerId !== pointerId) return;
-            var dx = e.clientX - startX;
-            var translate = lastTranslate + dx;
-            track.style.transform = 'translateX(' + translate + 'px)';
-        }
-
-        function onPointerUp(e) {
-            if (!isDragging || e.pointerId !== pointerId) return;
-            isDragging = false;
-            track.releasePointerCapture(pointerId);
-            // Decide based on how far we dragged whether to move next/prev
-            var dx = e.clientX - startX;
-            var threshold = wrapper.clientWidth * (isMobile ? 0.08 : 0.12); // tighter threshold on mobile
-            if (dx > threshold) {
-                movePrev();
-            } else if (dx < -threshold) {
-                moveNext();
-            } else {
-                // Snap back to current
-                centerIndex(currentIndex, true);
-            }
-            // Resume autoplay when not hovering
-            if (!autoplayTimer) { autoplayTimer = setInterval(moveNext, 4000); }
-        }
-
-        // Attach pointer events (fallback to touch/mouse via pointer events support)
-        try {
-            track.addEventListener('pointerdown', onPointerDown, { passive: false });
-            window.addEventListener('pointermove', onPointerMove, { passive: false });
-            window.addEventListener('pointerup', onPointerUp, { passive: false });
-            track.addEventListener('pointercancel', onPointerUp, { passive: false });
-        } catch (err) {
-            // ignore if pointer events not supported
-        }
+        /* Swipe disabled by design: button-only navigation */
     }
 
     // Kick off the bagel carousel if present
