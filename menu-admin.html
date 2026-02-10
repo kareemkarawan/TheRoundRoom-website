@@ -143,7 +143,8 @@
         const grid = document.getElementById('menuGridAdmin');
         console.debug('[menu-admin] Loading menu items');
         try {
-            const response = await fetch('/.netlify/functions/menu');
+            const cacheBust = `/.netlify/functions/menu?ts=${Date.now()}`;
+            const response = await fetch(cacheBust, { cache: 'no-store' });
             if (response.ok) {
                 allItems = await response.json();
                 console.debug('[menu-admin] Loaded items:', allItems.length);
@@ -462,6 +463,7 @@
             
             if (response.ok) {
                 console.debug('[menu-admin] Save success');
+                try { localStorage.setItem('rr_menu_force_refresh', '1'); } catch (e) { /* ignore */ }
                 showMessage(editingId ? 'Item updated successfully' : 'Item added successfully', 'success');
                 closeModal();
                 await loadMenuItems();

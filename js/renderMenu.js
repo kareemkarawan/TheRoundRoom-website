@@ -26,10 +26,17 @@ async function renderMenu() {
     const timeoutMs = 8000; // 8s
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res;
+    const forceRefresh = (() => {
+      try { return localStorage.getItem('rr_menu_force_refresh') === '1'; } catch (e) { return false; }
+    })();
+    const menuUrl = forceRefresh ? `/.netlify/functions/menu?ts=${Date.now()}` : '/.netlify/functions/menu';
     try {
-      res = await fetch('/.netlify/functions/menu', { signal: controller.signal });
+      res = await fetch(menuUrl, { signal: controller.signal, cache: forceRefresh ? 'no-store' : 'default' });
     } finally {
       clearTimeout(timer);
+    }
+    if (forceRefresh) {
+      try { localStorage.removeItem('rr_menu_force_refresh'); } catch (e) { /* ignore */ }
     }
     if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'NO_RESPONSE'));
     const items = await res.json();
