@@ -244,6 +244,19 @@ footer {
   color: var(--rr-link-hover);
 }
 
+.order-note {
+	margin: 0.75rem auto 0.5rem;
+	color: rgba(109, 36, 48, 0.8);
+	text-align: center;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.order-note-inline {
+	margin: 0.85rem 0 0.35rem;
+	letter-spacing: 0.01em;
+}
+
 @media (max-width: 1400px) and (min-width: 971px) {
 	.top-nav .nav-links {
 		width: clamp(260px, 28vw, 420px);
