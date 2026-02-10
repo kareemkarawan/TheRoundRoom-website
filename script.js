@@ -159,12 +159,17 @@ function updateCart() {
         ).join('');
     }
 
-    const tax = subtotal * 0.05;
+    const sgst = subtotal * 0.025;
+    const cgst = subtotal * 0.025;
+    const tax = sgst + cgst;
     const total = subtotal + tax;
 
     document.getElementById('toggleTotal').textContent = `₹${subtotal.toFixed(2)}`;
     document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
-    document.getElementById('tax').textContent = `₹${tax.toFixed(2)}`;
+    const sgstEl = document.getElementById('sgst');
+    const cgstEl = document.getElementById('cgst');
+    if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
+    if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
     document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
 
     // Update review section (if present)
@@ -185,7 +190,7 @@ function updateCart() {
         if (cartItems.length === 0) {
             localStorage.removeItem('rr_cart');
         } else {
-            localStorage.setItem('rr_cart', JSON.stringify({ items: cartItems, subtotal: subtotal, tax: tax, total: total }));
+            localStorage.setItem('rr_cart', JSON.stringify({ items: cartItems, subtotal: subtotal, sgst: sgst, cgst: cgst, tax: tax, total: total }));
         }
     } catch (err) {
         console.warn('Could not save cart to localStorage', err);
@@ -274,16 +279,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loadingEl) loadingEl.style.display = 'block';
         const itemsEl = document.getElementById('checkoutItems');
         const subtotalEl = document.getElementById('checkoutSubtotal');
-        const taxEl = document.getElementById('checkoutTax');
+        const sgstEl = document.getElementById('checkoutSgst');
+        const cgstEl = document.getElementById('checkoutCgst');
         const totalEl = document.getElementById('checkoutTotal');
-        if (!itemsEl || !subtotalEl || !taxEl || !totalEl) return;
+        if (!itemsEl || !subtotalEl || !totalEl) return;
 
         let cart = null;
         try { cart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (e) { cart = null; }
         if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) {
             itemsEl.innerHTML = '<p class="empty-cart">No items in your cart.</p>';
             subtotalEl.textContent = '₹0.00';
-            taxEl.textContent = '₹0.00';
+            if (sgstEl) sgstEl.textContent = '₹0.00';
+            if (cgstEl) cgstEl.textContent = '₹0.00';
             totalEl.textContent = '₹0.00';
             return;
         }
@@ -296,7 +303,10 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
 
         subtotalEl.textContent = `₹${Number(cart.subtotal || 0).toFixed(2)}`;
-        taxEl.textContent = `₹${Number(cart.tax || 0).toFixed(2)}`;
+        const sgst = Number(cart.sgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+        const cgst = Number(cart.cgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+        if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
+        if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
         totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
         if (loadingEl) loadingEl.style.display = 'none';
     }
@@ -626,7 +636,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const cart = data.cart || { items: [], subtotal: 0, tax: 0, total: 0 };
+    const cart = data.cart || { items: [], subtotal: 0, sgst: 0, cgst: 0, tax: 0, total: 0 };
+    const sgst = Number(cart.sgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+    const cgst = Number(cart.cgst ?? ((Number(cart.tax || 0)) / 2 || 0));
     const itemsHtml = (cart.items || []).map(item => `
         <div class="checkout-item">
             <div class="left"><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
@@ -641,7 +653,8 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="checkout-items" style="margin-top:1rem;">${itemsHtml || '<p>No items.</p>'}</div>
         <div class="checkout-breakdown" style="margin-top:1rem;">
             <div class="row"><span>Subtotal</span><span>₹${Number(cart.subtotal || 0).toFixed(2)}</span></div>
-            <div class="row"><span>Tax</span><span>₹${Number(cart.tax || 0).toFixed(2)}</span></div>
+            <div class="row"><span>SGST (2.5%)</span><span>₹${sgst.toFixed(2)}</span></div>
+            <div class="row"><span>CGST (2.5%)</span><span>₹${cgst.toFixed(2)}</span></div>
             <div class="row total"><span>Total</span><span>₹${Number(cart.total || 0).toFixed(2)}</span></div>
         </div>
         <div class="order-actions">
@@ -754,10 +767,49 @@ async function markPaymentFailed(orderNumber, razorpayResponse) {
 }
 
 async function generateReceiptPdf(orderData, razorpayResponse) {
-        const now = new Date();
-        const cart = orderData.cart || { items: [], subtotal: 0, tax: 0, total: 0 };
-        const totalPaid = Number(orderData.amount || 0) / 100;
-        const taxRate = cart.subtotal > 0 ? (Number(cart.tax || 0) / Number(cart.subtotal || 1)) * 100 : 0;
+    const now = new Date();
+
+    function sanitizeText(value) {
+        return String(value || '').replace(/[\x00-\x1F\x7F-\xFF]/g, '').trim();
+    }
+
+    function normalizeReceiptData(data) {
+        const cart = data?.cart || {};
+        const rawItems = Array.isArray(cart.items)
+            ? cart.items
+            : Array.isArray(data?.items)
+                ? data.items
+                : [];
+
+        const items = rawItems.map((item) => {
+            const qty = Number(item.qty ?? item.quantity ?? item.count ?? 0) || 0;
+            const name = item.name || item.title || item.menuItemName || item.menuItemId || item.id || 'Item';
+            const price = Number(item.price ?? item.unitPrice ?? item.unit_price ?? 0) || 0;
+            const itemTotal = Number(item.itemTotal ?? item.lineTotal ?? item.total ?? (price * qty)) || 0;
+            return {
+                qty,
+                name: sanitizeText(name),
+                itemTotal: Number(itemTotal) || 0
+            };
+        }).filter((item) => item.qty > 0 || item.name);
+
+        const subtotal = Number(
+            cart.subtotal ?? cart.subTotal ?? cart.subtotalAmount ?? 0
+        ) || items.reduce((sum, item) => sum + (Number(item.itemTotal) || 0), 0);
+        const tax = Number(cart.tax ?? cart.taxAmount ?? 0) || 0;
+        const sgst = Number(cart.sgst ?? cart.SGST ?? cart.sgstAmount ?? 0) || (tax / 2);
+        const cgst = Number(cart.cgst ?? cart.CGST ?? cart.cgstAmount ?? 0) || (tax / 2);
+        const total = Number(cart.total ?? cart.totalAmount ?? 0) || (subtotal + tax);
+
+        return { items, subtotal, tax, sgst, cgst, total };
+    }
+
+    const normalized = normalizeReceiptData(orderData || {});
+    const amountPaise = Number(orderData?.amount || 0);
+    const totalPaid = amountPaise > 0 ? amountPaise / 100 : Number(normalized.total || 0);
+    const taxRate = normalized.subtotal > 0 ? (Number(normalized.tax || 0) / Number(normalized.subtotal || 1)) * 100 : 0;
+    const sgstRate = normalized.subtotal > 0 ? (Number(normalized.sgst || 0) / Number(normalized.subtotal || 1)) * 100 : 0;
+    const cgstRate = normalized.subtotal > 0 ? (Number(normalized.cgst || 0) / Number(normalized.subtotal || 1)) * 100 : 0;
 
     async function loadImageDataUrl(url) {
         const res = await fetch(url);
@@ -770,65 +822,66 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         });
     }
 
-        if (window.jspdf && window.jspdf.jsPDF) {
-            const doc = new window.jspdf.jsPDF();
-            let y = 14;
-            const burgundy = [109, 36, 48];
+    if (window.jspdf && window.jspdf.jsPDF) {
+        const doc = new window.jspdf.jsPDF();
+        let y = 14;
+        const burgundy = [109, 36, 48];
 
-            doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
-            doc.rect(0, 0, 210, 18, 'F');
+        doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
+        doc.rect(0, 0, 210, 18, 'F');
 
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(14);
-            doc.text('THE ROUND ROOM', 14, 12);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.text('THE ROUND ROOM', 14, 12);
 
-            try {
-                const logoDataUrl = await loadImageDataUrl('images/Icon.png');
-                doc.addImage(logoDataUrl, 'PNG', 170, 3, 10, 10);
-            } catch (e) {
-                // ignore logo failures
-            }
-
-            doc.setTextColor(0, 0, 0);
-            y = 26;
-            doc.setFontSize(11);
-            doc.text('Velvet Lounge Enterprises Pvt. Ltd.', 14, y);
-            y += 6;
-            doc.setTextColor(burgundy[0], burgundy[1], burgundy[2]);
-            doc.setFontSize(12);
-            doc.text('Receipt', 14, y);
-            doc.setTextColor(0, 0, 0);
-            y += 8;
-
-            doc.setFontSize(11);
-            doc.text(`Order ID: ${orderData.orderNumber}`, 14, y); y += 6;
-            doc.text(`Date: ${now.toLocaleString()}`, 14, y); y += 6;
-            doc.text(`Customer: ${orderData.customer?.name || ''}`, 14, y); y += 6;
-            doc.text(`Email: ${orderData.customer?.email || ''}`, 14, y); y += 6;
-            doc.text(`Phone: ${orderData.customer?.phone || ''}`, 14, y); y += 6;
-            doc.text(`Payment ID: ${razorpayResponse?.razorpay_payment_id || ''}`, 14, y); y += 6;
-            doc.text(`Razorpay Order ID: ${razorpayResponse?.razorpay_order_id || ''}`, 14, y); y += 8;
-
-            doc.text('Items:', 14, y); y += 6;
-            doc.setFontSize(10);
-            (cart.items || []).forEach(item => {
-                const line = `${item.qty}x ${item.name} — ₹${Number(item.itemTotal || 0).toFixed(2)}`;
-                doc.text(line, 16, y);
-                y += 5;
-                if (y > 270) { doc.addPage(); y = 14; }
-            });
-
-            y += 4;
-            doc.setFontSize(11);
-            doc.text(`Subtotal: ₹${Number(cart.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
-            doc.text(`Tax (${taxRate.toFixed(2)}%): ₹${Number(cart.tax || 0).toFixed(2)}`, 14, y); y += 6;
-            doc.text(`Total Paid: ₹${totalPaid.toFixed(2)}`, 14, y);
-
-            doc.save(`receipt-${orderData.orderNumber}.pdf`);
-            return;
+        try {
+            const logoDataUrl = await loadImageDataUrl('images/Icon.png');
+            doc.addImage(logoDataUrl, 'PNG', 170, 3, 10, 10);
+        } catch (e) {
+            // ignore logo failures
         }
 
-        alert('Receipt download is unavailable right now.');
+        doc.setTextColor(0, 0, 0);
+        y = 26;
+        doc.setFontSize(11);
+        doc.text('Velvet Lounge Enterprises Pvt. Ltd.', 14, y);
+        y += 6;
+        doc.setTextColor(burgundy[0], burgundy[1], burgundy[2]);
+        doc.setFontSize(12);
+        doc.text('Receipt', 14, y);
+        doc.setTextColor(0, 0, 0);
+        y += 8;
+
+        doc.setFontSize(11);
+        doc.text(`Order ID: ${sanitizeText(orderData?.orderNumber)}`, 14, y); y += 6;
+        doc.text(`Date: ${now.toLocaleString()}`, 14, y); y += 6;
+        doc.text(`Customer: ${sanitizeText(orderData?.customer?.name)}`, 14, y); y += 6;
+        doc.text(`Email: ${sanitizeText(orderData?.customer?.email)}`, 14, y); y += 6;
+        doc.text(`Phone: ${sanitizeText(orderData?.customer?.phone)}`, 14, y); y += 6;
+        doc.text(`Payment ID: ${sanitizeText(razorpayResponse?.razorpay_payment_id)}`, 14, y); y += 6;
+        doc.text(`Razorpay Order ID: ${sanitizeText(razorpayResponse?.razorpay_order_id)}`, 14, y); y += 8;
+
+        doc.text('Items:', 14, y); y += 6;
+        doc.setFontSize(10);
+        (normalized.items || []).forEach(item => {
+            const line = `${item.qty}x ${item.name} - Rs ${Number(item.itemTotal || 0).toFixed(2)}`;
+            doc.text(line, 16, y);
+            y += 5;
+            if (y > 270) { doc.addPage(); y = 14; }
+        });
+
+        y += 4;
+        doc.setFontSize(11);
+        doc.text(`Subtotal: Rs ${Number(normalized.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
+        doc.text(`SGST (${sgstRate.toFixed(2)}%): Rs ${Number(normalized.sgst || 0).toFixed(2)}`, 14, y); y += 6;
+        doc.text(`CGST (${cgstRate.toFixed(2)}%): Rs ${Number(normalized.cgst || 0).toFixed(2)}`, 14, y); y += 6;
+        doc.text(`Total Paid: Rs ${Number(totalPaid || 0).toFixed(2)}`, 14, y);
+
+        doc.save(`receipt-${sanitizeText(orderData?.orderNumber) || 'order'}.pdf`);
+        return;
+    }
+
+    alert('Receipt download is unavailable right now.');
 }
 
 async function updateOrderStatus(orderNumber, status) {
@@ -880,4 +933,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (sessionStorage.getItem('rr_menu_prefetch')) return;
     sessionStorage.setItem('rr_menu_prefetch', '1');
     fetch('/.netlify/functions/menu', { cache: 'force-cache' }).catch(function () {});
+});
+
+document.querySelector('.carousel-track').addEventListener('click', function(e) {
+    const item = e.target.closest('.carousel-slide');
+    if (!item) return;
+    const id = item.dataset.id;
+    window.loacation.href = '/product?id=${encodeURIComponent(id)}';
 });

@@ -244,6 +244,24 @@ footer {
   color: var(--rr-link-hover);
 }
 
+@media (max-width: 1200px) and (min-width: 971px) {
+	.top-nav .nav-links {
+		max-width: calc(50% - 140px);
+		width: auto;
+		flex-wrap: wrap;
+		gap: 0.35rem 0.9rem;
+	}
+
+	.top-nav .nav-links a {
+		font-size: 0.85rem;
+	}
+
+	.top-nav .logo h1 {
+		font-size: 1.05rem;
+		white-space: nowrap;
+	}
+}
+
 .nav-toggle {
 	display: none;
 }
