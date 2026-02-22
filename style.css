@@ -478,6 +478,10 @@ footer {
 	border: none;
 }
 
+.menu-item-w h3 {
+	text-align: center;
+}
+
 .menu-item img, .menu-item-w img {
   	object-fit: cover;
 }
@@ -749,6 +753,7 @@ footer {
 		width: 100%;
 		height: auto;
 		display: block;
+		border-radius: 3px;
 	}
 
 	/* Mobile-specific carousel tweaks */
