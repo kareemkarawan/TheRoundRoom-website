@@ -1812,6 +1812,40 @@ footer {
 
 /* DESKTOP - 970px+ */
 @media (min-width: 970px) {
+	.section-s,
+	.section-ms {
+		align-items: flex-start;
+	}
+
+	.section-s h2,
+	.section-ms h2 {
+		flex: 0 0 260px;
+		max-width: 260px;
+	}
+
+	.section-s .menu,
+	.section-ms .menu {
+		flex: 1 1 auto;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 1rem;
+		padding: var(--spacing-md) 0 0;
+	}
+
+	.section-s .menu-item-w,
+	.section-ms .menu-item-w {
+		width: 100%;
+		margin: 0;
+	}
+
+	.section-s .menu-item-w img,
+	.section-ms .menu-item-w img {
+		width: 100%;
+		aspect-ratio: 1 / 1;
+		height: auto;
+		object-fit: contain;
+	}
+
 	.order-page {
 		flex-direction: row;
 		gap: 0;
