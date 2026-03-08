@@ -941,3 +941,246 @@ document.querySelector('.carousel-track').addEventListener('click', function(e) 
     const id = item.dataset.id;
     window.loacation.href = '/product?id=${encodeURIComponent(id)}';
 });
+
+/**
+ * Frontend login function
+ * @param {string} email - User email
+ * @param {string} password - User password
+ * @param {string} errorElementId - (optional) Element ID to display error message
+ * @returns {Promise<void>}
+ */
+async function handleLogin(email, password, errorElementId) {
+    try {
+        // Validate inputs
+        if (!email || !password) {
+            const message = "Email and password are required";
+            if (errorElementId) {
+                const errorEl = document.getElementById(errorElementId);
+                if (errorEl) errorEl.textContent = message;
+            } else {
+                alert(message);
+            }
+            return;
+        }
+
+        // Clear previous error
+        if (errorElementId) {
+            const errorEl = document.getElementById(errorElementId);
+            if (errorEl) errorEl.textContent = "";
+        }
+
+        // Send login request
+        const response = await fetch("/.netlify/functions/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            const message = data.error || "Login failed";
+            if (errorElementId) {
+                const errorEl = document.getElementById(errorElementId);
+                if (errorEl) errorEl.textContent = message;
+            } else {
+                alert(message);
+            }
+            return;
+        }
+
+        // Store token in localStorage
+        if (data.token) {
+            localStorage.setItem("rr_token", data.token);
+        }
+
+        // Update nav and redirect
+        updateAuthNav();
+        window.location.href = "/";
+    } catch (err) {
+        const message = "An error occurred during login";
+        if (errorElementId) {
+            const errorEl = document.getElementById(errorElementId);
+            if (errorEl) errorEl.textContent = message;
+        } else {
+            alert(message);
+        }
+        console.error("Login error:", err);
+    }
+}
+
+/**
+ * Frontend signup function
+ * @param {string} email - User email
+ * @param {string} phone - User phone
+ * @param {string} password - User password
+ * @param {string} errorElementId - (optional) Element ID to display error message
+ * @returns {Promise<void>}
+ */
+async function handleRegister(email, phone, password, errorElementId) {
+    try {
+        // Validate inputs
+        if (!email || !phone || !password) {
+            const message = "Email, phone, and password are required";
+            if (errorElementId) {
+                const errorEl = document.getElementById(errorElementId);
+                if (errorEl) errorEl.textContent = message;
+            } else {
+                alert(message);
+            }
+            return;
+        }
+
+        if (password.length < 8) {
+            const message = "Password must be at least 8 characters long";
+            if (errorElementId) {
+                const errorEl = document.getElementById(errorElementId);
+                if (errorEl) errorEl.textContent = message;
+            } else {
+                alert(message);
+            }
+            return;
+        }
+
+        // Clear previous error
+        if (errorElementId) {
+            const errorEl = document.getElementById(errorElementId);
+            if (errorEl) errorEl.textContent = "";
+        }
+
+        // Send signup request
+        const response = await fetch("/.netlify/functions/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, phone, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            const message = data.error || "Registration failed";
+            if (errorElementId) {
+                const errorEl = document.getElementById(errorElementId);
+                if (errorEl) errorEl.textContent = message;
+            } else {
+                alert(message);
+            }
+            return;
+        }
+
+        // Store token in localStorage if provided
+        if (data.token) {
+            localStorage.setItem("rr_token", data.token);
+        }
+
+        // Update nav and redirect
+        updateAuthNav();
+        window.location.href = "/";
+    } catch (err) {
+        const message = "An error occurred during registration";
+        if (errorElementId) {
+            const errorEl = document.getElementById(errorElementId);
+            if (errorEl) errorEl.textContent = message;
+        } else {
+            alert(message);
+        }
+        console.error("Register error:", err);
+    }
+}
+
+/**
+ * Make authenticated API calls with automatic Authorization header
+ * @param {string} url - API endpoint URL
+ * @param {Object} options - Fetch options (method, body, headers, etc.)
+ * @returns {Promise<Object>} Parsed JSON response
+ * @throws {Error} If token is missing or request fails
+ */
+async function authenticatedFetch(url, options = {}) {
+    const token = localStorage.getItem("rr_token");
+
+    if (!token) {
+        throw new Error("No authentication token found. Please log in.");
+    }
+
+    const headers = {
+        "Content-Type": "application/json",
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+    };
+
+    const response = await fetch(url, {
+        ...options,
+        headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        // If 401, token may be expired - clear it
+        if (response.status === 401) {
+            localStorage.removeItem("rr_token");
+            updateAuthNav();
+            throw new Error("Authentication failed. Please log in again.");
+        }
+        throw new Error(data.error || `Request failed with status ${response.status}`);
+    }
+
+    return data;
+}
+
+/**
+ * Update navigation to show login state
+ * Shows login/register buttons if not logged in
+ * Shows user email and logout button if logged in
+ */
+async function updateAuthNav() {
+    const token = localStorage.getItem("rr_token");
+    const authButtons = document.getElementById("authButtons");
+    const loginRegisterBtn = document.getElementById("loginRegisterBtn");
+    const authUser = document.getElementById("authUser");
+    const userEmail = document.getElementById("userEmail");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    if (!authButtons) return;
+
+    if (token) {
+        // User is logged in - fetch and display user info
+        try {
+            const response = await authenticatedFetch("/.netlify/functions/profile");
+            if (response.profile && response.profile.email) {
+                loginRegisterBtn.style.display = "none";
+                authUser.style.display = "flex";
+                userEmail.textContent = response.profile.email;
+            }
+        } catch (err) {
+            // Token invalid, clear it
+            localStorage.removeItem("rr_token");
+            loginRegisterBtn.style.display = "inline-block";
+            authUser.style.display = "none";
+        }
+    } else {
+        // User is not logged in
+        loginRegisterBtn.style.display = "inline-block";
+        authUser.style.display = "none";
+    }
+}
+
+// Update auth nav on page load
+document.addEventListener("DOMContentLoaded", function () {
+    updateAuthNav();
+
+    // Handle logout
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            localStorage.removeItem("rr_token");
+            updateAuthNav();
+            window.location.href = "/";
+        });
+    }
+});

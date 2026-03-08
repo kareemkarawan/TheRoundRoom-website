@@ -7,8 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js" defer></script>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+
 </head>
 <body>
     <nav class="top-nav">
@@ -27,6 +29,13 @@
             </ul>
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
+            </div>
+            <div class="auth-buttons" id="authButtons">
+                <a href="/login.html" class="auth-btn login-register-btn" id="loginRegisterBtn">Login/Register</a>
+                <div class="auth-user" id="authUser" style="display: none;">
+                    <span class="user-email" id="userEmail"></span>
+                    <a href="#" class="auth-btn logout-btn" id="logoutBtn">Logout</a>
+                </div>
             </div>
             <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
         </div>

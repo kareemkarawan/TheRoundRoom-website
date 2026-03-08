@@ -244,6 +244,83 @@ footer {
   color: var(--rr-link-hover);
 }
 
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  position: absolute;
+  right: 80px;
+}
+
+.auth-btn {
+  text-decoration: none;
+  color: var(--rr-text);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--rr-text);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.auth-btn:hover {
+  background-color: var(--rr-text);
+  color: var(--rr-bg);
+}
+
+.login-btn {
+  border-color: var(--rr-text);
+}
+
+.register-btn {
+  background-color: var(--rr-text);
+  color: var(--rr-bg);
+  border-color: var(--rr-text);
+}
+
+.register-btn:hover {
+  background-color: var(--rr-bg);
+  color: var(--rr-text);
+}
+
+.login-register-btn {
+  background-color: var(--rr-text);
+  color: var(--rr-bg);
+  border-color: var(--rr-text);
+  padding: 0.5rem 1.25rem;
+}
+
+.login-register-btn:hover {
+  background-color: var(--rr-bg);
+  color: var(--rr-text);
+}
+
+.auth-user {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.user-email {
+  color: var(--rr-text);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.logout-btn {
+  background-color: transparent;
+  border-color: var(--rr-text);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.logout-btn:hover {
+  background-color: var(--rr-text);
+  color: var(--rr-bg);
+}
+
 .order-note {
 	margin: 0.75rem auto 0.5rem;
 	color: rgba(109, 36, 48, 0.8);
@@ -710,6 +787,39 @@ footer {
 		display: block;
 		padding: 0.5rem 0;
 		font-size: 1.05rem;
+	}
+
+	.auth-buttons {
+		position: relative;
+		right: auto;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-top: 1rem;
+		margin-left: 1rem;
+		margin-right: 0.125rem;
+	}
+
+	.auth-btn {
+		width: auto;
+		text-align: center;
+		font-size: 0.7rem;
+		padding: 0.3rem 0.5rem;
+		align-self: flex-start;
+	}
+
+	.auth-user {
+		flex-direction: column;
+		gap: 0.5rem;
+		width: 100%;
+	}
+
+	.user-email {
+		font-size: 0.9rem;
+	}
+
+	.logout-btn {
+		width: 100%;
+		text-align: center;
 	}
 
 	.section .ss {
