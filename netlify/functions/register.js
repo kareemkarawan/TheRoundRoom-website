@@ -56,6 +56,12 @@ exports.handler = async (event) => {
       return buildResponse(409, { error: "Email already exists" });
     }
 
+    // Check if phone already exists
+    const existingPhone = await users.findOne({ phone: phone.trim() });
+    if (existingPhone) {
+      return buildResponse(409, { error: "Phone number already exists" });
+    }
+
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 

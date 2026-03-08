@@ -1063,7 +1063,9 @@ async function handleRegister(email, phone, password, errorElementId) {
 
         if (!response.ok) {
             const message = data.error || "Registration failed";
-            if (errorElementId) {
+            if (message.includes("already exists")) {
+                alert(message);
+            } else if (errorElementId) {
                 const errorEl = document.getElementById(errorElementId);
                 if (errorEl) errorEl.textContent = message;
             } else {
