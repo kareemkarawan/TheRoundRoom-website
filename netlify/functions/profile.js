@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
   try {
     // Verify authentication
-    const { userId } = verifyAuth(event);
+    const { userId } = await verifyAuth(event);
 
     const db = await getDB();
     const users = db.collection("users");

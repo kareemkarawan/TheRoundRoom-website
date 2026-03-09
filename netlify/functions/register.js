@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { getDB } = require("./db");
+const { getClientIp, recordAuthEvent } = require("./auth-activity");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = "7d";
@@ -49,16 +51,35 @@ exports.handler = async (event) => {
   try {
     const db = await getDB();
     const users = db.collection("users");
+    const sessions = db.collection("sessions");
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedPhone = phone.trim();
 
     // Check if email already exists
-    const existingUser = await users.findOne({ email: email.toLowerCase().trim() });
+    const existingUser = await users.findOne({ email: normalizedEmail });
     if (existingUser) {
+      await recordAuthEvent(db, "register", {
+        level: "warn",
+        source: "register",
+        message: "Registration blocked: email already exists",
+        details: { email: normalizedEmail },
+        meta: { ip: getClientIp(event.headers || {}) },
+        userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      });
       return buildResponse(409, { error: "Email already exists" });
     }
 
     // Check if phone already exists
-    const existingPhone = await users.findOne({ phone: phone.trim() });
+    const existingPhone = await users.findOne({ phone: normalizedPhone });
     if (existingPhone) {
+      await recordAuthEvent(db, "register", {
+        level: "warn",
+        source: "register",
+        message: "Registration blocked: phone already exists",
+        details: { phone: normalizedPhone },
+        meta: { ip: getClientIp(event.headers || {}) },
+        userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      });
       return buildResponse(409, { error: "Phone number already exists" });
     }
 
@@ -68,8 +89,8 @@ exports.handler = async (event) => {
     // Create user document
     const now = new Date();
     const userDoc = {
-      email: email.toLowerCase().trim(),
-      phone: phone.trim(),
+      email: normalizedEmail,
+      phone: normalizedPhone,
       passwordHash,
       addresses: [],
       role: "customer",
@@ -82,13 +103,43 @@ exports.handler = async (event) => {
     // Insert user
     const result = await users.insertOne(userDoc);
     const userId = result.insertedId;
+    const tokenId = crypto.randomUUID();
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // Generate JWT token
     const token = jwt.sign(
       { userId: userId.toString(), role: "customer" },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION }
+      { expiresIn: JWT_EXPIRATION, jwtid: tokenId }
     );
+
+    await sessions.insertOne({
+      userId: userId.toString(),
+      jti: tokenId,
+      createdAt: issuedAt,
+      lastSeenAt: issuedAt,
+      expiresAt,
+      revokedAt: null,
+      userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      ip: getClientIp(event.headers || {}),
+    });
+
+    await recordAuthEvent(db, "register", {
+      source: "register",
+      message: "User registered",
+      details: { userId: userId.toString(), email: normalizedEmail },
+      meta: { ip: getClientIp(event.headers || {}) },
+      userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+    });
+
+    await recordAuthEvent(db, "login", {
+      source: "login",
+      message: "User logged in after registration",
+      details: { userId: userId.toString(), email: normalizedEmail },
+      meta: { ip: getClientIp(event.headers || {}) },
+      userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+    });
 
     return buildResponse(201, {
       success: true,

@@ -1144,8 +1144,8 @@ async function updateAuthNav() {
     const authButtons = document.getElementById("authButtons");
     const loginRegisterBtn = document.getElementById("loginRegisterBtn");
     const authUser = document.getElementById("authUser");
+    const authDropdown = document.getElementById("authDropdown");
     const userEmail = document.getElementById("userEmail");
-    const logoutBtn = document.getElementById("logoutBtn");
 
     if (!authButtons) return;
 
@@ -1157,17 +1157,20 @@ async function updateAuthNav() {
                 loginRegisterBtn.style.display = "none";
                 authUser.style.display = "flex";
                 userEmail.textContent = response.profile.email;
+                if (authDropdown) authDropdown.style.display = "none";
             }
         } catch (err) {
             // Token invalid, clear it
             localStorage.removeItem("rr_token");
             loginRegisterBtn.style.display = "inline-block";
             authUser.style.display = "none";
+            if (authDropdown) authDropdown.style.display = "none";
         }
     } else {
         // User is not logged in
         loginRegisterBtn.style.display = "inline-block";
         authUser.style.display = "none";
+        if (authDropdown) authDropdown.style.display = "none";
     }
 }
 
@@ -1175,12 +1178,35 @@ async function updateAuthNav() {
 document.addEventListener("DOMContentLoaded", function () {
     updateAuthNav();
 
+    const accountBtn = document.getElementById("accountBtn");
+    const authDropdown = document.getElementById("authDropdown");
+
+    if (accountBtn && authDropdown) {
+        accountBtn.addEventListener("click", function () {
+            authDropdown.style.display = authDropdown.style.display === "block" ? "none" : "block";
+        });
+
+        document.addEventListener("click", function (e) {
+            if (!accountBtn.contains(e.target) && !authDropdown.contains(e.target)) {
+                authDropdown.style.display = "none";
+            }
+        });
+    }
+
     // Handle logout
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", function (e) {
+        logoutBtn.addEventListener("click", async function (e) {
             e.preventDefault();
+
+            try {
+                await authenticatedFetch("/.netlify/functions/logout", { method: "POST" });
+            } catch (err) {
+                console.warn("Logout API failed:", err.message || err);
+            }
+
             localStorage.removeItem("rr_token");
+            if (authDropdown) authDropdown.style.display = "none";
             updateAuthNav();
             window.location.href = "/";
         });

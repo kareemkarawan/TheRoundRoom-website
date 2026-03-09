@@ -36,6 +36,7 @@
                     <h3>Quick Actions</h3>
                     <div class="admin-actions">
                         <button class="btn" id="refreshAllBtn" type="button">Refresh all data</button>
+                        <button class="btn" id="openUserLogsBtn" type="button">User logs</button>
                         <button class="btn" id="exportOrdersCsvBtn" type="button">Export orders (CSV)</button>
                         <button class="btn" id="exportOrdersJsonBtn" type="button">Export orders (JSON)</button>
                         <button class="btn" id="exportAuditJsonBtn" type="button">Export audit log (JSON)</button>
@@ -452,6 +453,9 @@
         document.getElementById('refreshAllBtn').addEventListener('click', async () => {
             await Promise.all([loadSnapshot(), runHealthChecks(), loadAuditLog()]);
             logAudit({ type: 'action', level: 'info', message: 'Refreshed admin tools' });
+        });
+        document.getElementById('openUserLogsBtn').addEventListener('click', () => {
+            window.location.href = '/user-logs.html';
         });
         document.getElementById('runHealthChecksBtn').addEventListener('click', runHealthChecks);
         document.getElementById('auditRefreshBtn').addEventListener('click', loadAuditLog);

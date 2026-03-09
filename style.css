@@ -299,14 +299,35 @@ footer {
 
 .auth-user {
   display: flex;
-  gap: 1rem;
+	gap: 0.5rem;
   align-items: center;
+	position: relative;
 }
 
 .user-email {
   color: var(--rr-text);
   font-weight: 500;
-  font-size: 0.95rem;
+	font-size: 0.9rem;
+	padding: 0 0.2rem;
+}
+
+.account-btn {
+	background-color: transparent;
+}
+
+.auth-dropdown {
+	position: absolute;
+	top: calc(100% + 0.45rem);
+	right: 0;
+	min-width: 210px;
+	background: var(--rr-bg);
+	border: 1px solid var(--rr-text);
+	border-radius: 8px;
+	padding: 0.55rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	z-index: 1200;
 }
 
 .logout-btn {
@@ -809,12 +830,20 @@ footer {
 
 	.auth-user {
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.35rem;
 		width: 100%;
+		align-items: flex-start;
+	}
+
+	.auth-dropdown {
+		position: static;
+		min-width: 0;
+		width: 100%;
+		margin-top: 0.35rem;
 	}
 
 	.user-email {
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 	}
 
 	.logout-btn {

@@ -1,8 +1,9 @@
 const jwt = require("jsonwebtoken");
+const { getDB } = require("./db");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-function verifyAuth(event) {
+async function verifyAuth(event) {
   const authHeader = event.headers.authorization || event.headers.Authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -17,6 +18,23 @@ function verifyAuth(event) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!decoded.jti) {
+      return decoded;
+    }
+
+    const db = await getDB();
+    const sessions = db.collection("sessions");
+    const activeSession = await sessions.findOne({
+      jti: decoded.jti,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!activeSession) {
+      throw new Error("Invalid or expired session");
+    }
+
     return decoded; // Contains userId, role, etc.
   } catch (err) {
     throw new Error("Invalid or expired token");

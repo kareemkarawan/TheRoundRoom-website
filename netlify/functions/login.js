@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { getDB } = require("./db");
+const { getClientIp, recordAuthEvent } = require("./auth-activity");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = "7d";
@@ -45,14 +47,32 @@ exports.handler = async (event) => {
   try {
     const db = await getDB();
     const users = db.collection("users");
+    const sessions = db.collection("sessions");
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const user = await users.findOne({ email: email.toLowerCase().trim() });
+    const user = await users.findOne({ email: normalizedEmail });
     if (!user) {
+      await recordAuthEvent(db, "login", {
+        level: "warn",
+        source: "login",
+        message: "Login failed: user not found",
+        details: { email: normalizedEmail },
+        meta: { ip: getClientIp(event.headers || {}) },
+        userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      });
       return buildResponse(401, { error: "Invalid email or password" });
     }
 
     // Check if account is locked
     if (user.lockUntil && new Date() < new Date(user.lockUntil)) {
+      await recordAuthEvent(db, "login", {
+        level: "warn",
+        source: "login",
+        message: "Login blocked: account locked",
+        details: { userId: user._id.toString(), email: user.email, lockUntil: user.lockUntil },
+        meta: { ip: getClientIp(event.headers || {}) },
+        userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      });
       return buildResponse(423, { error: "Account is temporarily locked due to too many failed login attempts" });
     }
 
@@ -68,6 +88,19 @@ exports.handler = async (event) => {
       }
 
       await users.updateOne({ _id: user._id }, { $set: updateDoc });
+      await recordAuthEvent(db, "login", {
+        level: "warn",
+        source: "login",
+        message: "Login failed: invalid password",
+        details: {
+          userId: user._id.toString(),
+          email: user.email,
+          attempts: newAttempts,
+          locked: newAttempts >= MAX_LOGIN_ATTEMPTS,
+        },
+        meta: { ip: getClientIp(event.headers || {}) },
+        userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      });
       return buildResponse(401, { error: "Invalid email or password" });
     }
 
@@ -76,13 +109,39 @@ exports.handler = async (event) => {
       { _id: user._id },
       { $set: { loginAttempts: 0, lockUntil: null, updatedAt: new Date() } }
     );
+    await sessions.updateMany(
+      { userId: user._id.toString(), revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
+    const tokenId = crypto.randomUUID();
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // Generate JWT
     const token = jwt.sign(
       { userId: user._id.toString(), role: user.role },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION }
+      { expiresIn: JWT_EXPIRATION, jwtid: tokenId }
     );
+
+    await sessions.insertOne({
+      userId: user._id.toString(),
+      jti: tokenId,
+      createdAt: issuedAt,
+      lastSeenAt: issuedAt,
+      expiresAt,
+      revokedAt: null,
+      userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+      ip: getClientIp(event.headers || {}),
+    });
+
+    await recordAuthEvent(db, "login", {
+      source: "login",
+      message: "User logged in",
+      details: { userId: user._id.toString(), email: user.email },
+      meta: { ip: getClientIp(event.headers || {}) },
+      userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"] || null,
+    });
 
     return buildResponse(200, {
       token,

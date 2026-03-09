@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Logs - The Round Room</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body class="staff-page">
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='/admin'">
+                <div class="bar4"></div>
+                <div class="bar5"></div>
+            </button>
+            <div class="logo">
+                <h1>THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
+        </div>
+    </nav>
+
+    <main class="settings-page admin-tools-page">
+        <div class="settings-card admin-card">
+            <div class="settings-header">
+                <h2>User Logs</h2>
+                <p class="muted">Recent user-related activity from the audit log.</p>
+            </div>
+
+            <section class="admin-panel">
+                <h3>User Stats</h3>
+                <div class="snapshot-grid" id="userStatsGrid">
+                    <div class="snapshot-card">
+                        <span class="label">Registered Users</span>
+                        <span class="value" id="registeredUsersCount">—</span>
+                    </div>
+                    <div class="snapshot-card">
+                        <span class="label">Currently Logged In</span>
+                        <span class="value" id="currentlyLoggedInCount">—</span>
+                    </div>
+                </div>
+                <p class="muted" id="statsAsOf">Not updated yet.</p>
+            </section>
+
+            <section class="admin-panel admin-panel-wide">
+                <div class="audit-controls">
+                    <div class="audit-filters">
+                        <div class="form-group">
+                            <label for="logsSource">Source</label>
+                            <select id="logsSource">
+                                <option value="">All sources</option>
+                                <option value="register">register</option>
+                                <option value="login">login</option>
+                                <option value="logout">logout</option>
+                                <option value="profile">profile</option>
+                                <option value="auth">auth</option>
+                                <option value="client">client</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="logsLevel">Level</label>
+                            <select id="logsLevel">
+                                <option value="">All levels</option>
+                                <option value="info">Info</option>
+                                <option value="warn">Warn</option>
+                                <option value="error">Error</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="logsType">Type</label>
+                            <select id="logsType">
+                                <option value="">All types</option>
+                                <option value="action">Action</option>
+                                <option value="client-error">Client Error</option>
+                                <option value="system">System</option>
+                                <option value="health">Health</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="logsSearch">Search</label>
+                            <input id="logsSearch" type="text" placeholder="Search message or URL">
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button class="btn" id="logsRefreshBtn" type="button">Refresh logs</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="audit-table-wrapper" style="margin-top:1rem;">
+                    <table class="orders-table audit-table" id="userLogsTable" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Level</th>
+                                <th>Type</th>
+                                <th>Source</th>
+                                <th>Message</th>
+                                <th>URL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userLogsTbody">
+                            <tr><td colspan="6" class="muted">Loading user logs…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="js/admin-gate.js"></script>
+    <script>
+    function fmtDate(iso) {
+        try { return new Date(iso).toLocaleString(); } catch (e) { return iso || '—'; }
+    }
+
+    function getAdminToken() {
+        return window.AdminGate ? window.AdminGate.getToken() : '';
+    }
+
+    async function apiFetch(url, options = {}) {
+        const token = getAdminToken();
+        const headers = Object.assign({ 'Content-Type': 'application/json', 'x-admin-token': token || '' }, options.headers || {});
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401 && window.AdminGate) {
+            window.AdminGate.lock();
+        }
+        return response;
+    }
+
+    async function loadUserLogs() {
+        const tbody = document.getElementById('userLogsTbody');
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">Loading user logs…</td></tr>';
+
+        const source = document.getElementById('logsSource').value;
+        const level = document.getElementById('logsLevel').value;
+        const type = document.getElementById('logsType').value;
+        const search = (document.getElementById('logsSearch').value || '').trim().toLowerCase();
+
+        const params = new URLSearchParams({ limit: '300' });
+        if (source) params.set('source', source);
+        if (level) params.set('level', level);
+        if (type) params.set('type', type);
+
+        try {
+            const response = await apiFetch(`/.netlify/functions/audit?${params.toString()}`, { method: 'GET' });
+            if (!response.ok) {
+                throw new Error(`Failed to load logs (${response.status})`);
+            }
+
+            const logs = await response.json();
+            const filtered = Array.isArray(logs)
+                ? logs.filter((log) => {
+                    if (!search) return true;
+                    const haystack = [log.message, log.source, log.url, log.type, log.level]
+                        .map((v) => String(v || '').toLowerCase())
+                        .join(' ');
+                    return haystack.includes(search);
+                })
+                : [];
+
+            if (!filtered.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="muted">No user logs found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((log) => {
+                const safeMessage = String(log.message || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeUrl = String(log.url || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const level = (log.level || 'info').toLowerCase();
+                return `
+                    <tr>
+                        <td>${fmtDate(log.createdAt)}</td>
+                        <td><span class="status-pill" data-status="${level}">${level.toUpperCase()}</span></td>
+                        <td>${log.type || 'action'}</td>
+                        <td>${log.source || '—'}</td>
+                        <td title="${safeMessage}">${safeMessage}</td>
+                        <td title="${safeUrl}">${safeUrl}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Failed to load user logs:', e);
+            tbody.innerHTML = `<tr><td colspan="6" class="muted">Error: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadUserStats() {
+        try {
+            const response = await apiFetch('/.netlify/functions/user-stats', { method: 'GET' });
+            if (!response.ok) {
+                throw new Error(`Failed to load user stats (${response.status})`);
+            }
+            const data = await response.json();
+            document.getElementById('registeredUsersCount').textContent = String(data.registeredUsers ?? '—');
+            document.getElementById('currentlyLoggedInCount').textContent = String(data.currentlyLoggedInUsers ?? '—');
+            document.getElementById('statsAsOf').textContent = data.asOf
+                ? `Updated: ${fmtDate(data.asOf)}`
+                : 'Updated.';
+        } catch (e) {
+            console.error('Failed to load user stats:', e);
+            document.getElementById('registeredUsersCount').textContent = '—';
+            document.getElementById('currentlyLoggedInCount').textContent = '—';
+            document.getElementById('statsAsOf').textContent = `Error: ${e.message}`;
+        }
+    }
+
+    function bindEvents() {
+        document.getElementById('logsRefreshBtn').addEventListener('click', async () => {
+            await Promise.all([loadUserLogs(), loadUserStats()]);
+        });
+        document.getElementById('logsSearch').addEventListener('input', () => {
+            clearTimeout(window.__userLogsSearchTimer);
+            window.__userLogsSearchTimer = setTimeout(loadUserLogs, 200);
+        });
+        ['logsSource', 'logsLevel', 'logsType'].forEach((id) => {
+            document.getElementById(id).addEventListener('change', loadUserLogs);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.AdminGate) return;
+        window.AdminGate.requireAdminAccess(async () => {
+            bindEvents();
+            await Promise.all([loadUserLogs(), loadUserStats()]);
+        });
+    });
+    </script>
+</body>
+</html>
