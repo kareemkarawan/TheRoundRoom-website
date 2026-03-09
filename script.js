@@ -1183,11 +1183,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (accountBtn && authDropdown) {
         accountBtn.addEventListener("click", function () {
+            const isMobile = window.matchMedia("(max-width: 970px)").matches;
+
+            if (isMobile) {
+                if (authDropdown.classList.contains("active")) {
+                    authDropdown.classList.remove("active");
+                    setTimeout(function () {
+                        if (!authDropdown.classList.contains("active")) {
+                            authDropdown.style.display = "none";
+                        }
+                    }, 320);
+                } else {
+                    authDropdown.style.display = "flex";
+                    requestAnimationFrame(function () {
+                        authDropdown.classList.add("active");
+                    });
+                }
+                return;
+            }
+
             authDropdown.style.display = authDropdown.style.display === "block" ? "none" : "block";
         });
 
         document.addEventListener("click", function (e) {
             if (!accountBtn.contains(e.target) && !authDropdown.contains(e.target)) {
+                authDropdown.classList.remove("active");
                 authDropdown.style.display = "none";
             }
         });
@@ -1206,6 +1226,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             localStorage.removeItem("rr_token");
+            authDropdown.classList.remove("active");
             if (authDropdown) authDropdown.style.display = "none";
             updateAuthNav();
             window.location.href = "/";

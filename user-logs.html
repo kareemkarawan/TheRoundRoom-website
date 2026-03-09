@@ -56,9 +56,6 @@
                                 <option value="register">register</option>
                                 <option value="login">login</option>
                                 <option value="logout">logout</option>
-                                <option value="profile">profile</option>
-                                <option value="auth">auth</option>
-                                <option value="client">client</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -135,6 +132,7 @@
     async function loadUserLogs() {
         const tbody = document.getElementById('userLogsTbody');
         tbody.innerHTML = '<tr><td colspan="6" class="muted">Loading user logs…</td></tr>';
+        const allowedSources = new Set(['register', 'login', 'logout']);
 
         const source = document.getElementById('logsSource').value;
         const level = document.getElementById('logsLevel').value;
@@ -155,6 +153,9 @@
             const logs = await response.json();
             const filtered = Array.isArray(logs)
                 ? logs.filter((log) => {
+                    const logSource = String(log.source || '').toLowerCase();
+                    if (!allowedSources.has(logSource)) return false;
+                    if (source && logSource !== source) return false;
                     if (!search) return true;
                     const haystack = [log.message, log.source, log.url, log.type, log.level]
                         .map((v) => String(v || '').toLowerCase())
