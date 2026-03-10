@@ -1,5 +1,148 @@
 // Attempt to dynamically import MenuItem if modules are supported, but don't fail if import is blocked
 
+// Global store for menu items (needed for combo dropdowns)
+window._rrMenuItems = [];
+
+async function renderCombo(menuItems) {
+  const comboSection = document.getElementById('comboSection');
+  const comboContainer = document.getElementById('comboContainer');
+  if (!comboSection || !comboContainer) return;
+
+  try {
+    const res = await fetch('/.netlify/functions/combo-settings');
+    if (!res.ok) throw new Error('Failed to fetch combo settings');
+    const comboSettings = await res.json();
+
+    if (!comboSettings.isAvailable || comboSettings.price <= 0) {
+      comboSection.style.display = 'none';
+      return;
+    }
+
+    // Filter available bagels and schmears from menu
+    const availableBagels = menuItems.filter(item => 
+      item.category?.toLowerCase() === 'bagels' && 
+      item.isAvailable !== false &&
+      comboSettings.availableBagels.includes(item.id)
+    );
+    const availableSchmears = menuItems.filter(item => 
+      item.category?.toLowerCase() === 'schmears' && 
+      item.isAvailable !== false &&
+      comboSettings.availableSchmears.includes(item.id)
+    );
+
+    if (availableBagels.length === 0 || availableSchmears.length === 0) {
+      comboSection.style.display = 'none';
+      return;
+    }
+
+    // Render combo selector
+    comboContainer.innerHTML = `
+      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Combo" data-price="${comboSettings.price}">
+        <div class="combo-selectors">
+          <div class="combo-selector-group">
+            <label for="comboBagelSelect">Choose your bagel:</label>
+            <select id="comboBagelSelect" class="combo-select" data-type="bagel">
+              <option value="">Select a bagel</option>
+              ${availableBagels.map(b => `<option value="${b.id}" data-name="${b.name}">${b.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="combo-selector-group">
+            <label for="comboSchmearSelect">Choose your schmear:</label>
+            <select id="comboSchmearSelect" class="combo-select" data-type="schmear">
+              <option value="">Select a schmear</option>
+              ${availableSchmears.map(s => `<option value="${s.id}" data-name="${s.name}">${s.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="combo-info">
+          <p class="combo-price">₹${Number(comboSettings.price).toFixed(2)}</p>
+          <div class="combo-controls">
+            <button class="qty-btn combo-minus" data-id="combo_bagel_schmear" disabled>−</button>
+            <span class="qty combo-qty" data-id="combo_bagel_schmear">0</span>
+            <button class="qty-btn combo-plus" data-id="combo_bagel_schmear">+</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    comboSection.style.display = 'block';
+
+    // Restore combo from cart if saved
+    try {
+      const raw = localStorage.getItem('rr_cart');
+      if (raw) {
+        const cart = JSON.parse(raw);
+        const comboItem = (cart.items || []).find(it => it.id === 'combo_bagel_schmear');
+        if (comboItem && comboItem.qty > 0) {
+          const qtyEl = comboContainer.querySelector('.combo-qty');
+          if (qtyEl) qtyEl.textContent = comboItem.qty;
+          // Restore selections if present
+          if (comboItem.bagelId) {
+            const bagelSelect = document.getElementById('comboBagelSelect');
+            if (bagelSelect) bagelSelect.value = comboItem.bagelId;
+          }
+          if (comboItem.schmearId) {
+            const schmearSelect = document.getElementById('comboSchmearSelect');
+            if (schmearSelect) schmearSelect.value = comboItem.schmearId;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Attach combo button handlers
+    const comboMinusBtn = comboContainer.querySelector('.combo-minus');
+    const comboPlusBtn = comboContainer.querySelector('.combo-plus');
+    const comboQtyEl = comboContainer.querySelector('.combo-qty');
+    const bagelSelect = document.getElementById('comboBagelSelect');
+    const schmearSelect = document.getElementById('comboSchmearSelect');
+
+    function updateComboButtons() {
+      const bagelSelected = bagelSelect && bagelSelect.value;
+      const schmearSelected = schmearSelect && schmearSelect.value;
+      const qty = parseInt(comboQtyEl.textContent) || 0;
+      
+      // Enable plus only if both selections are made
+      comboPlusBtn.disabled = !bagelSelected || !schmearSelected;
+      // Enable minus only if qty > 0
+      comboMinusBtn.disabled = qty === 0;
+    }
+
+    bagelSelect.addEventListener('change', () => {
+      updateComboButtons();
+      if (typeof updateCart === 'function') updateCart();
+    });
+    schmearSelect.addEventListener('change', () => {
+      updateComboButtons();
+      if (typeof updateCart === 'function') updateCart();
+    });
+
+    comboPlusBtn.addEventListener('click', () => {
+      if (comboPlusBtn.disabled) return;
+      let qty = parseInt(comboQtyEl.textContent) || 0;
+      qty++;
+      comboQtyEl.textContent = qty;
+      updateComboButtons();
+      if (typeof updateCart === 'function') updateCart();
+    });
+
+    comboMinusBtn.addEventListener('click', () => {
+      let qty = parseInt(comboQtyEl.textContent) || 0;
+      qty = Math.max(0, qty - 1);
+      comboQtyEl.textContent = qty;
+      updateComboButtons();
+      if (typeof updateCart === 'function') updateCart();
+    });
+
+    updateComboButtons();
+
+  } catch (err) {
+    console.warn('Failed to load combo settings', err);
+    comboSection.style.display = 'none';
+  }
+}
+
 async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
@@ -40,6 +183,9 @@ async function renderMenu() {
     }
     if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'NO_RESPONSE'));
     const items = await res.json();
+
+    // Store items globally for combo dropdown access
+    window._rrMenuItems = items;
 
     // Remove existing dynamic menu-item nodes, leave section headers intact
     grid.querySelectorAll('.menu-item').forEach(el => el.remove());
@@ -112,6 +258,9 @@ async function renderMenu() {
 
     // hide loader
     if (loader) loader.style.display = 'none';
+
+    // Render combo section
+    await renderCombo(items);
 
     // initial update
     if (typeof updateCart === 'function') updateCart();

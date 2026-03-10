@@ -39,6 +39,15 @@
         .message { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none; }
         .message.success { background: #d4edda; color: #155724; display: block; }
         .message.error { background: #f8d7da; color: #721c24; display: block; }
+        /* Combo settings styles */
+        .combo-settings { border: 2px solid #6d2430; border-radius: 8px; padding: 1.5rem; background: #fff; margin-bottom: 2rem; }
+        .combo-settings h3 { margin: 0 0 1rem 0; color: #6d2430; }
+        .combo-settings .form-group { margin-bottom: 1rem; }
+        .combo-checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 0.75rem; border-radius: 4px; background: #fafafa; }
+        .combo-checkbox-item { display: flex; align-items: center; gap: 0.5rem; }
+        .combo-checkbox-item input { width: auto; }
+        .btn-combo-save { background: #6d2430; color: #fff; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer; border-radius: 4px; }
+        .btn-combo-save:hover { background: #8a2d3d; }
     </style>
 </head>
 <body class="staff-page">
@@ -60,6 +69,40 @@
         <p class="muted">Add, edit, or remove menu items from the database.</p>
 
         <div id="messageBox" class="message"></div>
+
+        <!-- Combo Settings Section -->
+        <section class="combo-settings">
+            <h3>Bagel &amp; Schmear Combo Settings</h3>
+            <p class="muted">Configure the combo item that appears on the order page.</p>
+            
+            <div class="form-group">
+                <label for="comboPrice">Combo Price (₹)</label>
+                <input type="number" id="comboPrice" name="comboPrice" min="0" step="10" placeholder="e.g., 250">
+            </div>
+            
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="comboAvailable" name="comboAvailable">
+                    Combo available for order
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label>Available Bagels for Combo:</label>
+                <div id="comboBagels" class="combo-checkbox-grid">
+                    <p class="muted">Loading bagels...</p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Available Schmears for Combo:</label>
+                <div id="comboSchmears" class="combo-checkbox-grid">
+                    <p class="muted">Loading schmears...</p>
+                </div>
+            </div>
+            
+            <button type="button" class="btn-combo-save" id="saveComboBtn">Save Combo Settings</button>
+        </section>
 
         <button class="btn-add" id="addItemBtn">+ Add New Item</button>
 
@@ -160,7 +203,128 @@
             msg.textContent = `Error loading menu items: ${e.message}`;
             grid.appendChild(msg);
         }
+        
+        // Also load combo settings and render combo checkboxes
+        await loadComboSettings();
     }
+
+    // ====== COMBO SETTINGS FUNCTIONS ======
+    let comboSettings = {
+        price: 0,
+        isAvailable: false,
+        availableBagels: [],
+        availableSchmears: []
+    };
+
+    async function loadComboSettings() {
+        console.debug('[menu-admin] Loading combo settings');
+        try {
+            const response = await fetch(`/.netlify/functions/combo-settings?ts=${Date.now()}`, { cache: 'no-store' });
+            if (response.ok) {
+                comboSettings = await response.json();
+                console.debug('[menu-admin] Loaded combo settings:', comboSettings);
+            }
+        } catch (e) {
+            console.error('[menu-admin] Failed to load combo settings:', e);
+        }
+        renderComboCheckboxes();
+    }
+
+    function renderComboCheckboxes() {
+        const bagelsContainer = document.getElementById('comboBagels');
+        const schmearsContainer = document.getElementById('comboSchmears');
+        const priceInput = document.getElementById('comboPrice');
+        const availableCheckbox = document.getElementById('comboAvailable');
+
+        // Set price and availability
+        if (priceInput) priceInput.value = comboSettings.price || '';
+        if (availableCheckbox) availableCheckbox.checked = comboSettings.isAvailable === true;
+
+        // Get bagels and schmears from allItems
+        const bagels = allItems.filter(item => (item.category || '').toLowerCase() === 'bagels');
+        const schmears = allItems.filter(item => (item.category || '').toLowerCase() === 'schmears');
+
+        // Render bagel checkboxes
+        if (bagelsContainer) {
+            if (bagels.length === 0) {
+                bagelsContainer.innerHTML = '<p class="muted">No bagels found. Add bagels to the menu first.</p>';
+            } else {
+                bagelsContainer.innerHTML = bagels.map(bagel => `
+                    <label class="combo-checkbox-item">
+                        <input type="checkbox" name="comboBagel" value="${bagel.id}" 
+                            ${comboSettings.availableBagels.includes(bagel.id) ? 'checked' : ''}>
+                        ${bagel.name}
+                    </label>
+                `).join('');
+            }
+        }
+
+        // Render schmear checkboxes
+        if (schmearsContainer) {
+            if (schmears.length === 0) {
+                schmearsContainer.innerHTML = '<p class="muted">No schmears found. Add schmears to the menu first.</p>';
+            } else {
+                schmearsContainer.innerHTML = schmears.map(schmear => `
+                    <label class="combo-checkbox-item">
+                        <input type="checkbox" name="comboSchmear" value="${schmear.id}"
+                            ${comboSettings.availableSchmears.includes(schmear.id) ? 'checked' : ''}>
+                        ${schmear.name}
+                    </label>
+                `).join('');
+            }
+        }
+    }
+
+    async function saveComboSettings() {
+        console.debug('[menu-admin] Saving combo settings');
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required. Please try again.', 'error');
+            if (window.AdminGate) window.AdminGate.lock();
+            return;
+        }
+
+        const price = Number(document.getElementById('comboPrice').value) || 0;
+        const isAvailable = document.getElementById('comboAvailable').checked;
+        
+        // Get selected bagels
+        const availableBagels = Array.from(document.querySelectorAll('input[name="comboBagel"]:checked'))
+            .map(cb => cb.value);
+        
+        // Get selected schmears
+        const availableSchmears = Array.from(document.querySelectorAll('input[name="comboSchmear"]:checked'))
+            .map(cb => cb.value);
+
+        const data = { price, isAvailable, availableBagels, availableSchmears };
+
+        try {
+            const response = await fetch('/.netlify/functions/combo-settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                console.debug('[menu-admin] Combo settings saved');
+                showMessage('Combo settings saved successfully', 'success');
+                comboSettings = { ...data };
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                throw new Error('Failed to save combo settings');
+            }
+        } catch (e) {
+            console.error('[menu-admin] Save combo failed:', e);
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    // Attach combo save button handler
+    document.getElementById('saveComboBtn')?.addEventListener('click', saveComboSettings);
+    // ====== END COMBO SETTINGS FUNCTIONS ======
 
     function renderMenuItems() {
         const grid = document.getElementById('menuGridAdmin');

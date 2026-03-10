@@ -18,6 +18,7 @@
             padding: 3rem 2.5rem;
             border-radius: 12px;
             border-top: 4px solid var(--rr-text);
+            box-sizing: border-box;
         }
 
         .auth-container h2 {
@@ -124,24 +125,54 @@
             color: var(--rr-text);
         }
 
+        .auth-main {
+            padding-top: calc(var(--top-nav-height) + 3rem);
+            padding-bottom: 3rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
         @media (max-width: 600px) {
+            .auth-main {
+                padding-top: calc(var(--top-nav-height) + 4rem);
+                padding-bottom: 1.5rem;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
             .auth-container {
-                margin: 1rem;
-                padding: 2rem 1.5rem;
+                margin: 0;
+                padding: 1.5rem 1rem;
+                border-radius: 10px;
             }
 
             .auth-container h2 {
-                font-size: 1.5rem;
-                margin-bottom: 1.5rem;
+                font-size: 1.35rem;
+                margin-bottom: 1.1rem;
             }
 
             .form-group {
-                margin-bottom: 1.25rem;
+                margin-bottom: 1rem;
+            }
+
+            .form-group label {
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .form-group input {
+                font-size: 0.95rem;
+                padding: 0.78rem 0.85rem;
             }
 
             .submit-btn {
-                padding: 0.875rem;
+                padding: 0.82rem;
                 font-size: 0.95rem;
+            }
+
+            .auth-footer {
+                margin-top: 1.25rem;
+                padding-top: 1.25rem;
             }
         }
     </style>
@@ -160,7 +191,7 @@
         </div>
     </nav>
 
-    <main class="section-s" style="padding-top: calc(var(--top-nav-height) + 3rem); padding-bottom: 3rem;">
+    <main class="section-s auth-main">
         <div class="auth-container">
             <h2>Login</h2>
 

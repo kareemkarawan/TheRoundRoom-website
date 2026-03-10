@@ -132,6 +132,7 @@ function updateCart() {
     let cartItems = [];
     let subtotal = 0;
 
+    // Handle regular menu items
     document.querySelectorAll('.menu-item').forEach(item => {
         const id = item.dataset.id;
         const qty = parseInt(document.querySelector(`.qty[data-id="${id}"]`).textContent);
@@ -145,6 +146,40 @@ function updateCart() {
             subtotal += itemTotal;
         }
     });
+
+    // Handle combo item separately
+    const comboItem = document.querySelector('.combo-item');
+    if (comboItem) {
+        const comboQtyEl = comboItem.querySelector('.combo-qty');
+        const comboQty = parseInt(comboQtyEl?.textContent) || 0;
+        
+        if (comboQty > 0) {
+            const bagelSelect = document.getElementById('comboBagelSelect');
+            const schmearSelect = document.getElementById('comboSchmearSelect');
+            const bagelId = bagelSelect?.value || '';
+            const schmearId = schmearSelect?.value || '';
+            const bagelName = bagelSelect?.selectedOptions[0]?.dataset?.name || 'No bagel';
+            const schmearName = schmearSelect?.selectedOptions[0]?.dataset?.name || 'No schmear';
+            
+            const comboPrice = parseFloat(comboItem.dataset.price);
+            const comboTotal = comboQty * comboPrice;
+            const displayName = `Combo: ${bagelName} + ${schmearName}`;
+            
+            cartItems.push({
+                id: 'combo_bagel_schmear',
+                name: displayName,
+                price: comboPrice,
+                qty: comboQty,
+                itemTotal: comboTotal,
+                isCombo: true,
+                bagelId,
+                schmearId,
+                bagelName,
+                schmearName
+            });
+            subtotal += comboTotal;
+        }
+    }
 
     // Update cart display
     const cartItemsDiv = document.getElementById('cartItems');
