@@ -308,6 +308,115 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let pendingOrderData = null;
     let validPincodes = [];
+    let availableDiscounts = [];
+    let selectedDiscount = null;
+    let collectionEnabled = false;
+
+    // Order type handling (delivery vs collection)
+    function handleOrderTypeChange() {
+        const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'delivery';
+        const addressSection = document.getElementById('addressSection');
+        const pincodeSection = document.getElementById('pincodeSection');
+        const addressInput = document.getElementById('address');
+        const pincodeInput = document.getElementById('pincode');
+
+        if (orderType === 'collection') {
+            if (addressSection) addressSection.style.display = 'none';
+            if (pincodeSection) pincodeSection.style.display = 'none';
+            if (addressInput) addressInput.removeAttribute('required');
+            if (pincodeInput) pincodeInput.removeAttribute('required');
+        } else {
+            if (addressSection) addressSection.style.display = '';
+            if (pincodeSection) pincodeSection.style.display = '';
+            if (addressInput) addressInput.setAttribute('required', 'true');
+            if (pincodeInput) pincodeInput.setAttribute('required', 'true');
+        }
+    }
+
+    async function loadCollectionSetting() {
+        try {
+            const response = await fetch('/.netlify/functions/settings');
+            if (response.ok) {
+                const data = await response.json();
+                collectionEnabled = data.collectionEnabled !== false;
+                const collectionOption = document.getElementById('collectionOption');
+                if (collectionOption) {
+                    collectionOption.style.display = collectionEnabled ? '' : 'none';
+                }
+            }
+        } catch (e) { console.error('Could not load collection setting', e); }
+    }
+
+    // Set up order type radio listeners
+    const orderTypeRadios = document.querySelectorAll('input[name="orderType"]');
+    orderTypeRadios.forEach(radio => {
+        radio.addEventListener('change', handleOrderTypeChange);
+    });
+
+    async function loadAvailableDiscounts() {
+        try {
+            const response = await fetch('/.netlify/functions/discounts?activeOnly=true');
+            if (response.ok) {
+                availableDiscounts = await response.json();
+                populateDiscountDropdown();
+            }
+        } catch (e) { console.error('Could not load discounts', e); }
+    }
+
+    function populateDiscountDropdown() {
+        const select = document.getElementById('discountSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">No discount</option>';
+        availableDiscounts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = `${d.name} (${d.percentage}% off)`;
+            select.appendChild(opt);
+        });
+    }
+
+    function handleDiscountChange() {
+        const select = document.getElementById('discountSelect');
+        if (!select) return;
+        const discountId = select.value;
+        selectedDiscount = discountId ? availableDiscounts.find(d => d.id === discountId) : null;
+        updateCheckoutWithDiscount();
+    }
+
+    function updateCheckoutWithDiscount() {
+        const subtotalEl = document.getElementById('checkoutSubtotal');
+        const discountRow = document.getElementById('discountRow');
+        const discountNameEl = document.getElementById('discountName');
+        const discountAmtEl = document.getElementById('checkoutDiscount');
+        const sgstEl = document.getElementById('checkoutSgst');
+        const cgstEl = document.getElementById('checkoutCgst');
+        const totalEl = document.getElementById('checkoutTotal');
+
+        let cart = null;
+        try { cart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (e) { cart = null; }
+        if (!cart || !cart.subtotal) return;
+
+        const subtotal = Number(cart.subtotal || 0);
+        let discountAmount = 0;
+
+        if (selectedDiscount) {
+            discountAmount = (subtotal * selectedDiscount.percentage) / 100;
+            discountRow.style.display = 'flex';
+            discountNameEl.textContent = selectedDiscount.name;
+            discountAmtEl.textContent = `-₹${discountAmount.toFixed(2)}`;
+        } else {
+            discountRow.style.display = 'none';
+        }
+
+        const discountedSubtotal = subtotal - discountAmount;
+        const sgst = discountedSubtotal * 0.025;
+        const cgst = discountedSubtotal * 0.025;
+        const total = discountedSubtotal + sgst + cgst;
+
+        if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
+        if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
+        if (totalEl) totalEl.textContent = `₹${total.toFixed(2)}`;
+    }
 
     function renderCheckoutSummary() {
         const loadingEl = document.getElementById('checkoutLoading');
@@ -338,11 +447,16 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
 
         subtotalEl.textContent = `₹${Number(cart.subtotal || 0).toFixed(2)}`;
-        const sgst = Number(cart.sgst ?? ((Number(cart.tax || 0)) / 2 || 0));
-        const cgst = Number(cart.cgst ?? ((Number(cart.tax || 0)) / 2 || 0));
-        if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
-        if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
-        totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
+        // Apply discount if selected
+        if (selectedDiscount) {
+            updateCheckoutWithDiscount();
+        } else {
+            const sgst = Number(cart.sgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+            const cgst = Number(cart.cgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+            if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
+            if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
+            totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
+        }
         if (loadingEl) loadingEl.style.display = 'none';
     }
 
@@ -409,15 +523,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const first = data.get('firstName').trim();
         const last = data.get('lastName').trim();
         const phone = data.get('phone').trim();
-        const address = data.get('address').trim();
-        const pincode = data.get('pincode').trim();
+        const address = data.get('address')?.trim() || '';
+        const pincode = data.get('pincode')?.trim() || '';
         const note = data.get('note').trim();
+        const orderType = data.get('orderType') || 'delivery';
 
-        // Validate pincode
-        const pincodeValid = await validatePincode(pincode);
-        if (!pincodeValid) {
-            if (paymentLoading) paymentLoading.style.display = 'none';
-            return;
+        // Validate pincode only for delivery orders
+        if (orderType === 'delivery') {
+            const pincodeValid = await validatePincode(pincode);
+            if (!pincodeValid) {
+                if (paymentLoading) paymentLoading.style.display = 'none';
+                return;
+            }
         }
 
         // Get the saved cart
@@ -436,13 +553,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: `${first} ${last}`.trim(),
                 phone: phone,
                 email: email,
-                address: address,
+                address: orderType === 'collection' ? '' : address,
                 note: note
             },
+            orderType: orderType,
             items: (rawCart.items || []).map(i => ({
                 menuItemId: i.id,
                 qty: Number(i.qty)
-            }))
+            })),
+            discountId: selectedDiscount ? selectedDiscount.id : null
         };
 
         // Create order and Razorpay order server-side before opening payment modal
@@ -580,6 +699,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load checkout summary and pincodes when form is ready
     renderCheckoutSummary();
     loadValidPincodes();
+    loadAvailableDiscounts();
+    loadCollectionSetting();
+
+    // Discount dropdown listener
+    const discountSelect = document.getElementById('discountSelect');
+    if (discountSelect) {
+        discountSelect.addEventListener('change', handleDiscountChange);
+    }
 });
 
 /* ===== Store status (open/closed) ===== */

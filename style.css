@@ -336,6 +336,7 @@ footer {
   border-color: var(--rr-bg);
   padding: 0.4rem 0.8rem;
   font-size: 0.9rem;
+  margin: auto;
 }
 
 .logout-btn:hover {
@@ -1045,6 +1046,7 @@ footer {
 	font-size: 1rem;
 	font-family: inherit;
 	background-color: #fff;
+	color: var(--rr-bg);
 	cursor: pointer;
 	transition: border-color 200ms ease, box-shadow 200ms ease;
 }
@@ -1525,6 +1527,71 @@ footer {
 .checkout-item .name { color: #222; }
 .checkout-breakdown .row { display:flex; justify-content:space-between; padding:0.35rem 0; color:#222; }
 .checkout-breakdown .row.total { font-weight:700; border-top:1px solid rgba(27,27,27,0.04); padding-top:0.6rem; }
+.checkout-breakdown .discount-row { color: var(--rr-bg); font-weight: 500; }
+
+/* Discount selector */
+.discount-selector {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid rgba(27,27,27,0.06);
+}
+.discount-selector label {
+	display: block;
+	font-size: 0.85rem;
+	color: #555;
+	margin-bottom: 0.4rem;
+}
+.discount-selector select {
+	width: 100%;
+	padding: 0.6rem 0.8rem;
+	border: 1px solid rgba(27,27,27,0.1);
+	border-radius: 6px;
+	background: #fff;
+	font-size: 0.95rem;
+	color: #222;
+	cursor: pointer;
+}
+.discount-selector select:focus {
+	outline: none;
+	border-color: var(--rr-bg);
+}
+
+/* Order type selector */
+.order-type-section {
+	grid-column: 1 / -1;
+}
+.order-type-options {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+.order-type-option {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	border: 2px solid rgba(109, 36, 48, 0.2);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 200ms ease;
+	background: #fff;
+}
+.order-type-option:hover {
+	border-color: var(--rr-bg);
+}
+.order-type-option input[type="radio"] {
+	width: auto;
+	margin: 0;
+	accent-color: var(--rr-bg);
+}
+.order-type-option input[type="radio"]:checked + .order-type-label {
+	color: var(--rr-bg);
+	font-weight: 600;
+}
+.order-type-label {
+	color: #333;
+	font-size: 0.95rem;
+}
 
 /* Keep .form-success below */
 .form-success {

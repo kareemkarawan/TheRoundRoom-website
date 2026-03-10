@@ -156,8 +156,26 @@ async function handlePost(body) {
       });
     }
 
-    const tax = Number(((subtotal * settings.taxRate) / 100).toFixed(2));
-    const total = Number((subtotal + tax).toFixed(2));
+    // Handle discount if provided
+    let discountAmount = 0;
+    let discountInfo = null;
+    if (order.discountId) {
+      const discountsCollection = db.collection("discounts");
+      const discount = await discountsCollection.findOne({ id: order.discountId, isActive: true });
+      if (discount) {
+        discountAmount = Number(((subtotal * discount.percentage) / 100).toFixed(2));
+        discountInfo = {
+          id: discount.id,
+          name: discount.name,
+          percentage: discount.percentage,
+          amount: discountAmount,
+        };
+      }
+    }
+
+    const discountedSubtotal = subtotal - discountAmount;
+    const tax = Number(((discountedSubtotal * settings.taxRate) / 100).toFixed(2));
+    const total = Number((discountedSubtotal + tax).toFixed(2));
     const createdAt = new Date();
     const orderNumber = `${settings.invoicePrefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -196,9 +214,12 @@ async function handlePost(body) {
     const orderDoc = {
       orderNumber,
       status: "PAYMENT_PENDING",
+      orderType: order.orderType || "delivery",
       items: lineItems,
       pricing: {
         subtotal,
+        discount: discountInfo,
+        discountedSubtotal,
         tax,
         total,
         currency: settings.currency,
@@ -264,14 +285,27 @@ async function handlePost(body) {
 }
 
 // GET: fetch all orders
-async function handleGet() {
+async function handleGet(event) {
   try {
     const client = await getClient();
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
 
+    // Build filter from query params
+    const params = event.queryStringParameters || {};
+    const filter = {};
+    
+    if (params.orderType) {
+      filter.orderType = params.orderType;
+    }
+    
+    if (params.status) {
+      const statuses = params.status.split(',').map(s => s.trim());
+      filter.status = { $in: statuses };
+    }
+
     const orders = await collection
-      .find({})
+      .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -672,7 +706,7 @@ exports.handler = async (event) => {
   if (method === "POST") {
     response = await handlePost(body);
   } else if (method === "GET") {
-    response = await handleGet();
+    response = await handleGet(event);
   } else if (method === "PATCH") {
     response = await handlePatch(body, orderNumber);
   } else if (method === "DELETE") {

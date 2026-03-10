@@ -59,6 +59,14 @@
                     <input id="minOrder" name="minOrder" type="number" min="0" step="1" placeholder="e.g., 300">
                 </div>
 
+                <div class="form-group">
+                    <label for="collectionEnabled">Collection at Popup</label>
+                    <select id="collectionEnabled" name="collectionEnabled">
+                        <option value="enabled">Enabled</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </div>
+
                 <button type="button" class="btn" id="saveSettingsBtn">Save Settings</button>
             </form>
         </div>
@@ -96,6 +104,7 @@
             document.getElementById('invoicePrefix').value = data.invoicePrefix || 'ORD';
             document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
             document.getElementById('minOrder').value = data.minOrder ?? '';
+            document.getElementById('collectionEnabled').value = data.collectionEnabled === false ? 'disabled' : 'enabled';
         } catch (e) {
             console.error('[settings] Load failed:', e);
             alert(`Error loading settings: ${e.message}`);
@@ -111,7 +120,8 @@
             currency: document.getElementById('currency').value.trim() || 'INR',
             invoicePrefix: document.getElementById('invoicePrefix').value.trim() || 'ORD',
             storeOpen: document.getElementById('shopStatus').value === 'open',
-            minOrder: Number(document.getElementById('minOrder').value || 0)
+            minOrder: Number(document.getElementById('minOrder').value || 0),
+            collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled'
         };
 
         try {

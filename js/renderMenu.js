@@ -245,6 +245,8 @@ async function renderMenu() {
       grid.addEventListener('click', function (e) {
         const btn = e.target.closest('.qty-btn');
         if (!btn) return;
+        // Skip combo buttons - they have their own handlers
+        if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
         const id = btn.dataset.id;
         const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
         let qty = parseInt(qtyEl.textContent) || 0;

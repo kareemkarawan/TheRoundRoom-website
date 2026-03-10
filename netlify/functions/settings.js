@@ -49,6 +49,7 @@ async function handleGet(isAdmin = false) {
         body: JSON.stringify({
           storeOpen: typeof settings?.storeOpen === "boolean" ? settings.storeOpen : true,
           minOrder: Number(settings?.minOrder ?? 0),
+          collectionEnabled: typeof settings?.collectionEnabled === "boolean" ? settings.collectionEnabled : true,
         }),
       };
     }
@@ -89,6 +90,7 @@ async function handlePut(body) {
     invoicePrefix: updates.invoicePrefix || "ORD",
     storeOpen: typeof updates.storeOpen === "boolean" ? updates.storeOpen : true,
     minOrder: Number(updates.minOrder ?? 0),
+    collectionEnabled: typeof updates.collectionEnabled === "boolean" ? updates.collectionEnabled : true,
     updatedAt: new Date(),
   };
 

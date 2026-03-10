@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discounts Admin - The Round Room</title>   
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+    <style>
+        .admin-container { max-width: 1200px; margin: 2rem; padding: var(--spacing-lg) var(--spacing-md); }
+        .discounts-grid { display: grid; gap: 1.5rem; margin-top: 1rem; }
+        .discount-card { border: 1px solid #000; padding: 1.5rem; border-radius: 8px; background: #fff; }
+        .discount-card h4 { margin: 0 0 0.5rem 0; font-size: 1.2rem; }
+        .discount-card p { margin: 0.25rem 0; font-size: 0.9rem; }
+        .discount-card .discount-percentage { font-size: 1.5rem; font-weight: 700; color: #6d2430; margin: 0.5rem 0; }
+        .discount-card .discount-description { color: #666; font-style: italic; margin-bottom: 0.75rem; }
+        .discount-card .discount-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .discount-card .discount-meta span { background: #f0f0f0; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+        .discount-card .discount-meta span.active { background: #d4edda; color: #155724; }
+        .discount-card .discount-meta span.inactive { background: #f8d7da; color: #721c24; }
+        .discount-card-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .discount-card-actions button { flex: 1; padding: 0.5rem; font-size: 0.85rem; cursor: pointer; border-radius: 4px; }
+        .btn-edit { background: #4CAF50; color: #fff; border: none; }
+        .btn-edit:hover { background: #45a049; }
+        .btn-delete { background: #f44336; color: #fff; border: none; }
+        .btn-delete:hover { background: #da190b; }
+        .btn-add { background: #2196F3; color: #fff; border: none; margin-bottom: 1rem; padding: 0.75rem 1.5rem; cursor: pointer; border-radius: 4px; font-size: 1rem; }
+        .btn-add:hover { background: #1976D2; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 1rem; }
+        .form-group input[type="checkbox"] { width: auto; margin-right: 0.5rem; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 3000; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #fff; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin-top: 0; }
+        .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+        .modal-actions button { flex: 1; padding: 0.75rem; cursor: pointer; border-radius: 4px; font-size: 1rem; }
+        .btn-cancel { background: #ddd; color: #000; border: none; }
+        .btn-cancel:hover { background: #ccc; }
+        .btn-save { background: #2196F3; color: #fff; border: none; }
+        .btn-save:hover { background: #1976D2; }
+        .message { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none; }
+        .message.success { background: #d4edda; color: #155724; display: block; }
+        .message.error { background: #f8d7da; color: #721c24; display: block; }
+        .discounts-grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .empty-state { text-align: center; padding: 3rem; background: #f9f9f9; border-radius: 8px; }
+        .empty-state p { color: #666; }
+    </style>
+</head>
+<body class="staff-page">
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='/pookie'">
+                <div class = "bar4"></div>
+                <div class = "bar5"></div>
+            </button>
+            <div class="logo">
+                <h1>THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
+        </div>
+    </nav>
+
+    <main class="admin-container">
+        <h2>Discount Management</h2>
+        <p class="muted">Add, edit, or remove discount codes.</p>
+
+        <div id="messageBox" class="message"></div>
+
+        <button class="btn-add" id="addDiscountBtn">+ Add New Discount</button>
+
+        <div id="discountsGrid" class="discounts-grid">
+            <p class="muted">Loading discounts…</p>
+        </div>
+    </main>
+
+    <!-- Modal for add/edit -->
+    <div id="discountModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">Add Discount</h3>
+            <form id="discountForm">
+                <div class="form-group">
+                    <label for="discountId">Discount Code ID</label>
+                    <input type="text" id="discountId" name="discountId" required placeholder="e.g., WELCOME10" pattern="[A-Za-z0-9_-]+" title="Only letters, numbers, underscores and hyphens allowed">
+                </div>
+                <div class="form-group">
+                    <label for="discountName">Display Name</label>
+                    <input type="text" id="discountName" name="discountName" required placeholder="e.g., Welcome Discount">
+                </div>
+                <div class="form-group">
+                    <label for="discountDescription">Description (optional)</label>
+                    <textarea id="discountDescription" name="discountDescription" placeholder="e.g., 10% off for new customers"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="discountPercentage">Discount Percentage (%)</label>
+                    <input type="number" id="discountPercentage" name="discountPercentage" required placeholder="e.g., 10" min="0" max="100" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="discountUsesPerUser">Uses Allowed Per User</label>
+                    <input type="number" id="discountUsesPerUser" name="discountUsesPerUser" required placeholder="e.g., 1" min="0" step="1" value="1">
+                    <small style="color: #666;">Set to 0 for unlimited uses</small>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="discountIsActive" name="discountIsActive" checked>
+                        Active (available for use)
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-save">Save Discount</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/admin-gate.js"></script>
+    <script>
+    let allDiscounts = [];
+    let editingId = null;
+
+    function getAdminToken() {
+        return window.AdminGate ? window.AdminGate.getToken() : '';
+    }
+
+    async function loadDiscounts() {
+        const grid = document.getElementById('discountsGrid');
+        console.debug('[discounts-admin] Loading discounts');
+        const token = getAdminToken();
+        if (!token) {
+            grid.innerHTML = '<p class="muted">Admin token required.</p>';
+            return;
+        }
+        try {
+            const response = await fetch(`/.netlify/functions/discounts?ts=${Date.now()}`, {
+                cache: 'no-store',
+                headers: { 'x-admin-token': token }
+            });
+            if (response.ok) {
+                allDiscounts = await response.json();
+                console.debug('[discounts-admin] Loaded discounts:', allDiscounts.length);
+                renderDiscounts();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    grid.innerHTML = '<p class="muted">Unauthorized. Please re-enter admin token.</p>';
+                    return;
+                }
+                throw new Error('Failed to fetch discounts');
+            }
+        } catch (e) {
+            console.error('[discounts-admin] Load failed:', e);
+            grid.innerHTML = `<p class="muted">Error loading discounts: ${e.message}</p>`;
+        }
+    }
+
+    function renderDiscounts() {
+        const grid = document.getElementById('discountsGrid');
+        grid.innerHTML = '';
+
+        if (!allDiscounts || allDiscounts.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <p>No discounts yet. Click "Add New Discount" to create one.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'discounts-grid-container';
+
+        allDiscounts.forEach(discount => {
+            const card = document.createElement('div');
+            card.className = 'discount-card';
+
+            card.innerHTML = `
+                <h4>${escapeHtml(discount.name)}</h4>
+                <p class="discount-percentage">${discount.percentage}% OFF</p>
+                ${discount.description ? `<p class="discount-description">${escapeHtml(discount.description)}</p>` : ''}
+                <div class="discount-meta">
+                    <span><strong>Code:</strong> ${escapeHtml(discount.id)}</span>
+                    <span><strong>Uses/User:</strong> ${discount.usesAllowedPerUser === 0 ? 'Unlimited' : discount.usesAllowedPerUser}</span>
+                    <span class="${discount.isActive !== false ? 'active' : 'inactive'}">${discount.isActive !== false ? 'Active' : 'Inactive'}</span>
+                </div>
+                <div class="discount-card-actions">
+                    <button class="btn-edit" data-id="${discount.id}">Edit</button>
+                    <button class="btn-delete" data-id="${discount.id}">Delete</button>
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+
+        grid.appendChild(container);
+
+        // Attach event listeners
+        grid.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => editDiscount(btn.dataset.id));
+        });
+        grid.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', () => deleteDiscount(btn.dataset.id));
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function showModal(title, discountId = null) {
+        editingId = discountId;
+        const modal = document.getElementById('discountModal');
+        const titleEl = document.getElementById('modalTitle');
+        titleEl.textContent = title;
+
+        if (discountId) {
+            const discount = allDiscounts.find(d => d.id === discountId);
+            if (discount) {
+                document.getElementById('discountId').value = discount.id;
+                document.getElementById('discountId').disabled = true;
+                document.getElementById('discountName').value = discount.name;
+                document.getElementById('discountDescription').value = discount.description || '';
+                document.getElementById('discountPercentage').value = discount.percentage;
+                document.getElementById('discountUsesPerUser').value = discount.usesAllowedPerUser;
+                document.getElementById('discountIsActive').checked = discount.isActive !== false;
+            }
+        } else {
+            document.getElementById('discountId').disabled = false;
+            document.getElementById('discountForm').reset();
+            document.getElementById('discountIsActive').checked = true;
+            document.getElementById('discountUsesPerUser').value = 1;
+        }
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('discountModal');
+        modal.classList.remove('active');
+        editingId = null;
+    }
+
+    function showMessage(text, type) {
+        const box = document.getElementById('messageBox');
+        box.textContent = text;
+        box.className = `message ${type}`;
+        setTimeout(() => box.className = 'message', 5000);
+    }
+
+    function editDiscount(discountId) {
+        showModal('Edit Discount', discountId);
+    }
+
+    async function deleteDiscount(discountId) {
+        if (!confirm('Are you sure you want to delete this discount?')) return;
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required. Please try again.', 'error');
+            if (window.AdminGate) window.AdminGate.lock();
+            return;
+        }
+        try {
+            const response = await fetch(`/.netlify/functions/discounts?id=${discountId}`, {
+                method: 'DELETE',
+                headers: { 'x-admin-token': token }
+            });
+            if (response.ok) {
+                showMessage('Discount deleted successfully', 'success');
+                await loadDiscounts();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                throw new Error('Failed to delete discount');
+            }
+        } catch (e) {
+            console.error('[discounts-admin] Delete failed:', e);
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    document.getElementById('addDiscountBtn').addEventListener('click', () => {
+        showModal('Add Discount');
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+
+    document.getElementById('discountForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required. Please try again.', 'error');
+            if (window.AdminGate) window.AdminGate.lock();
+            return;
+        }
+
+        const discountId = document.getElementById('discountId').value.trim();
+        const name = document.getElementById('discountName').value.trim();
+        const description = document.getElementById('discountDescription').value.trim();
+        const percentage = Number(document.getElementById('discountPercentage').value);
+        const usesAllowedPerUser = Number(document.getElementById('discountUsesPerUser').value);
+        const isActive = document.getElementById('discountIsActive').checked;
+
+        const data = { id: discountId, name, description, percentage, usesAllowedPerUser, isActive };
+
+        try {
+            let response;
+            if (editingId) {
+                // Update existing
+                response = await fetch(`/.netlify/functions/discounts?id=${editingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // Add new
+                response = await fetch('/.netlify/functions/discounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            if (response.ok) {
+                showMessage(editingId ? 'Discount updated successfully' : 'Discount added successfully', 'success');
+                closeModal();
+                await loadDiscounts();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to save discount');
+            }
+        } catch (e) {
+            console.error('[discounts-admin] Save failed:', e);
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    });
+
+    // Load discounts only after admin gate unlocks
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.AdminGate) {
+            window.AdminGate.requireAdminAccess(loadDiscounts);
+        }
+    });
+    </script>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="/privacy">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="/terms">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="/refund">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="/contact">Contact</a>
+            </div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -5,6 +5,8 @@
 /admin /admin.html 200
 /pookie-admin /admin 301
 /menu-admin /menu-admin.html 200
+/discounts-admin /discounts-admin.html 200
+/collections-admin /collections-admin.html 200
 /pincodes-admin /pincodes-admin.html 200
 /settings /settings.html 200
 /privacy /privacy.html 200
