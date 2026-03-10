@@ -169,7 +169,7 @@ async function handlePost(body) {
     // Process combo items
     if (comboItems.length > 0) {
       const comboSettingsCollection = db.collection("combo_settings");
-      const comboSettings = await comboSettingsCollection.findOne({ key: "combo" });
+      const comboSettings = await comboSettingsCollection.findOne({ id: "combo" });
       
       if (!comboSettings || !comboSettings.isAvailable) {
         return {
