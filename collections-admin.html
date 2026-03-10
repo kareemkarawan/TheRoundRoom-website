@@ -210,16 +210,6 @@
     </style>
 </head>
 <body>
-    <div id="adminGate" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); color:#fff; z-index:5000; display:flex; align-items:center; justify-content:center;">
-        <div style="max-width:360px; width:90%; background:#111; padding:1.5rem; border-radius:8px; text-align:center;">
-            <h3 style="margin-top:0;">Staff Access</h3>
-            <p class="muted" style="color:#ccc;">Enter admin token to continue.</p>
-            <input type="password" id="adminTokenInput" placeholder="Admin token" style="width:100%; padding:0.6rem; margin:0.75rem 0;">
-            <button id="adminTokenBtn" class="btn" style="width:100%;">Unlock</button>
-            <p id="adminGateError" style="color:#ffb3b3; margin-top:0.75rem; display:none;">Invalid token.</p>
-        </div>
-    </div>
-
     <main class="collections-page">
         <a href="/pookie" class="back-link">← Back to Orders</a>
         
@@ -243,7 +233,22 @@
 
     <script src="js/admin-gate.js"></script>
     <script>
-        const ADMIN_TOKEN = localStorage.getItem('rr_admin_token');
+        let ADMIN_TOKEN = localStorage.getItem('rr_admin_token');
+
+        function initPage() {
+            ADMIN_TOKEN = localStorage.getItem('rr_admin_token');
+            loadCollectionSetting();
+            loadCollectionOrders();
+
+            document.getElementById('collectionToggle').addEventListener('change', (e) => {
+                toggleCollection(e.target.checked);
+            });
+
+            document.getElementById('refreshBtn').addEventListener('click', loadCollectionOrders);
+
+            // Auto-refresh every 30 seconds
+            setInterval(loadCollectionOrders, 30000);
+        }
 
         async function loadCollectionSetting() {
             try {
@@ -380,17 +385,11 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            loadCollectionSetting();
-            loadCollectionOrders();
-
-            document.getElementById('collectionToggle').addEventListener('change', (e) => {
-                toggleCollection(e.target.checked);
-            });
-
-            document.getElementById('refreshBtn').addEventListener('click', loadCollectionOrders);
-
-            // Auto-refresh every 30 seconds
-            setInterval(loadCollectionOrders, 30000);
+            if (window.AdminGate) {
+                window.AdminGate.requireAdminAccess(initPage);
+            } else {
+                initPage();
+            }
         });
     </script>
 </body>

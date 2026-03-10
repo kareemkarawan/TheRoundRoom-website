@@ -1556,6 +1556,25 @@ footer {
 	border-color: var(--rr-bg);
 }
 
+/* Discount login prompt for non-logged-in users */
+.discount-login-prompt {
+	margin-top: 1rem;
+	padding: 0.75rem 1rem;
+	background: rgba(109, 36, 48, 0.05);
+	border: 1px dashed rgba(109, 36, 48, 0.2);
+	border-radius: 6px;
+	text-align: center;
+}
+.discount-login-prompt p {
+	margin: 0;
+	font-size: 0.9rem;
+	color: #555;
+}
+.discount-login-prompt a {
+	color: var(--rr-bg);
+	font-weight: 600;
+}
+
 /* Order type selector */
 .order-type-section {
 	grid-column: 1 / -1;

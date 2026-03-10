@@ -354,6 +354,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     async function loadAvailableDiscounts() {
+        const discountSelector = document.getElementById('discountSelector');
+        const discountLoginPrompt = document.getElementById('discountLoginPrompt');
+        const token = localStorage.getItem('rr_token');
+        
+        // Only logged-in users can use discounts
+        if (!token) {
+            if (discountSelector) discountSelector.style.display = 'none';
+            if (discountLoginPrompt) discountLoginPrompt.style.display = '';
+            return;
+        }
+        
+        if (discountSelector) discountSelector.style.display = '';
+        if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
+        
         try {
             const response = await fetch('/.netlify/functions/discounts?activeOnly=true');
             if (response.ok) {
@@ -557,10 +571,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 note: note
             },
             orderType: orderType,
-            items: (rawCart.items || []).map(i => ({
-                menuItemId: i.id,
-                qty: Number(i.qty)
-            })),
+            items: (rawCart.items || []).map(i => {
+                if (i.isCombo) {
+                    return {
+                        menuItemId: i.id,
+                        qty: Number(i.qty),
+                        isCombo: true,
+                        bagelId: i.bagelId,
+                        schmearId: i.schmearId,
+                        bagelName: i.bagelName,
+                        schmearName: i.schmearName
+                    };
+                }
+                return {
+                    menuItemId: i.id,
+                    qty: Number(i.qty)
+                };
+            }),
             discountId: selectedDiscount ? selectedDiscount.id : null
         };
 

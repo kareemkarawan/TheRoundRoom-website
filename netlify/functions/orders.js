@@ -112,6 +112,11 @@ async function handlePost(body) {
       .map((i) => ({
         menuItemId: String(i.menuItemId || "").trim(),
         qty: Number(i.qty || 0),
+        isCombo: i.isCombo || false,
+        bagelId: i.bagelId || null,
+        schmearId: i.schmearId || null,
+        bagelName: i.bagelName || null,
+        schmearName: i.schmearName || null,
       }))
       .filter((i) => i.menuItemId && i.qty > 0);
 
@@ -122,14 +127,19 @@ async function handlePost(body) {
       };
     }
 
-    const ids = requestedItems.map((i) => i.menuItemId);
-    const menuItems = await menuCollection.find({ id: { $in: ids } }).toArray();
+    // Separate combo items from regular menu items
+    const comboItems = requestedItems.filter((i) => i.isCombo || i.menuItemId === "combo_bagel_schmear");
+    const regularItems = requestedItems.filter((i) => !i.isCombo && i.menuItemId !== "combo_bagel_schmear");
+
+    const ids = regularItems.map((i) => i.menuItemId);
+    const menuItems = ids.length > 0 ? await menuCollection.find({ id: { $in: ids } }).toArray() : [];
     const menuMap = new Map(menuItems.map((m) => [m.id, m]));
 
     let subtotal = 0;
     const lineItems = [];
 
-    for (const item of requestedItems) {
+    // Process regular menu items
+    for (const item of regularItems) {
       const menuItem = menuMap.get(item.menuItemId);
       if (!menuItem) {
         return {
@@ -154,6 +164,40 @@ async function handlePost(body) {
         qty: item.qty,
         lineTotal,
       });
+    }
+
+    // Process combo items
+    if (comboItems.length > 0) {
+      const comboSettingsCollection = db.collection("combo_settings");
+      const comboSettings = await comboSettingsCollection.findOne({ key: "combo" });
+      
+      if (!comboSettings || !comboSettings.isAvailable) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: "Combo is currently unavailable" }),
+        };
+      }
+
+      for (const combo of comboItems) {
+        const comboPrice = Number(comboSettings.price || 0);
+        const lineTotal = Number((comboPrice * combo.qty).toFixed(2));
+        subtotal += lineTotal;
+        
+        const comboName = combo.bagelName && combo.schmearName 
+          ? `Combo: ${combo.bagelName} + ${combo.schmearName}`
+          : "Bagel & Schmear Combo";
+        
+        lineItems.push({
+          menuItemId: "combo_bagel_schmear",
+          name: comboName,
+          price: comboPrice,
+          qty: combo.qty,
+          lineTotal,
+          isCombo: true,
+          bagelId: combo.bagelId,
+          schmearId: combo.schmearId,
+        });
+      }
     }
 
     // Handle discount if provided
