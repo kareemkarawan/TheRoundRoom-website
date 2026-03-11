@@ -62,6 +62,10 @@
         .combo-checkbox-item input { width: auto; }
         .btn-combo-save { background: #6d2430; color: #fff; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer; border-radius: 4px; }
         .btn-combo-save:hover { background: #8a2d3d; }
+        /* Bagel box admin styles */
+        .box-settings { border-color: #2196F3; }
+        .box-settings h3 { color: #2196F3; }
+        .box-grid-admin { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
     </style>
 </head>
 <body class="staff-page">
@@ -116,6 +120,18 @@
             </div>
             
             <button type="button" class="btn-combo-save" id="saveComboBtn">Save Combo Settings</button>
+        </section>
+
+        <!-- Bagel Box Settings Section -->
+        <section class="combo-settings box-settings">
+            <h3>Bagel Box Sets</h3>
+            <p class="muted">Create preset bagel boxes for customers to order.</p>
+            
+            <button type="button" class="btn-add" id="addBoxBtn" style="margin-bottom: 1rem;">+ Add New Box</button>
+            
+            <div id="boxGridAdmin" class="box-grid-admin">
+                <p class="muted">Loading bagel boxes…</p>
+            </div>
         </section>
 
         <button class="btn-add" id="addItemBtn">+ Add New Item</button>
@@ -182,6 +198,49 @@
         </div>
     </div>
 
+    <!-- Modal for add/edit bagel box -->
+    <div id="boxModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="boxModalTitle">Add Bagel Box</h3>
+            <form id="boxForm">
+                <div class="form-group">
+                    <label for="boxId">Box ID *</label>
+                    <input type="text" id="boxId" name="boxId" required placeholder="e.g., box_6pack">
+                </div>
+                <div class="form-group">
+                    <label for="boxName">Name *</label>
+                    <input type="text" id="boxName" name="boxName" required placeholder="e.g., Family Box (6)">
+                </div>
+                <div class="form-group">
+                    <label for="boxBagelCount">Number of Bagels *</label>
+                    <input type="number" id="boxBagelCount" name="boxBagelCount" required min="1" value="6">
+                </div>
+                <div class="form-group">
+                    <label for="boxSchmearCount">Number of Schmears *</label>
+                    <input type="number" id="boxSchmearCount" name="boxSchmearCount" required min="0" value="2">
+                </div>
+                <div class="form-group">
+                    <label for="boxPrice">Price (₹) *</label>
+                    <input type="number" id="boxPrice" name="boxPrice" required min="0" step="10" placeholder="e.g., 1200">
+                </div>
+                <div class="form-group">
+                    <label for="boxDescription">Description (optional)</label>
+                    <input type="text" id="boxDescription" name="boxDescription" placeholder="e.g., Perfect for family gatherings">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="boxAvailable" name="boxAvailable" checked>
+                        Available for order
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelBoxBtn">Cancel</button>
+                    <button type="submit" class="btn-save">Save Box</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="js/admin-gate.js"></script>
     <script>
     let allItems = [];
@@ -220,6 +279,9 @@
         
         // Also load combo settings and render combo checkboxes
         await loadComboSettings();
+        
+        // Load bagel boxes
+        await loadBagelBoxes();
     }
 
     // ====== COMBO SETTINGS FUNCTIONS ======
@@ -339,6 +401,184 @@
     // Attach combo save button handler
     document.getElementById('saveComboBtn')?.addEventListener('click', saveComboSettings);
     // ====== END COMBO SETTINGS FUNCTIONS ======
+
+    // ====== BAGEL BOX FUNCTIONS ======
+    let allBoxes = [];
+    let editingBoxId = null;
+
+    async function loadBagelBoxes() {
+        const grid = document.getElementById('boxGridAdmin');
+        console.debug('[menu-admin] Loading bagel boxes');
+        try {
+            const response = await fetch(`/.netlify/functions/bagel-boxes?ts=${Date.now()}`, { cache: 'no-store' });
+            if (response.ok) {
+                allBoxes = await response.json();
+                console.debug('[menu-admin] Loaded boxes:', allBoxes.length);
+                renderBagelBoxes();
+            } else {
+                throw new Error('Failed to fetch bagel boxes');
+            }
+        } catch (e) {
+            console.error('[menu-admin] Load boxes failed:', e);
+            grid.innerHTML = `<p class="muted">Error loading bagel boxes: ${e.message}</p>`;
+        }
+    }
+
+    function renderBagelBoxes() {
+        const grid = document.getElementById('boxGridAdmin');
+        grid.innerHTML = '';
+        
+        if (!allBoxes || allBoxes.length === 0) {
+            grid.innerHTML = '<p class="muted">No bagel boxes defined yet.</p>';
+            return;
+        }
+
+        allBoxes.forEach(box => {
+            const card = document.createElement('div');
+            card.className = 'menu-card';
+            card.innerHTML = `
+                <h4>${box.name} ${!box.isAvailable ? '<span style="color:#999;">(Unavailable)</span>' : ''}</h4>
+                <p><strong>Contents:</strong> ${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}</p>
+                <p><strong>Price:</strong> ₹${Number(box.price).toFixed(2)}</p>
+                ${box.description ? `<p><strong>Description:</strong> ${box.description}</p>` : ''}
+                <div class="menu-card-actions">
+                    <button class="btn-edit" onclick="editBox('${box.id}')">Edit</button>
+                    <button class="btn-delete" onclick="deleteBox('${box.id}')">Delete</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function openBoxModal(box = null) {
+        editingBoxId = box ? box.id : null;
+        const modal = document.getElementById('boxModal');
+        const form = document.getElementById('boxForm');
+        const title = document.getElementById('boxModalTitle');
+        const idField = document.getElementById('boxId');
+        
+        form.reset();
+        
+        if (box) {
+            title.textContent = 'Edit Bagel Box';
+            idField.value = box.id;
+            idField.disabled = true;
+            document.getElementById('boxName').value = box.name || '';
+            document.getElementById('boxBagelCount').value = box.bagelCount || 1;
+            document.getElementById('boxSchmearCount').value = box.schmearCount || 0;
+            document.getElementById('boxPrice').value = box.price || '';
+            document.getElementById('boxDescription').value = box.description || '';
+            document.getElementById('boxAvailable').checked = box.isAvailable !== false;
+        } else {
+            title.textContent = 'Add Bagel Box';
+            idField.value = '';
+            idField.disabled = false;
+            document.getElementById('boxBagelCount').value = 6;
+            document.getElementById('boxSchmearCount').value = 2;
+            document.getElementById('boxAvailable').checked = true;
+        }
+        
+        modal.classList.add('active');
+    }
+
+    function closeBoxModal() {
+        document.getElementById('boxModal').classList.remove('active');
+        editingBoxId = null;
+    }
+
+    async function editBox(boxId) {
+        const box = allBoxes.find(b => b.id === boxId);
+        if (box) openBoxModal(box);
+    }
+
+    async function deleteBox(boxId) {
+        if (!confirm(`Delete this bagel box? This cannot be undone.`)) return;
+        
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/.netlify/functions/bagel-boxes?id=${boxId}`, {
+                method: 'DELETE',
+                headers: { 'x-admin-token': token }
+            });
+
+            if (response.ok) {
+                showMessage('Bagel box deleted', 'success');
+                await loadBagelBoxes();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                throw new Error('Failed to delete box');
+            }
+        } catch (e) {
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    document.getElementById('addBoxBtn')?.addEventListener('click', () => openBoxModal());
+    document.getElementById('cancelBoxBtn')?.addEventListener('click', closeBoxModal);
+
+    document.getElementById('boxForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required.', 'error');
+            return;
+        }
+
+        const data = {
+            id: document.getElementById('boxId').value.trim(),
+            name: document.getElementById('boxName').value.trim(),
+            bagelCount: Number(document.getElementById('boxBagelCount').value),
+            schmearCount: Number(document.getElementById('boxSchmearCount').value),
+            price: Number(document.getElementById('boxPrice').value),
+            description: document.getElementById('boxDescription').value.trim(),
+            isAvailable: document.getElementById('boxAvailable').checked
+        };
+
+        if (!data.id || !data.name || !data.price) {
+            showMessage('Please fill in all required fields', 'error');
+            return;
+        }
+
+        try {
+            const isEditing = editingBoxId !== null;
+            const url = isEditing 
+                ? `/.netlify/functions/bagel-boxes?id=${editingBoxId}` 
+                : '/.netlify/functions/bagel-boxes';
+            
+            const response = await fetch(url, {
+                method: isEditing ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showMessage(isEditing ? 'Bagel box updated' : 'Bagel box created', 'success');
+                closeBoxModal();
+                await loadBagelBoxes();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || 'Failed to save box');
+            }
+        } catch (e) {
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    });
+    // ====== END BAGEL BOX FUNCTIONS ======
 
     function renderMenuItems() {
         const grid = document.getElementById('menuGridAdmin');

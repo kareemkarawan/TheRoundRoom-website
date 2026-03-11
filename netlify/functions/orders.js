@@ -119,10 +119,16 @@ async function handlePost(body) {
         menuItemId: String(i.menuItemId || "").trim(),
         qty: Number(i.qty || 0),
         isCombo: i.isCombo || false,
+        isBox: i.isBox || false,
         bagelId: i.bagelId || null,
         schmearId: i.schmearId || null,
         bagelName: i.bagelName || null,
         schmearName: i.schmearName || null,
+        boxName: i.boxName || null,
+        bagelCount: i.bagelCount || 0,
+        schmearCount: i.schmearCount || 0,
+        selectedBagels: i.selectedBagels || [],
+        selectedSchmears: i.selectedSchmears || [],
       }))
       .filter((i) => i.menuItemId && i.qty > 0);
 
@@ -133,9 +139,10 @@ async function handlePost(body) {
       };
     }
 
-    // Separate combo items from regular menu items
+    // Separate combo items, box items, and regular menu items
     const comboItems = requestedItems.filter((i) => i.isCombo || i.menuItemId === "combo_bagel_schmear");
-    const regularItems = requestedItems.filter((i) => !i.isCombo && i.menuItemId !== "combo_bagel_schmear");
+    const boxItems = requestedItems.filter((i) => i.isBox || i.menuItemId.startsWith("box_"));
+    const regularItems = requestedItems.filter((i) => !i.isCombo && !i.isBox && i.menuItemId !== "combo_bagel_schmear" && !i.menuItemId.startsWith("box_"));
 
     const ids = regularItems.map((i) => i.menuItemId);
     const menuItems = ids.length > 0 ? await menuCollection.find({ id: { $in: ids } }).toArray() : [];
@@ -170,6 +177,47 @@ async function handlePost(body) {
         qty: item.qty,
         lineTotal,
       });
+    }
+
+    // Process bagel box items
+    if (boxItems.length > 0) {
+      const boxCollection = db.collection("bagel_boxes");
+      const boxIds = boxItems.map((i) => i.menuItemId);
+      const boxes = await boxCollection.find({ id: { $in: boxIds } }).toArray();
+      const boxMap = new Map(boxes.map((b) => [b.id, b]));
+
+      for (const boxItem of boxItems) {
+        const box = boxMap.get(boxItem.menuItemId);
+        if (!box) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: `Invalid box id: ${boxItem.menuItemId}` }),
+          };
+        }
+        if (box.isAvailable === false) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: `Box unavailable: ${boxItem.menuItemId}` }),
+          };
+        }
+
+        const boxPrice = Number(box.price || 0);
+        const lineTotal = Number((boxPrice * boxItem.qty).toFixed(2));
+        subtotal += lineTotal;
+
+        lineItems.push({
+          menuItemId: box.id,
+          name: box.name,
+          price: boxPrice,
+          qty: boxItem.qty,
+          lineTotal,
+          isBox: true,
+          bagelCount: box.bagelCount,
+          schmearCount: box.schmearCount,
+          selectedBagels: boxItem.selectedBagels || [],
+          selectedSchmears: boxItem.selectedSchmears || [],
+        });
+      }
     }
 
     // Process combo items

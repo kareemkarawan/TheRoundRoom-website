@@ -145,6 +145,202 @@ async function renderCombo(menuItems, comboSettings) {
   }
 }
 
+// Store current box being selected and available menu items
+let currentBoxData = null;
+let availableBagels = [];
+let availableSchmears = [];
+let selectedBagels = [];
+let selectedSchmears = [];
+
+function openBoxPopup(box) {
+  currentBoxData = box;
+  selectedBagels = [];
+  selectedSchmears = [];
+
+  const popup = document.getElementById('boxPopup');
+  const bagelGrid = document.getElementById('bagelSelections');
+  const schmearGrid = document.getElementById('schmearSelections');
+  const titleEl = document.getElementById('boxPopupTitle');
+
+  if (!popup) return;
+
+  titleEl.textContent = box.name;
+
+  // Render bagel options
+  bagelGrid.innerHTML = availableBagels.map(b => `
+    <div class="box-selection-item" data-type="bagel" data-name="${b.name}">
+      <input type="checkbox" id="bagel-${b.name.replace(/\s+/g, '-')}">
+      <span class="box-selection-check"></span>
+      <span class="box-selection-name">${b.name}</span>
+    </div>
+  `).join('');
+
+  // Render schmear options
+  schmearGrid.innerHTML = availableSchmears.map(s => `
+    <div class="box-selection-item" data-type="schmear" data-name="${s.name}">
+      <input type="checkbox" id="schmear-${s.name.replace(/\s+/g, '-')}">
+      <span class="box-selection-check"></span>
+      <span class="box-selection-name">${s.name}</span>
+    </div>
+  `).join('');
+
+  updateBoxCounters();
+  popup.classList.add('active');
+  popup.setAttribute('aria-hidden', 'false');
+}
+
+function closeBoxPopup() {
+  const popup = document.getElementById('boxPopup');
+  if (popup) {
+    popup.classList.remove('active');
+    popup.setAttribute('aria-hidden', 'true');
+  }
+  currentBoxData = null;
+  selectedBagels = [];
+  selectedSchmears = [];
+}
+
+function toggleBoxSelection(el) {
+  if (!currentBoxData) return;
+  const type = el.dataset.type;
+  const name = el.dataset.name;
+  const isSelected = el.classList.contains('selected');
+
+  if (type === 'bagel') {
+    if (isSelected) {
+      selectedBagels = selectedBagels.filter(n => n !== name);
+      el.classList.remove('selected');
+    } else if (selectedBagels.length < currentBoxData.bagelCount) {
+      selectedBagels.push(name);
+      el.classList.add('selected');
+    }
+  } else if (type === 'schmear') {
+    if (isSelected) {
+      selectedSchmears = selectedSchmears.filter(n => n !== name);
+      el.classList.remove('selected');
+    } else if (selectedSchmears.length < currentBoxData.schmearCount) {
+      selectedSchmears.push(name);
+      el.classList.add('selected');
+    }
+  }
+
+  updateBoxCounters();
+}
+
+function updateBoxCounters() {
+  if (!currentBoxData) return;
+
+  const bagelCounter = document.getElementById('bagelCounter');
+  const schmearCounter = document.getElementById('schmearCounter');
+  const confirmBtn = document.getElementById('boxConfirmBtn');
+
+  if (bagelCounter) {
+    bagelCounter.textContent = `Selected ${selectedBagels.length} of ${currentBoxData.bagelCount}`;
+  }
+  if (schmearCounter) {
+    schmearCounter.textContent = `Selected ${selectedSchmears.length} of ${currentBoxData.schmearCount}`;
+  }
+
+  const bagelOk = selectedBagels.length === currentBoxData.bagelCount;
+  const schmearOk = selectedSchmears.length === currentBoxData.schmearCount;
+
+  if (confirmBtn) {
+    confirmBtn.disabled = !(bagelOk && schmearOk);
+  }
+}
+
+function confirmBoxSelection() {
+  if (!currentBoxData) return;
+  if (selectedBagels.length !== currentBoxData.bagelCount) return;
+  if (selectedSchmears.length !== currentBoxData.schmearCount) return;
+
+  // Add to cart using the script.js function
+  if (typeof window.addBoxToCart === 'function') {
+    window.addBoxToCart(currentBoxData, [...selectedBagels], [...selectedSchmears]);
+  }
+
+  closeBoxPopup();
+}
+
+// Initialize popup event listeners
+function initBoxPopup() {
+  const popup = document.getElementById('boxPopup');
+  if (!popup) return;
+
+  const closeBtn = document.getElementById('boxPopupClose');
+  const cancelBtn = document.getElementById('boxCancelBtn');
+  const confirmBtn = document.getElementById('boxConfirmBtn');
+  const bagelGrid = document.getElementById('bagelSelections');
+  const schmearGrid = document.getElementById('schmearSelections');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeBoxPopup);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeBoxPopup);
+  if (confirmBtn) confirmBtn.addEventListener('click', confirmBoxSelection);
+
+  // Delegated click handlers for selection items
+  [bagelGrid, schmearGrid].forEach(grid => {
+    if (grid) {
+      grid.addEventListener('click', e => {
+        const item = e.target.closest('.box-selection-item');
+        if (item) toggleBoxSelection(item);
+      });
+    }
+  });
+
+  // Close on overlay click
+  popup.addEventListener('click', e => {
+    if (e.target === popup) closeBoxPopup();
+  });
+}
+
+async function renderBagelBoxes() {
+  const boxSection = document.getElementById('boxSection');
+  const boxContainer = document.getElementById('boxContainer');
+  if (!boxSection || !boxContainer) return;
+
+  try {
+    const response = await fetch(`/.netlify/functions/bagel-boxes?activeOnly=true&ts=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) {
+      boxSection.style.display = 'none';
+      return;
+    }
+
+    const boxes = await response.json();
+    if (!boxes || boxes.length === 0) {
+      boxSection.style.display = 'none';
+      return;
+    }
+
+    boxContainer.innerHTML = boxes.map(box => `
+      <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${box.bagelCount}" data-schmears="${box.schmearCount}" data-is-box="true">
+        <div class="menu-item-info">
+          <h3>${box.name}</h3>
+          <p class="box-contents">${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}</p>
+          ${box.description ? `<p class="box-desc">${box.description}</p>` : ''}
+          <p class="price">₹${Number(box.price).toFixed(2)}</p>
+          <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
+        </div>
+      </div>
+    `).join('');
+
+    boxSection.style.display = 'block';
+
+    // Add click handler for ADD buttons
+    boxContainer.querySelectorAll('.box-add-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const boxData = JSON.parse(btn.dataset.box.replace(/&#39;/g, "'"));
+        openBoxPopup(boxData);
+      });
+    });
+
+    initBoxPopup();
+
+  } catch (err) {
+    console.warn('Failed to load bagel boxes', err);
+    boxSection.style.display = 'none';
+  }
+}
+
 async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
@@ -194,6 +390,10 @@ async function renderMenu() {
     }
 
     window._rrMenuItems = items;
+
+    // Populate available bagels and schmears for box selection popup
+    availableBagels = items.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
+    availableSchmears = items.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
 
     grid.querySelectorAll('.menu-item').forEach(el => el.remove());
 
@@ -258,7 +458,10 @@ async function renderMenu() {
 
     if (loader) loader.style.display = 'none';
 
-    await renderCombo(items, comboSettings);
+    await Promise.all([
+      renderCombo(items, comboSettings),
+      renderBagelBoxes()
+    ]);
 
     if (typeof updateCart === 'function') updateCart();
   } catch (err) {

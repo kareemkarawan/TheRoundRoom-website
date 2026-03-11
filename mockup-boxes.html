@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bagel Boxes Mockup - The Round Room</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+    <style>
+        .mockup-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .box-add-btn {
+            width: 100%;
+            background: var(--rr-bg);
+            color: var(--rr-text);
+            border: none;
+            padding: 0.9rem 1.2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 200ms ease;
+            margin-top: 0.5rem;
+        }
+        .box-add-btn:hover {
+            background: #8a3344;
+        }
+        /* Box selection popup */
+        .box-popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .box-popup-overlay.active {
+            display: flex;
+        }
+        .box-popup {
+            background: #fff;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .box-popup-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .box-popup-header h3 {
+            margin: 0;
+            color: var(--rr-bg);
+        }
+        .box-popup-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            line-height: 1;
+        }
+        .box-popup-body {
+            padding: 1.5rem;
+        }
+        .box-selection-group {
+            margin-bottom: 1.5rem;
+        }
+        .box-selection-group h4 {
+            margin: 0 0 0.75rem 0;
+            color: var(--rr-bg);
+            font-size: 1rem;
+        }
+        .box-selection-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .box-selection-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 200ms, background 200ms;
+        }
+        .box-selection-item:hover {
+            border-color: var(--rr-bg);
+            background: rgba(109,36,48,0.03);
+        }
+        .box-selection-item.selected {
+            border-color: var(--rr-bg);
+            background: rgba(109,36,48,0.08);
+        }
+        .box-selection-item input {
+            display: none;
+        }
+        .box-selection-check {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: border-color 200ms, background 200ms;
+        }
+        .box-selection-item.selected .box-selection-check {
+            border-color: var(--rr-bg);
+            background: var(--rr-bg);
+            color: #fff;
+        }
+        .box-selection-check::after {
+            content: "✓";
+            font-size: 0.8rem;
+            opacity: 0;
+        }
+        .box-selection-item.selected .box-selection-check::after {
+            opacity: 1;
+        }
+        .box-selection-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        .box-popup-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.75rem;
+        }
+        .box-popup-footer button {
+            flex: 1;
+            padding: 0.9rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .box-cancel-btn {
+            background: #eee;
+            border: none;
+            color: #333;
+        }
+        .box-confirm-btn {
+            background: var(--rr-bg);
+            border: none;
+            color: var(--rr-text);
+        }
+        .box-confirm-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .selection-counter {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='/'">
+                <div class="bar4"></div>
+                <div class="bar5"></div>
+            </button>
+            <div class="logo">
+                <h1>THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
+        </div>
+    </nav>
+
+    <div class="order-page">
+        <section class="section-menu">
+            <div class="big-menu-title">
+                <h2>MENU</h2>
+            </div>
+            
+            <div class="mockup-notice">
+                ⚠️ This is a mockup page — click "ADD" on any box to see the selection popup
+            </div>
+
+            <div class="menu-grid">
+                <!-- BAGEL BOXES SECTION -->
+                <div class="box-section">
+                    <div class="small-menu-title">
+                        <h3>BAGEL BOXES</h3>
+                        <div class="section-line"></div>
+                    </div>
+                    <div class="category-grid">
+                        <!-- Box 1: Small -->
+                        <div class="menu-item box-item" data-id="box_small" data-name="Small Box" data-price="500" data-bagels="3" data-schmears="1">
+                            <div class="menu-item-info">
+                                <h3>Small Box</h3>
+                                <p class="box-contents">3 bagels + 1 schmear</p>
+                                <p class="box-desc">Perfect for a quick breakfast</p>
+                                <p class="price">₹500.00</p>
+                                <button class="box-add-btn" onclick="openBoxPopup('box_small', 'Small Box', 3, 1, 500)">ADD</button>
+                            </div>
+                        </div>
+
+                        <!-- Box 2: Family -->
+                        <div class="menu-item box-item" data-id="box_family" data-name="Family Box" data-price="1200" data-bagels="6" data-schmears="2">
+                            <div class="menu-item-info">
+                                <h3>Family Box</h3>
+                                <p class="box-contents">6 bagels + 2 schmears</p>
+                                <p class="box-desc">Great for family gatherings</p>
+                                <p class="price">₹1,200.00</p>
+                                <button class="box-add-btn" onclick="openBoxPopup('box_family', 'Family Box', 6, 2, 1200)">ADD</button>
+                            </div>
+                        </div>
+
+                        <!-- Box 3: Party -->
+                        <div class="menu-item box-item" data-id="box_party" data-name="Party Box" data-price="2000" data-bagels="12" data-schmears="4">
+                            <div class="menu-item-info">
+                                <h3>Party Box</h3>
+                                <p class="box-contents">12 bagels + 4 schmears</p>
+                                <p class="box-desc">Feed the whole crew!</p>
+                                <p class="price">₹2,000.00</p>
+                                <button class="box-add-btn" onclick="openBoxPopup('box_party', 'Party Box', 12, 4, 2000)">ADD</button>
+                            </div>
+                        </div>
+
+                        <!-- Box 4: Brunch -->
+                        <div class="menu-item box-item" data-id="box_brunch" data-name="Brunch Box" data-price="850" data-bagels="4" data-schmears="2">
+                            <div class="menu-item-info">
+                                <h3>Brunch Box</h3>
+                                <p class="box-contents">4 bagels + 2 schmears</p>
+                                <p class="price">₹850.00</p>
+                                <button class="box-add-btn" onclick="openBoxPopup('box_brunch', 'Brunch Box', 4, 2, 850)">ADD</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagels Section -->
+                <div class="small-menu-title">
+                    <h3>BAGELS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div class="category-grid">
+                    <div class="menu-item" data-id="bagel_plain" data-name="Plain Bagel" data-price="150">
+                        <div class="menu-item-info">
+                            <h3>Plain Bagel</h3>
+                            <p class="price">₹150.00</p>
+                            <div class="item-controls">
+                                <button class="qty-btn minus">−</button>
+                                <span class="qty">0</span>
+                                <button class="qty-btn plus">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-item" data-id="bagel_everything" data-name="Everything Bagel" data-price="180">
+                        <div class="menu-item-info">
+                            <h3>Everything Bagel</h3>
+                            <p class="price">₹180.00</p>
+                            <div class="item-controls">
+                                <button class="qty-btn minus">−</button>
+                                <span class="qty">0</span>
+                                <button class="qty-btn plus">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Box Selection Popup -->
+    <div id="boxPopup" class="box-popup-overlay">
+        <div class="box-popup">
+            <div class="box-popup-header">
+                <h3 id="boxPopupTitle">Select Your Items</h3>
+                <button class="box-popup-close" onclick="closeBoxPopup()">×</button>
+            </div>
+            <div class="box-popup-body">
+                <div class="box-selection-group">
+                    <h4>Choose your bagels</h4>
+                    <p class="selection-counter" id="bagelCounter">Select 0 of 3</p>
+                    <div class="box-selection-grid" id="bagelSelections">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+                <div class="box-selection-group">
+                    <h4>Choose your schmears</h4>
+                    <p class="selection-counter" id="schmearCounter">Select 0 of 1</p>
+                    <div class="box-selection-grid" id="schmearSelections">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="box-popup-footer">
+                <button class="box-cancel-btn" onclick="closeBoxPopup()">Cancel</button>
+                <button class="box-confirm-btn" id="boxConfirmBtn" onclick="confirmBoxSelection()" disabled>Add to Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="/privacy">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="/terms">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="/refund">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="/contact">Contact</a>
+            </div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
+        </div>
+    </footer>
+
+    <script>
+    // Sample data - in real app this comes from the menu API
+    const availableBagels = [
+        { id: 'bagel_plain', name: 'Plain Bagel' },
+        { id: 'bagel_everything', name: 'Everything Bagel' },
+        { id: 'bagel_sesame', name: 'Sesame Bagel' },
+        { id: 'bagel_poppy', name: 'Poppy Seed Bagel' },
+        { id: 'bagel_onion', name: 'Onion Bagel' },
+        { id: 'bagel_cinnamon', name: 'Cinnamon Raisin Bagel' }
+    ];
+    
+    const availableSchmears = [
+        { id: 'schmear_plain', name: 'Plain Cream Cheese' },
+        { id: 'schmear_chive', name: 'Chive Cream Cheese' },
+        { id: 'schmear_garlic', name: 'Garlic Herb' },
+        { id: 'schmear_lox', name: 'Lox Spread' }
+    ];
+
+    let currentBox = null;
+    let selectedBagels = [];
+    let selectedSchmears = [];
+
+    function openBoxPopup(boxId, boxName, bagelCount, schmearCount, price) {
+        currentBox = { id: boxId, name: boxName, bagelCount, schmearCount, price };
+        selectedBagels = [];
+        selectedSchmears = [];
+        
+        document.getElementById('boxPopupTitle').textContent = boxName;
+        
+        // Render bagel options
+        const bagelGrid = document.getElementById('bagelSelections');
+        bagelGrid.innerHTML = availableBagels.map(b => `
+            <label class="box-selection-item" data-id="${b.id}" data-type="bagel" onclick="toggleSelection(this, 'bagel')">
+                <span class="box-selection-check"></span>
+                <span class="box-selection-name">${b.name}</span>
+            </label>
+        `).join('');
+        
+        // Render schmear options
+        const schmearGrid = document.getElementById('schmearSelections');
+        schmearGrid.innerHTML = availableSchmears.map(s => `
+            <label class="box-selection-item" data-id="${s.id}" data-type="schmear" onclick="toggleSelection(this, 'schmear')">
+                <span class="box-selection-check"></span>
+                <span class="box-selection-name">${s.name}</span>
+            </label>
+        `).join('');
+        
+        updateCounters();
+        document.getElementById('boxPopup').classList.add('active');
+    }
+
+    function closeBoxPopup() {
+        document.getElementById('boxPopup').classList.remove('active');
+        currentBox = null;
+    }
+
+    function toggleSelection(el, type) {
+        const id = el.dataset.id;
+        const arr = type === 'bagel' ? selectedBagels : selectedSchmears;
+        const max = type === 'bagel' ? currentBox.bagelCount : currentBox.schmearCount;
+        
+        if (el.classList.contains('selected')) {
+            // Remove selection
+            el.classList.remove('selected');
+            const idx = arr.indexOf(id);
+            if (idx > -1) arr.splice(idx, 1);
+        } else {
+            // Add selection if under limit
+            if (arr.length < max) {
+                el.classList.add('selected');
+                arr.push(id);
+            }
+        }
+        
+        updateCounters();
+    }
+
+    function updateCounters() {
+        const bagelCount = selectedBagels.length;
+        const schmearCount = selectedSchmears.length;
+        const bagelMax = currentBox.bagelCount;
+        const schmearMax = currentBox.schmearCount;
+        
+        document.getElementById('bagelCounter').textContent = `Selected ${bagelCount} of ${bagelMax}`;
+        document.getElementById('schmearCounter').textContent = `Selected ${schmearCount} of ${schmearMax}`;
+        
+        // Enable confirm button only when exact counts are selected
+        const confirmBtn = document.getElementById('boxConfirmBtn');
+        confirmBtn.disabled = !(bagelCount === bagelMax && schmearCount === schmearMax);
+    }
+
+    function confirmBoxSelection() {
+        if (!currentBox) return;
+        
+        const bagelNames = selectedBagels.map(id => 
+            availableBagels.find(b => b.id === id)?.name || id
+        );
+        const schmearNames = selectedSchmears.map(id => 
+            availableSchmears.find(s => s.id === id)?.name || id
+        );
+        
+        // In real app, this would add to cart
+        alert(`Added to cart:\n\n${currentBox.name} (₹${currentBox.price})\n\nBagels:\n- ${bagelNames.join('\n- ')}\n\nSchmears:\n- ${schmearNames.join('\n- ')}`);
+        
+        closeBoxPopup();
+    }
+    </script>
+</body>
+</html>

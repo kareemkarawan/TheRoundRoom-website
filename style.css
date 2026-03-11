@@ -1180,6 +1180,193 @@ footer {
 
 /* ====== END COMBO SECTION ====== */
 
+/* ====== BOX SECTION STYLES ====== */
+.box-section {
+	margin-bottom: 2rem;
+}
+
+.box-item .menu-item-info {
+	padding: 1rem;
+}
+
+.box-item .box-contents {
+	font-size: 0.9rem;
+	color: var(--rr-bg);
+	margin: 0.25rem 0 0.5rem 0;
+	font-weight: 500;
+}
+
+.box-item .box-desc {
+	font-size: 0.85rem;
+	color: #666;
+	margin: 0 0 0.5rem 0;
+	font-style: italic;
+}
+
+/* Box ADD button */
+.box-add-btn {
+	width: 100%;
+	background: var(--rr-bg);
+	color: var(--rr-text);
+	border: none;
+	padding: 0.9rem 1.2rem;
+	font-size: 1rem;
+	font-weight: 600;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background 200ms ease;
+	margin-top: 0.5rem;
+}
+.box-add-btn:hover {
+	background: #8a3344;
+}
+
+/* Box selection popup */
+.box-popup-overlay {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.6);
+	z-index: 3000;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+.box-popup-overlay.active {
+	display: flex;
+}
+.box-popup {
+	background: #fff;
+	border-radius: 12px;
+	max-width: 500px;
+	width: 100%;
+	max-height: 90vh;
+	overflow-y: auto;
+	box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.box-popup-header {
+	padding: 1.25rem 1.5rem;
+	border-bottom: 1px solid #eee;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.box-popup-header h3 {
+	margin: 0;
+	color: var(--rr-bg);
+}
+.box-popup-close {
+	background: none;
+	border: none;
+	font-size: 1.5rem;
+	cursor: pointer;
+	color: #666;
+	padding: 0;
+	line-height: 1;
+}
+.box-selection-group {
+	margin-bottom: 1.5rem;
+}
+.box-selection-group h4 {
+	margin: 0 0 0.75rem 0;
+	color: var(--rr-bg);
+	font-size: 1rem;
+}
+.box-popup-body {
+	padding: 1.5rem;
+}
+.box-selection-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+.box-selection-item {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.75rem;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: border-color 200ms, background 200ms;
+}
+.box-selection-item:hover {
+	border-color: var(--rr-bg);
+	background: rgba(109,36,48,0.03);
+}
+.box-selection-item.selected {
+	border-color: var(--rr-bg);
+	background: rgba(109,36,48,0.08);
+}
+.box-selection-item input {
+	display: none;
+}
+.box-selection-check {
+	width: 20px;
+	height: 20px;
+	border: 2px solid #ccc;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: border-color 200ms, background 200ms;
+}
+.box-selection-item.selected .box-selection-check {
+	border-color: var(--rr-bg);
+	background: var(--rr-bg);
+	color: #fff;
+}
+.box-selection-check::after {
+	content: "✓";
+	font-size: 0.8rem;
+	opacity: 0;
+}
+.box-selection-item.selected .box-selection-check::after {
+	opacity: 1;
+}
+.box-selection-name {
+	flex: 1;
+	font-weight: 500;
+}
+.box-popup-footer {
+	padding: 1rem 1.5rem;
+	border-top: 1px solid #eee;
+	display: flex;
+	gap: 0.75rem;
+}
+.box-popup-footer button {
+	flex: 1;
+	padding: 0.9rem;
+	border-radius: 6px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+.box-cancel-btn {
+	background: #eee;
+	border: none;
+	color: #333;
+}
+.box-confirm-btn {
+	background: var(--rr-bg);
+	border: none;
+	color: var(--rr-text);
+}
+.box-confirm-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+.selection-counter {
+	font-size: 0.85rem;
+	color: #666;
+	margin-bottom: 0.5rem;
+}
+/* ====== END BOX SECTION ====== */
+
 /* Loader shown while menu.json is fetched */
 .menu-loader {
 	display: block;
@@ -1472,6 +1659,27 @@ footer {
 }
 
 .cart-item-name {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.cart-item-info {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	min-width: 0;
+}
+
+.cart-box-details {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+}
+
+.cart-box-details small {
+	font-size: 0.7rem;
+	color: #666;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;

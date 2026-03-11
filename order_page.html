@@ -63,6 +63,15 @@
                     </div>
                 </div>
 
+                <div id="boxSection" class="box-section" style="display:none;">
+                    <div class="small-menu-title">
+                        <h3>BAGEL BOXES</h3>
+                        <div class="section-line"></div>
+                    </div>
+                    <div id="boxContainer" class="category-grid">
+                    </div>
+                </div>
+
                 <div class="small-menu-title">
                     <h3>BAGELS</h3>
                     <div class="section-line"></div>
@@ -160,6 +169,32 @@
         </div>
         <div class="sheet-footer">
             <button class="sheet-checkout-btn" id="sheetCheckoutBtn">Checkout</button>
+        </div>
+    </div>
+
+    <!-- Box Selection Popup -->
+    <div id="boxPopup" class="box-popup-overlay" aria-hidden="true">
+        <div class="box-popup" role="dialog" aria-modal="true" aria-labelledby="boxPopupTitle">
+            <div class="box-popup-header">
+                <h3 id="boxPopupTitle">Select Your Items</h3>
+                <button class="box-popup-close" id="boxPopupClose" type="button" aria-label="Close">×</button>
+            </div>
+            <div class="box-popup-body">
+                <div class="box-selection-group">
+                    <h4>Choose your bagels</h4>
+                    <p class="selection-counter" id="bagelCounter">Select 0 of 0</p>
+                    <div class="box-selection-grid" id="bagelSelections"></div>
+                </div>
+                <div class="box-selection-group">
+                    <h4>Choose your schmears</h4>
+                    <p class="selection-counter" id="schmearCounter">Select 0 of 0</p>
+                    <div class="box-selection-grid" id="schmearSelections"></div>
+                </div>
+            </div>
+            <div class="box-popup-footer">
+                <button class="box-cancel-btn" id="boxCancelBtn" type="button">Cancel</button>
+                <button class="box-confirm-btn" id="boxConfirmBtn" type="button" disabled>Add to Cart</button>
+            </div>
         </div>
     </div>
 

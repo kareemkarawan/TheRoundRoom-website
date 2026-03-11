@@ -14,18 +14,23 @@
  * - PDF receipt generation using jsPDF library
  * - Discount codes support for logged-in users only
  * - Combos stored in window._rrCombos array with unique IDs
+ * - Box sets stored in window._rrBoxes array with unique IDs and selected items
  */
 
 // Global array to store confirmed combos
 window._rrCombos = [];
 
-// Load saved combos from localStorage
-(function loadSavedCombos() {
+// Global array to store confirmed box sets
+window._rrBoxes = [];
+
+// Load saved combos and boxes from localStorage
+(function loadSavedCart() {
     try {
         const raw = localStorage.getItem('rr_cart');
         if (raw) {
             const cart = JSON.parse(raw);
             window._rrCombos = (cart.items || []).filter(item => item.isCombo) || [];
+            window._rrBoxes = (cart.items || []).filter(item => item.isBox) || [];
         }
     } catch (e) {}
 })();
@@ -50,6 +55,33 @@ function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) 
     
     updateCart();
 }
+
+// Add a box set with selected bagels and schmears to the cart
+window.addBoxToCart = function(boxData, selectedBagels, selectedSchmears) {
+    const boxId = `box_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const bagelsStr = selectedBagels.join(', ');
+    const schmearsStr = selectedSchmears.length > 0 ? selectedSchmears.join(', ') : 'None';
+    const displayName = `${boxData.name}`;
+    
+    window._rrBoxes.push({
+        id: boxId,
+        name: displayName,
+        price: boxData.price,
+        qty: 1,
+        itemTotal: boxData.price,
+        isBox: true,
+        boxId: boxData.id,
+        boxName: boxData.name,
+        bagelCount: boxData.bagelCount,
+        schmearCount: boxData.schmearCount,
+        selectedBagels,
+        selectedSchmears,
+        bagelsStr,
+        schmearsStr
+    });
+    
+    updateCart();
+};
 
 function changeHamburger(x) {
     x.classList.toggle("change");
@@ -318,6 +350,16 @@ function adjustSheetQty(itemId, delta) {
                 window._rrCombos.splice(comboIndex, 1);
             }
         }
+    // Check if it's a box item (starts with "box_")
+    } else if (itemId.startsWith('box_')) {
+        const boxIndex = window._rrBoxes.findIndex(b => b.id === itemId);
+        if (boxIndex !== -1) {
+            window._rrBoxes[boxIndex].qty = Math.max(0, window._rrBoxes[boxIndex].qty + delta);
+            window._rrBoxes[boxIndex].itemTotal = window._rrBoxes[boxIndex].qty * window._rrBoxes[boxIndex].price;
+            if (window._rrBoxes[boxIndex].qty === 0) {
+                window._rrBoxes.splice(boxIndex, 1);
+            }
+        }
     } else {
         const qtyEl = document.querySelector(`.qty[data-id="${itemId}"]`);
         if (qtyEl) {
@@ -335,6 +377,12 @@ function removeSheetItem(itemId) {
         const comboIndex = window._rrCombos.findIndex(c => c.id === itemId);
         if (comboIndex !== -1) {
             window._rrCombos.splice(comboIndex, 1);
+        }
+    // Check if it's a box item (starts with "box_")
+    } else if (itemId.startsWith('box_')) {
+        const boxIndex = window._rrBoxes.findIndex(b => b.id === itemId);
+        if (boxIndex !== -1) {
+            window._rrBoxes.splice(boxIndex, 1);
         }
     } else {
         const qtyEl = document.querySelector(`.qty[data-id="${itemId}"]`);
@@ -355,8 +403,9 @@ function updateCart() {
             const name = item.dataset.name;
             const price = parseFloat(item.dataset.price);
             const itemTotal = qty * price;
+            const isBox = item.dataset.isBox === 'true';
                     
-            cartItems.push({ id, name, price, qty, itemTotal });
+            cartItems.push({ id, name, price, qty, itemTotal, isBox });
             subtotal += itemTotal;
         }
     });
@@ -367,23 +416,40 @@ function updateCart() {
         subtotal += combo.itemTotal;
     });
 
+    // Add confirmed box sets from global array
+    window._rrBoxes.forEach(box => {
+        cartItems.push(box);
+        subtotal += box.itemTotal;
+    });
+
     const cartItemsDiv = document.getElementById('cartItems');
     if (cartItems.length === 0) {
         cartItemsDiv.innerHTML = '<p class="empty-cart">No items added</p>';
     } else {
-        cartItemsDiv.innerHTML = cartItems.map(item => 
-            `<div class="cart-item">
+        cartItemsDiv.innerHTML = cartItems.map(item => {
+            // For boxes, show selected items below
+            let detailsHtml = '';
+            if (item.isBox && item.bagelsStr) {
+                detailsHtml = `<div class="cart-box-details">
+                    <small>Bagels: ${item.bagelsStr}</small>
+                    ${item.schmearsStr !== 'None' ? `<small>Schmears: ${item.schmearsStr}</small>` : ''}
+                </div>`;
+            }
+            return `<div class="cart-item">
                 <div class="cart-item-left">
                     <div class="cart-item-controls">
                         <button class="cart-item-btn" onclick="adjustSheetQty('${item.id}', -1)">−</button>
                         <span class="cart-item-qty">${item.qty}</span>
                         <button class="cart-item-btn" onclick="adjustSheetQty('${item.id}', 1)">+</button>
                     </div>
-                    <span class="cart-item-name">${item.name}</span>
+                    <div class="cart-item-info">
+                        <span class="cart-item-name">${item.name}</span>
+                        ${detailsHtml}
+                    </div>
                 </div>
                 <span class="cart-item-price">₹${item.itemTotal.toFixed(2)}</span>
-            </div>`
-        ).join('');
+            </div>`;
+        }).join('');
     }
 
     const sgst = subtotal * 0.025;
@@ -922,6 +988,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         schmearId: i.schmearId,
                         bagelName: i.bagelName,
                         schmearName: i.schmearName
+                    };
+                }
+                // Mark box items with selected bagels/schmears
+                if (i.isBox || (i.id && i.id.startsWith('box_'))) {
+                    return {
+                        menuItemId: i.boxId || i.id,
+                        qty: Number(i.qty),
+                        isBox: true,
+                        boxName: i.boxName || i.name,
+                        bagelCount: i.bagelCount,
+                        schmearCount: i.schmearCount,
+                        selectedBagels: i.selectedBagels || [],
+                        selectedSchmears: i.selectedSchmears || []
                     };
                 }
                 return {
