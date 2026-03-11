@@ -296,6 +296,40 @@ document.addEventListener('DOMContentLoaded', function() {
 // Menu rendering and quantity button initialization moved to an ES module: js/renderMenu.js
 // This keeps `script.js` focused on site behaviour (carousels, cart updates, checkout, etc.).
 
+// Adjust quantity from bottom sheet
+function adjustSheetQty(itemId, delta) {
+    if (itemId === 'combo_bagel_schmear') {
+        // Handle combo item
+        const comboQtyEl = document.querySelector('.combo-qty');
+        if (comboQtyEl) {
+            let qty = parseInt(comboQtyEl.textContent) || 0;
+            qty = Math.max(0, qty + delta);
+            comboQtyEl.textContent = qty;
+        }
+    } else {
+        // Handle regular menu item
+        const qtyEl = document.querySelector(`.qty[data-id="${itemId}"]`);
+        if (qtyEl) {
+            let qty = parseInt(qtyEl.textContent) || 0;
+            qty = Math.max(0, qty + delta);
+            qtyEl.textContent = qty;
+        }
+    }
+    updateCart();
+}
+
+// Remove item from bottom sheet
+function removeSheetItem(itemId) {
+    if (itemId === 'combo_bagel_schmear') {
+        const comboQtyEl = document.querySelector('.combo-qty');
+        if (comboQtyEl) comboQtyEl.textContent = '0';
+    } else {
+        const qtyEl = document.querySelector(`.qty[data-id="${itemId}"]`);
+        if (qtyEl) qtyEl.textContent = '0';
+    }
+    updateCart();
+}
+
 function updateCart() {
     let cartItems = [];
     let subtotal = 0;
@@ -405,15 +439,23 @@ function updateCart() {
     if (sheetCgst) sheetCgst.textContent = `₹${cgst.toFixed(2)}`;
     if (sheetTotalFull) sheetTotalFull.textContent = `₹${total.toFixed(2)}`;
     
-    // Update sheet cart items
+    // Update sheet cart items with +/- and remove buttons
     if (sheetCartItems) {
         if (cartItems.length === 0) {
             sheetCartItems.innerHTML = '<p class="empty-cart">No items added</p>';
         } else {
             sheetCartItems.innerHTML = cartItems.map(item => 
-                `<div class="cart-item">
-                    <span>${item.qty}x ${item.name}</span>
-                    <span>₹${item.itemTotal.toFixed(2)}</span>
+                `<div class="sheet-cart-item">
+                    <div class="sheet-item-info">
+                        <span class="sheet-item-name">${item.name}</span>
+                        <span class="sheet-item-price">₹${item.itemTotal.toFixed(2)}</span>
+                    </div>
+                    <div class="sheet-item-controls">
+                        <button class="sheet-qty-btn" onclick="event.stopPropagation(); adjustSheetQty('${item.id}', -1)">−</button>
+                        <span class="sheet-qty">${item.qty}</span>
+                        <button class="sheet-qty-btn" onclick="event.stopPropagation(); adjustSheetQty('${item.id}', 1)">+</button>
+                        <button class="sheet-remove-btn" onclick="event.stopPropagation(); removeSheetItem('${item.id}')">×</button>
+                    </div>
                 </div>`
             ).join('');
         }
