@@ -1815,6 +1815,10 @@ document.addEventListener("DOMContentLoaded", function () {
         logoutBtn.addEventListener("click", async function (e) {
             e.preventDefault();
 
+            // Show loading overlay
+            const logoutLoading = document.getElementById("logoutLoading");
+            if (logoutLoading) logoutLoading.style.display = "flex";
+
             try {
                 await authenticatedFetch("/.netlify/functions/logout", { method: "POST" });
             } catch (err) {
@@ -1823,6 +1827,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             localStorage.removeItem("rr_token");
             localStorage.removeItem("rr_email");
+            localStorage.removeItem("rr_last_activity");
             authDropdown.classList.remove("active");
             if (authDropdown) authDropdown.style.display = "none";
             updateAuthNav();
@@ -1830,3 +1835,70 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+
+/**
+ * Inactivity timeout - auto logout after 30 minutes of inactivity
+ */
+(function setupInactivityTimeout() {
+    const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in ms
+    let inactivityTimer = null;
+
+    function updateLastActivity() {
+        if (localStorage.getItem("rr_token")) {
+            localStorage.setItem("rr_last_activity", Date.now().toString());
+        }
+    }
+
+    function checkInactivity() {
+        const token = localStorage.getItem("rr_token");
+        if (!token) return;
+
+        const lastActivity = parseInt(localStorage.getItem("rr_last_activity") || "0", 10);
+        const now = Date.now();
+
+        if (lastActivity && (now - lastActivity) > INACTIVITY_TIMEOUT) {
+            // Auto logout due to inactivity
+            console.log("Auto logout due to inactivity");
+            localStorage.removeItem("rr_token");
+            localStorage.removeItem("rr_email");
+            localStorage.removeItem("rr_last_activity");
+            
+            // Update UI if on page
+            if (typeof updateAuthNav === "function") {
+                updateAuthNav();
+            }
+            
+            // Redirect to home with message
+            if (window.location.pathname !== "/" && window.location.pathname !== "/index.html") {
+                window.location.href = "/?session_expired=1";
+            }
+        }
+    }
+
+    function resetInactivityTimer() {
+        updateLastActivity();
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(checkInactivity, INACTIVITY_TIMEOUT);
+    }
+
+    // Track user activity
+    const activityEvents = ["mousedown", "keydown", "touchstart", "scroll"];
+    activityEvents.forEach(function(eventName) {
+        document.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+
+    // Check on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        checkInactivity();
+        if (localStorage.getItem("rr_token")) {
+            resetInactivityTimer();
+        }
+    });
+
+    // Check when tab becomes visible again
+    document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === "visible") {
+            checkInactivity();
+        }
+    });
+})();

@@ -869,14 +869,14 @@ footer {
 		top: 0;
 		right: 0;
 		height: 100vh;
-		width: 80%;
-		max-width: 320px;
+		width: auto;
+		min-width: 180px;
 		background-color: var(--rr-text);
 		border-left: 2px solid var(--rr-bg);
 		border-radius: 0;
 		padding-top: 72px;
-		padding-left: 1rem;
-		padding-right: 1rem;
+		padding-left: 1.5rem;
+		padding-right: 1.5rem;
 		box-sizing: border-box;
 		transform: translateX(110%);
 		transition: transform 320ms cubic-bezier(.2,.9,.2,1);

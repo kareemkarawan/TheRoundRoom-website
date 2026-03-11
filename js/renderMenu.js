@@ -3,17 +3,14 @@
 // Global store for menu items (needed for combo dropdowns)
 window._rrMenuItems = [];
 
-async function renderCombo(menuItems) {
+async function renderCombo(menuItems, comboSettings) {
   const comboSection = document.getElementById('comboSection');
   const comboContainer = document.getElementById('comboContainer');
   if (!comboSection || !comboContainer) return;
 
   try {
-    const res = await fetch(`/.netlify/functions/combo-settings?ts=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch combo settings');
-    const comboSettings = await res.json();
-
-    if (!comboSettings.isAvailable || comboSettings.price <= 0) {
+    // Use pre-fetched settings or hide section if unavailable
+    if (!comboSettings || !comboSettings.isAvailable || comboSettings.price <= 0) {
       comboSection.style.display = 'none';
       return;
     }
@@ -164,20 +161,36 @@ async function renderMenu() {
   }
 
   try {
-    // Fetch from MongoDB API instead of JSON file
+    // Fetch menu AND combo settings in parallel for faster loading
     const controller = new AbortController();
     const timeoutMs = 8000; // 8s
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let res;
-    // Always fetch fresh menu data with cache busting
+    
     const menuUrl = `/.netlify/functions/menu?ts=${Date.now()}`;
+    const comboUrl = `/.netlify/functions/combo-settings?ts=${Date.now()}`;
+    
+    let menuRes, comboRes;
     try {
-      res = await fetch(menuUrl, { signal: controller.signal, cache: 'no-store' });
+      [menuRes, comboRes] = await Promise.all([
+        fetch(menuUrl, { signal: controller.signal, cache: 'no-store' }),
+        fetch(comboUrl, { signal: controller.signal, cache: 'no-store' }).catch(() => null)
+      ]);
     } finally {
       clearTimeout(timer);
     }
-    if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'NO_RESPONSE'));
-    const items = await res.json();
+    
+    if (!menuRes || !menuRes.ok) throw new Error('HTTP ' + (menuRes ? menuRes.status : 'NO_RESPONSE'));
+    const items = await menuRes.json();
+    
+    // Parse combo settings (may be null if fetch failed)
+    let comboSettings = null;
+    if (comboRes && comboRes.ok) {
+      try {
+        comboSettings = await comboRes.json();
+      } catch (e) {
+        comboSettings = null;
+      }
+    }
 
     // Store items globally for combo dropdown access
     window._rrMenuItems = items;
@@ -256,8 +269,8 @@ async function renderMenu() {
     // hide loader
     if (loader) loader.style.display = 'none';
 
-    // Render combo section
-    await renderCombo(items);
+    // Render combo section with pre-fetched settings (no extra API call)
+    await renderCombo(items, comboSettings);
 
     // initial update
     if (typeof updateCart === 'function') updateCart();
