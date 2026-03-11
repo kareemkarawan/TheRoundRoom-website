@@ -228,7 +228,15 @@
             </form>
 
             <div class="auth-footer">
-                <p>Already have an account? <a href="/login.html">Sign in</a></p>
+                <p>Already have an account? <a href="/login.html" id="loginLink">Sign in</a></p>
+            <script>
+                // Pass redirect parameter to login page
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect');
+                if (redirect) {
+                    document.getElementById('loginLink').href = '/login.html?redirect=' + encodeURIComponent(redirect);
+                }
+            </script>
             </div>
         </div>
     </main>

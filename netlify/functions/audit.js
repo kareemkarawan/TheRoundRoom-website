@@ -1,4 +1,5 @@
 const { MongoClient } = require("mongodb");
+const { isAdminAuthorized } = require("./utils");
 
 const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
@@ -14,16 +15,6 @@ async function getClient() {
   await client.connect();
   cachedClient = client;
   return client;
-}
-
-function getAdminToken(headers = {}) {
-  return headers["x-admin-token"] || headers["X-Admin-Token"] || headers["x-admin-token".toLowerCase()];
-}
-
-function isAdminAuthorized(headers = {}) {
-  if (!ADMIN_TOKEN) return false;
-  const token = getAdminToken(headers);
-  return token && token === ADMIN_TOKEN;
 }
 
 function buildHeaders(isAdminRoute = true) {
@@ -178,7 +169,7 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: "" };
   }
 
-  if (!isAdminAuthorized(event.headers)) {
+  if (!isAdminAuthorized(event.headers, ADMIN_TOKEN)) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: "Unauthorized" }) };
   }
 

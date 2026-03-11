@@ -6,6 +6,10 @@ const dbName = "round_room";
 const collectionName = "orders";
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
+if (!WEBHOOK_SECRET) {
+  console.error("FATAL: RAZORPAY_WEBHOOK_SECRET is not configured");
+}
+
 let cachedClient = null;
 
 async function getClient() {
@@ -22,7 +26,9 @@ function verifySignature(rawBody, signature) {
     .createHmac("sha256", WEBHOOK_SECRET)
     .update(rawBody)
     .digest("hex");
-  return expected === signature;
+  
+  if (expected.length !== signature.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
 exports.handler = async (event) => {
@@ -70,6 +76,7 @@ exports.handler = async (event) => {
     }
 
     const expectedAmount = Math.round(Number(orderDoc?.pricing?.total || 0) * 100);
+    const webhookAmount = Number(amount);
     if (Number(orderDoc?.payment?.amount) !== expectedAmount) {
       console.error("Webhook amount mismatch", {
         orderNumber: orderDoc?.orderNumber,
@@ -77,6 +84,15 @@ exports.handler = async (event) => {
         storedAmount: orderDoc?.payment?.amount,
       });
       return { statusCode: 400, body: "Amount mismatch" };
+    }
+
+    if (webhookAmount !== expectedAmount) {
+      console.error("Webhook: payment amount mismatch", {
+        orderNumber: orderDoc?.orderNumber,
+        expectedAmount,
+        webhookAmount,
+      });
+      return { statusCode: 400, body: "Payment amount mismatch" }; 
     }
 
     if (eventType === "payment.captured") {

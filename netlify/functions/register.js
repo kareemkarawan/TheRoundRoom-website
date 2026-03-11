@@ -21,6 +21,11 @@ function buildResponse(statusCode, body) {
 }
 
 exports.handler = async (event) => {
+  if (!JWT_SECRET || JWT_SECRET.length < 32) {
+    console.error("JWT_SECRET misconfiguration");
+    return buildResponse(500, { error: "Server configuration error" });
+  }
+
   if (event.httpMethod === "OPTIONS") {
     return buildResponse(200, {});
   }

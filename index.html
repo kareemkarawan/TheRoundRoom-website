@@ -24,7 +24,7 @@
                 <li><a href="#bagels">BAGELS</a></li>
                 <li><a href="#schmear">SCHMEARS</a></li>
                 <li><a href="#dessert">DESSERTS</a></li>
-                <li><a href="#order">ORDER</a></li>
+                <li><a href="/order_page">ORDER</a></li>
             </ul>
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
@@ -218,9 +218,50 @@
             <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
         </div>
     </footer>
+
+    <!-- Welcome Popup -->
+    <div class="welcome-popup-overlay" id="welcomePopup" style="display: none;">
+        <div class="welcome-popup">
+            <h2>Welcome to The Round Room</h2>
+            <p>Sign in to access exclusive discounts and track your orders.</p>
+            <div class="welcome-popup-buttons">
+                <a href="/login.html" class="welcome-btn welcome-btn-primary">Login</a>
+                <a href="/register.html" class="welcome-btn welcome-btn-secondary">Register</a>
+                <button type="button" class="welcome-btn welcome-btn-text" id="continueBtn">Continue browsing</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        fetch('/.netlify/functions/menu', { cache: 'force-cache' }).catch(function () {});
+        fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
+        
+        // Show welcome popup if not logged in
+        const token = localStorage.getItem('rr_token');
+        const dismissed = sessionStorage.getItem('rr_welcome_dismissed');
+        const popup = document.getElementById('welcomePopup');
+        
+        if (!token && !dismissed && popup) {
+            popup.style.display = 'flex';
+        }
+        
+        const continueBtn = document.getElementById('continueBtn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', function () {
+                popup.style.display = 'none';
+                sessionStorage.setItem('rr_welcome_dismissed', '1');
+            });
+        }
+        
+        // Close on overlay click
+        if (popup) {
+            popup.addEventListener('click', function (e) {
+                if (e.target === popup) {
+                    popup.style.display = 'none';
+                    sessionStorage.setItem('rr_welcome_dismissed', '1');
+                }
+            });
+        }
     });
     </script>
 </body>

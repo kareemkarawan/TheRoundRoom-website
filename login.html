@@ -212,7 +212,15 @@
             </form>
 
             <div class="auth-footer">
-                <p>Don't have an account? <a href="/register.html">Create one</a></p>
+                <p>Don't have an account? <a href="/register.html" id="registerLink">Create one</a></p>
+            <script>
+                // Pass redirect parameter to register page
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect');
+                if (redirect) {
+                    document.getElementById('registerLink').href = '/register.html?redirect=' + encodeURIComponent(redirect);
+                }
+            </script>
             </div>
         </div>
     </main>

@@ -1,5 +1,6 @@
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
+const { isAdminAuthorized } = require("./utils");
 
 const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
@@ -24,16 +25,6 @@ async function getClient() {
   await client.connect();
   cachedClient = client;
   return client;
-}
-
-function getAdminToken(headers = {}) {
-  return headers["x-admin-token"] || headers["X-Admin-Token"] || headers["x-admin-token".toLowerCase()];
-}
-
-function isAdminAuthorized(headers = {}) {
-  if (!ADMIN_TOKEN) return false;
-  const token = getAdminToken(headers);
-  return token && token === ADMIN_TOKEN;
 }
 
 function buildHeaders(isAdminRoute = false) {
@@ -316,6 +307,13 @@ async function handlePost(body) {
         amount: razorpayData.amount,
         currency: razorpayData.currency,
         key_id: RAZORPAY_KEY_ID,
+        pricing: {
+          subtotal,
+          discount: discountInfo,
+          discountedSubtotal,
+          tax,
+          total,
+        },
         message: "Order saved successfully",
       }),
     };
@@ -737,7 +735,7 @@ exports.handler = async (event) => {
     };
   }
 
-  if (requiresAdmin && !isAdminAuthorized(event.headers)) {
+  if (requiresAdmin && !isAdminAuthorized(event.headers, ADMIN_TOKEN)) {
     return {
       statusCode: 401,
       headers,

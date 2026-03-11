@@ -9,7 +9,7 @@ async function renderCombo(menuItems) {
   if (!comboSection || !comboContainer) return;
 
   try {
-    const res = await fetch('/.netlify/functions/combo-settings');
+    const res = await fetch(`/.netlify/functions/combo-settings?ts=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch combo settings');
     const comboSettings = await res.json();
 
@@ -169,17 +169,12 @@ async function renderMenu() {
     const timeoutMs = 8000; // 8s
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res;
-    const forceRefresh = (() => {
-      try { return localStorage.getItem('rr_menu_force_refresh') === '1'; } catch (e) { return false; }
-    })();
-    const menuUrl = forceRefresh ? `/.netlify/functions/menu?ts=${Date.now()}` : '/.netlify/functions/menu';
+    // Always fetch fresh menu data with cache busting
+    const menuUrl = `/.netlify/functions/menu?ts=${Date.now()}`;
     try {
-      res = await fetch(menuUrl, { signal: controller.signal, cache: forceRefresh ? 'no-store' : 'default' });
+      res = await fetch(menuUrl, { signal: controller.signal, cache: 'no-store' });
     } finally {
       clearTimeout(timer);
-    }
-    if (forceRefresh) {
-      try { localStorage.removeItem('rr_menu_force_refresh'); } catch (e) { /* ignore */ }
     }
     if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'NO_RESPONSE'));
     const items = await res.json();

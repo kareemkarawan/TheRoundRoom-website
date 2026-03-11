@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { getDB } = require("./db");
 const { getClientIp, recordAuthEvent } = require("./auth-activity");
+const { error } = require("console");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = "7d";
@@ -23,6 +24,11 @@ function buildResponse(statusCode, body) {
 }
 
 exports.handler = async (event) => {
+  if (!JWT_SECRET || JWT_SECRET.length < 32) {
+    console.error("JWT_SECRET misconfiguration");
+    return buildResponse(500, {error: "Server configuration error"});
+  }
+
   if (event.httpMethod === "OPTIONS") {
     return buildResponse(200, {});
   }

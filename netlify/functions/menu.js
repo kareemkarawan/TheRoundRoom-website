@@ -1,4 +1,5 @@
 const { MongoClient } = require("mongodb");
+const { isAdminAuthorized } = require("./utils");
 
 const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
@@ -18,16 +19,6 @@ async function getClient() {
   await client.connect();
   cachedClient = client;
   return client;
-}
-
-function getAdminToken(headers = {}) {
-  return headers["x-admin-token"] || headers["X-Admin-Token"] || headers["x-admin-token".toLowerCase()];
-}
-
-function isAdminAuthorized(headers = {}) {
-  if (!ADMIN_TOKEN) return false;
-  const token = getAdminToken(headers);
-  return token && token === ADMIN_TOKEN;
 }
 
 function buildHeaders(isAdminRoute = false) {
@@ -228,7 +219,7 @@ exports.handler = async (event) => {
   // CORS headers
   const headers = buildHeaders(isAdminRoute);
   if (method === "GET") {
-    headers["Cache-Control"] = "public, s-maxage=300, stale-while-revalidate=60";
+    headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
   }
 
   // Handle preflight
@@ -240,7 +231,7 @@ exports.handler = async (event) => {
     };
   }
 
-  if (isAdminRoute && !isAdminAuthorized(event.headers)) {
+  if (isAdminRoute && !isAdminAuthorized(event.headers, ADMIN_TOKEN)) {
     return {
       statusCode: 401,
       headers,

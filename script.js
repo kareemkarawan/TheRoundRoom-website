@@ -613,7 +613,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 address: address,
                 note: note
             },
-            cart: rawCart
+            cart: rawCart,
+            pricing: created.pricing
         };
 
         // Show payment modal with server-calculated amount
@@ -678,6 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         orderNumber: pendingOrderData.orderNumber,
                         customer: pendingOrderData.customer,
                         cart: pendingOrderData.cart,
+                        pricing: pendingOrderData.pricing,
                         amount: pendingOrderData.amount,
                         currency: pendingOrderData.currency,
                         payment: {
@@ -826,8 +828,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const cart = data.cart || { items: [], subtotal: 0, sgst: 0, cgst: 0, tax: 0, total: 0 };
-    const sgst = Number(cart.sgst ?? ((Number(cart.tax || 0)) / 2 || 0));
-    const cgst = Number(cart.cgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+    const pricing = data.pricing || {};
+    const discount = pricing.discount || null;
+    
+    // Use pricing from server if available, otherwise fallback to cart values
+    const subtotal = Number(pricing.subtotal ?? cart.subtotal ?? 0);
+    const tax = Number(pricing.tax ?? cart.tax ?? 0);
+    const sgst = Number(tax / 2);
+    const cgst = Number(tax / 2);
+    const total = Number(pricing.total ?? cart.total ?? 0);
+    
     const itemsHtml = (cart.items || []).map(item => `
         <div class="checkout-item">
             <div class="left"><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
@@ -835,16 +845,25 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     `).join('');
 
+    // Build discount row if applicable
+    const discountHtml = discount ? `
+        <div class="row discount-row" style="color: #2e7d32;">
+            <span>Discount (${discount.percentage}%)</span>
+            <span>-₹${Number(discount.amount || 0).toFixed(2)}</span>
+        </div>
+    ` : '';
+
     container.innerHTML = `
         <h3>Thanks! Your payment is confirmed.</h3>
         <p>Order ID: <strong>${data.orderNumber}</strong></p>
         <p>We'll start preparing your order now.</p>
         <div class="checkout-items" style="margin-top:1rem;">${itemsHtml || '<p>No items.</p>'}</div>
         <div class="checkout-breakdown" style="margin-top:1rem;">
-            <div class="row"><span>Subtotal</span><span>₹${Number(cart.subtotal || 0).toFixed(2)}</span></div>
+            <div class="row"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
+            ${discountHtml}
             <div class="row"><span>SGST (2.5%)</span><span>₹${sgst.toFixed(2)}</span></div>
             <div class="row"><span>CGST (2.5%)</span><span>₹${cgst.toFixed(2)}</span></div>
-            <div class="row total"><span>Total</span><span>₹${Number(cart.total || 0).toFixed(2)}</span></div>
+            <div class="row total"><span>Total</span><span>₹${total.toFixed(2)}</span></div>
         </div>
         <div class="order-actions">
             <button class="order-button" id="downloadReceiptBtn" type="button">Download receipt (PDF)</button>
@@ -861,6 +880,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 orderNumber: data.orderNumber,
                 customer: data.customer,
                 cart: data.cart,
+                pricing: data.pricing,
                 amount: data.amount
             }, data.payment || {});
             if (thankyouLoading) thankyouLoading.style.display = 'none';
@@ -964,6 +984,7 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
 
     function normalizeReceiptData(data) {
         const cart = data?.cart || {};
+        const pricing = data?.pricing || {};
         const rawItems = Array.isArray(cart.items)
             ? cart.items
             : Array.isArray(data?.items)
@@ -982,23 +1003,28 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
             };
         }).filter((item) => item.qty > 0 || item.name);
 
+        // Use server pricing if available
         const subtotal = Number(
-            cart.subtotal ?? cart.subTotal ?? cart.subtotalAmount ?? 0
+            pricing.subtotal ?? cart.subtotal ?? cart.subTotal ?? cart.subtotalAmount ?? 0
         ) || items.reduce((sum, item) => sum + (Number(item.itemTotal) || 0), 0);
-        const tax = Number(cart.tax ?? cart.taxAmount ?? 0) || 0;
+        const tax = Number(pricing.tax ?? cart.tax ?? cart.taxAmount ?? 0) || 0;
         const sgst = Number(cart.sgst ?? cart.SGST ?? cart.sgstAmount ?? 0) || (tax / 2);
         const cgst = Number(cart.cgst ?? cart.CGST ?? cart.cgstAmount ?? 0) || (tax / 2);
-        const total = Number(cart.total ?? cart.totalAmount ?? 0) || (subtotal + tax);
+        const total = Number(pricing.total ?? cart.total ?? cart.totalAmount ?? 0) || (subtotal + tax);
+        const discount = pricing.discount || null;
 
-        return { items, subtotal, tax, sgst, cgst, total };
+        return { items, subtotal, tax, sgst, cgst, total, discount };
     }
 
     const normalized = normalizeReceiptData(orderData || {});
     const amountPaise = Number(orderData?.amount || 0);
     const totalPaid = amountPaise > 0 ? amountPaise / 100 : Number(normalized.total || 0);
-    const taxRate = normalized.subtotal > 0 ? (Number(normalized.tax || 0) / Number(normalized.subtotal || 1)) * 100 : 0;
-    const sgstRate = normalized.subtotal > 0 ? (Number(normalized.sgst || 0) / Number(normalized.subtotal || 1)) * 100 : 0;
-    const cgstRate = normalized.subtotal > 0 ? (Number(normalized.cgst || 0) / Number(normalized.subtotal || 1)) * 100 : 0;
+    // Calculate rates based on discountedSubtotal if discount exists
+    const discountedSubtotal = normalized.discount 
+        ? normalized.subtotal - (normalized.discount.amount || 0) 
+        : normalized.subtotal;
+    const sgstRate = discountedSubtotal > 0 ? (Number(normalized.sgst || 0) / discountedSubtotal) * 100 : 0;
+    const cgstRate = discountedSubtotal > 0 ? (Number(normalized.cgst || 0) / discountedSubtotal) * 100 : 0;
 
     async function loadImageDataUrl(url) {
         const res = await fetch(url);
@@ -1015,6 +1041,7 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         const doc = new window.jspdf.jsPDF();
         let y = 14;
         const burgundy = [109, 36, 48];
+        const green = [46, 125, 50];
 
         doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
         doc.rect(0, 0, 210, 18, 'F');
@@ -1062,6 +1089,14 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         y += 4;
         doc.setFontSize(11);
         doc.text(`Subtotal: Rs ${Number(normalized.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
+        
+        // Add discount line if applicable
+        if (normalized.discount) {
+            doc.setTextColor(green[0], green[1], green[2]);
+            doc.text(`Discount (${normalized.discount.percentage}%): -Rs ${Number(normalized.discount.amount || 0).toFixed(2)}`, 14, y); y += 6;
+            doc.setTextColor(0, 0, 0);
+        }
+        
         doc.text(`SGST (${sgstRate.toFixed(2)}%): Rs ${Number(normalized.sgst || 0).toFixed(2)}`, 14, y); y += 6;
         doc.text(`CGST (${cgstRate.toFixed(2)}%): Rs ${Number(normalized.cgst || 0).toFixed(2)}`, 14, y); y += 6;
         doc.text(`Total Paid: Rs ${Number(totalPaid || 0).toFixed(2)}`, 14, y);
@@ -1121,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!(location.pathname === '/' || location.pathname.endsWith('/index.html'))) return;
     if (sessionStorage.getItem('rr_menu_prefetch')) return;
     sessionStorage.setItem('rr_menu_prefetch', '1');
-    fetch('/.netlify/functions/menu', { cache: 'force-cache' }).catch(function () {});
+    fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
 });
 
 document.querySelector('.carousel-track').addEventListener('click', function(e) {
@@ -1187,7 +1222,10 @@ async function handleLogin(email, password, errorElementId) {
 
         // Update nav and redirect
         updateAuthNav();
-        window.location.href = "/";
+        // Check for redirect parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || '/';
+        window.location.href = redirectTo;
     } catch (err) {
         const message = "An error occurred during login";
         if (errorElementId) {
@@ -1270,7 +1308,10 @@ async function handleRegister(email, phone, password, errorElementId) {
 
         // Update nav and redirect
         updateAuthNav();
-        window.location.href = "/";
+        // Check for redirect parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || '/';
+        window.location.href = redirectTo;
     } catch (err) {
         const message = "An error occurred during registration";
         if (errorElementId) {
