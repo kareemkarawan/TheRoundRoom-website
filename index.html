@@ -174,14 +174,16 @@
         <h2>OUR DESSERTS</h2>
         <div class="menu desktop-only">
             <div class="menu-item-w">
-                <img src="webpimages/tiramisu.webp" alt="Sun Dried Tomatoes" loading="lazy">
+                <img src="webpimages/tiramisu.webp" alt="Tiramisu" loading="lazy">
                 <h3>TIRAMISU</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/coming_soon.webp" alt="Bagel" loading="lazy">
+                <img src="webpimages/new_ch_bagel.webp" alt="Chocolate Mousse" loading="lazy">
+                <h3>CHOCOLATE MOUSSE</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/coming_soon.webp" alt="Bagel" loading="lazy">
+                <img src="webpimages/mango_ch.webp" alt="Mango Cheesecake" loading="lazy">
+                <h3>MANGO CHEESECAKE</h3>
             </div>
             <div class="menu-item-w">
                 <img src="webpimages/coming_soon.webp" alt="Bagel" loading="lazy">
@@ -192,6 +194,14 @@
             <div class="menu-item-p">
                 <h3>TIRAMISU</h3>
                 <img src="webpimages/tiramisu.webp" alt="Tiramisu" style="border: none" loading="lazy">
+            </div>
+            <div class="menu-item-p">
+                <h3>CHOCOLATE MOUSSE</h3>
+                <img src="webpimages/new_ch_bagel.webp" alt="Chocolate Mousse" style="border: none" loading="lazy">
+            </div>
+            <div class="menu-item-p">
+                <h3>MANGO CHEESECAKE</h3>
+                <img src="webpimages/mango_ch.webp" alt="Mango Cheesecake" style="border: none" loading="lazy">
             </div>
         </div>
     </section>
@@ -220,7 +230,7 @@
     </footer>
 
     <!-- Welcome Popup -->
-    <div class="welcome-popup-overlay" id="welcomePopup" style="display: none;">
+    <div class="welcome-popup-overlay" id="welcomePopup">
         <div class="welcome-popup">
             <h2>Welcome to The Round Room</h2>
             <p>Sign in to access exclusive discounts and track your orders.</p>
@@ -231,37 +241,34 @@
             </div>
         </div>
     </div>
-
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
-        
-        // Show welcome popup if not logged in
+    // Instant popup check - runs immediately
+    (function() {
         const token = localStorage.getItem('rr_token');
         const dismissed = sessionStorage.getItem('rr_welcome_dismissed');
         const popup = document.getElementById('welcomePopup');
         
-        if (!token && !dismissed && popup) {
-            popup.style.display = 'flex';
+        if (token || dismissed) {
+            popup.style.display = 'none';
         }
         
-        const continueBtn = document.getElementById('continueBtn');
-        if (continueBtn) {
-            continueBtn.addEventListener('click', function () {
+        document.getElementById('continueBtn').addEventListener('click', function () {
+            popup.style.display = 'none';
+            sessionStorage.setItem('rr_welcome_dismissed', '1');
+        });
+        
+        popup.addEventListener('click', function (e) {
+            if (e.target === popup) {
                 popup.style.display = 'none';
                 sessionStorage.setItem('rr_welcome_dismissed', '1');
-            });
-        }
-        
-        // Close on overlay click
-        if (popup) {
-            popup.addEventListener('click', function (e) {
-                if (e.target === popup) {
-                    popup.style.display = 'none';
-                    sessionStorage.setItem('rr_welcome_dismissed', '1');
-                }
-            });
-        }
+            }
+        });
+    })();
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
     });
     </script>
 </body>

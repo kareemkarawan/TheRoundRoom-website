@@ -453,12 +453,33 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        itemsEl.innerHTML = cart.items.map(item => `
-            <div class="checkout-item">
-                <div class="left"><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
-                <div>₹${Number(item.itemTotal || 0).toFixed(2)}</div>
+        itemsEl.innerHTML = cart.items.map((item, index) => `
+            <div class="checkout-item" data-index="${index}">
+                <div class="left">
+                    <div class="qty-controls">
+                        <button type="button" class="qty-btn qty-minus" data-index="${index}" aria-label="Decrease quantity">−</button>
+                        <span class="qty">${item.qty}</span>
+                        <button type="button" class="qty-btn qty-plus" data-index="${index}" aria-label="Increase quantity">+</button>
+                    </div>
+                    <span class="name">${item.name}</span>
+                </div>
+                <div class="item-right">
+                    <span class="item-price">₹${Number(item.itemTotal || 0).toFixed(2)}</span>
+                    <button type="button" class="remove-btn" data-index="${index}" aria-label="Remove item">×</button>
+                </div>
             </div>
         `).join('');
+
+        // Attach event listeners for quantity controls
+        itemsEl.querySelectorAll('.qty-minus').forEach(btn => {
+            btn.addEventListener('click', () => updateCartItemQty(parseInt(btn.dataset.index), -1));
+        });
+        itemsEl.querySelectorAll('.qty-plus').forEach(btn => {
+            btn.addEventListener('click', () => updateCartItemQty(parseInt(btn.dataset.index), 1));
+        });
+        itemsEl.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', () => removeCartItem(parseInt(btn.dataset.index)));
+        });
 
         subtotalEl.textContent = `₹${Number(cart.subtotal || 0).toFixed(2)}`;
         // Apply discount if selected
@@ -472,6 +493,60 @@ document.addEventListener('DOMContentLoaded', function() {
             totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
         }
         if (loadingEl) loadingEl.style.display = 'none';
+    }
+
+    function updateCartItemQty(index, delta) {
+        let cart = null;
+        try { cart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (e) { cart = null; }
+        if (!cart || !Array.isArray(cart.items) || index < 0 || index >= cart.items.length) return;
+
+        const item = cart.items[index];
+        const newQty = item.qty + delta;
+        
+        if (newQty <= 0) {
+            removeCartItem(index);
+            return;
+        }
+
+        // Update quantity and recalculate item total
+        item.qty = newQty;
+        item.itemTotal = item.price * newQty;
+
+        // Recalculate cart totals
+        recalculateCartTotals(cart);
+        
+        localStorage.setItem('rr_cart', JSON.stringify(cart));
+        renderCheckoutSummary();
+    }
+
+    function removeCartItem(index) {
+        let cart = null;
+        try { cart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (e) { cart = null; }
+        if (!cart || !Array.isArray(cart.items) || index < 0 || index >= cart.items.length) return;
+
+        cart.items.splice(index, 1);
+
+        if (cart.items.length === 0) {
+            localStorage.removeItem('rr_cart');
+        } else {
+            recalculateCartTotals(cart);
+            localStorage.setItem('rr_cart', JSON.stringify(cart));
+        }
+        renderCheckoutSummary();
+    }
+
+    function recalculateCartTotals(cart) {
+        const subtotal = cart.items.reduce((sum, item) => sum + (Number(item.itemTotal) || 0), 0);
+        const sgst = subtotal * 0.025;
+        const cgst = subtotal * 0.025;
+        const tax = sgst + cgst;
+        const total = subtotal + tax;
+
+        cart.subtotal = subtotal;
+        cart.sgst = sgst;
+        cart.cgst = cgst;
+        cart.tax = tax;
+        cart.total = total;
     }
 
     // Load valid pincodes on page load
@@ -1173,7 +1248,10 @@ document.querySelector('.carousel-track').addEventListener('click', function(e) 
  * @param {string} errorElementId - (optional) Element ID to display error message
  * @returns {Promise<void>}
  */
-async function handleLogin(email, password, errorElementId) {
+async function handleLogin(email, password, errorElementId, loadingElementId) {
+    const loadingEl = loadingElementId ? document.getElementById(loadingElementId) : null;
+    const submitBtn = document.querySelector('.submit-btn');
+    
     try {
         // Validate inputs
         if (!email || !password) {
@@ -1193,6 +1271,10 @@ async function handleLogin(email, password, errorElementId) {
             if (errorEl) errorEl.textContent = "";
         }
 
+        // Show loading state
+        if (loadingEl) loadingEl.style.display = 'flex';
+        if (submitBtn) submitBtn.disabled = true;
+
         // Send login request
         const response = await fetch("/.netlify/functions/login", {
             method: "POST",
@@ -1205,6 +1287,10 @@ async function handleLogin(email, password, errorElementId) {
         const data = await response.json();
 
         if (!response.ok) {
+            // Hide loading state
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (submitBtn) submitBtn.disabled = false;
+            
             const message = data.error || "Login failed";
             if (errorElementId) {
                 const errorEl = document.getElementById(errorElementId);
@@ -1227,6 +1313,10 @@ async function handleLogin(email, password, errorElementId) {
         const redirectTo = urlParams.get('redirect') || '/';
         window.location.href = redirectTo;
     } catch (err) {
+        // Hide loading state
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (submitBtn) submitBtn.disabled = false;
+        
         const message = "An error occurred during login";
         if (errorElementId) {
             const errorEl = document.getElementById(errorElementId);
@@ -1246,7 +1336,10 @@ async function handleLogin(email, password, errorElementId) {
  * @param {string} errorElementId - (optional) Element ID to display error message
  * @returns {Promise<void>}
  */
-async function handleRegister(email, phone, password, errorElementId) {
+async function handleRegister(email, phone, password, errorElementId, loadingElementId) {
+    const loadingEl = loadingElementId ? document.getElementById(loadingElementId) : null;
+    const submitBtn = document.querySelector('.submit-btn');
+    
     try {
         // Validate inputs
         if (!email || !phone || !password) {
@@ -1277,6 +1370,10 @@ async function handleRegister(email, phone, password, errorElementId) {
             if (errorEl) errorEl.textContent = "";
         }
 
+        // Show loading state
+        if (loadingEl) loadingEl.style.display = 'flex';
+        if (submitBtn) submitBtn.disabled = true;
+
         // Send signup request
         const response = await fetch("/.netlify/functions/register", {
             method: "POST",
@@ -1289,6 +1386,10 @@ async function handleRegister(email, phone, password, errorElementId) {
         const data = await response.json();
 
         if (!response.ok) {
+            // Hide loading state
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (submitBtn) submitBtn.disabled = false;
+            
             const message = data.error || "Registration failed";
             if (message.includes("already exists")) {
                 alert(message);
@@ -1313,6 +1414,10 @@ async function handleRegister(email, phone, password, errorElementId) {
         const redirectTo = urlParams.get('redirect') || '/';
         window.location.href = redirectTo;
     } catch (err) {
+        // Hide loading state
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (submitBtn) submitBtn.disabled = false;
+        
         const message = "An error occurred during registration";
         if (errorElementId) {
             const errorEl = document.getElementById(errorElementId);
