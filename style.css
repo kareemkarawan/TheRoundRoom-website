@@ -1081,22 +1081,21 @@ footer {
 .combo-controls .qty-btn {
 	width: 36px;
 	height: 36px;
-	border-radius: 50%;
-	border: 1px solid var(--rr-bg);
-	background: #fff;
-	color: var(--rr-bg);
+	border-radius: 4px;
+	border: none;
+	background: var(--rr-bg);
+	color: #fff;
 	font-size: 1.25rem;
 	font-weight: 700;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	transition: background 200ms ease, color 200ms ease;
+	transition: background 200ms ease;
 }
 
 .combo-controls .qty-btn:not(:disabled):hover {
-	background: var(--rr-bg);
-	color: #fff;
+	background: #5a1d28;
 }
 
 .combo-controls .qty-btn:disabled {
@@ -1237,8 +1236,8 @@ footer {
 	height: 32px;
 	border-radius: 4px;
 	background-color: var(--rr-bg);
-	border: var(--rr-bg);
-	color: var(--rr-bg);
+	border: none;
+	color: #fff;
 	font-size: 1.2rem;
 	cursor: pointer;
 	display: flex;
@@ -1248,7 +1247,7 @@ footer {
 }
 
 .qty-btn:active {
-	background-color: var(--rr-bg);
+	background-color: #5a1d28;
 }
 
 .qty {
@@ -1272,10 +1271,10 @@ footer {
 	width: 44px;
 	height: 44px;
 	border-radius: 4px;
-	background-color: var(--rr-text);
-	border: 1px solid rgba(109,36,48,0.3);
-	color: var(--rr-bg);
-	font-size: 1.2rem;
+	background-color: var(--rr-bg);
+	border: none;
+	color: #fff;
+	font-size: 1.3rem;
 	line-height: 1;
 	cursor: pointer;
 	display: flex;
@@ -1285,7 +1284,8 @@ footer {
 }
 
 .qty-btn:active {
-	background-color: var(--rr-bg);
+	background-color: #5a1d28;
+	transform: scale(0.95);
 }
 
 .qty {
@@ -2786,20 +2786,20 @@ footer {
         width: 32px;
         height: 32px;
         border: none;
-        border-radius: 6px;
-        background: rgba(245,240,235,0.2);
+        border-radius: 4px;
+        background: transparent;
         color: var(--rr-text);
-        font-size: 1.1rem;
+        font-size: 1.3rem;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.15s ease;
+        transition: opacity 0.15s ease;
     }
     
     .sheet-qty-btn:active {
-        background: rgba(245,240,235,0.35);
+        opacity: 0.6;
     }
     
     .sheet-qty {
@@ -2813,8 +2813,8 @@ footer {
         width: 28px;
         height: 28px;
         border: none;
-        border-radius: 50%;
-        background: rgba(220,53,69,0.8);
+        border-radius: 4px;
+        background: rgba(220,53,69,0.9);
         color: #fff;
         font-size: 1.1rem;
         cursor: pointer;
