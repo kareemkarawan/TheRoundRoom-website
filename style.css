@@ -1081,21 +1081,22 @@ footer {
 .combo-controls .qty-btn {
 	width: 36px;
 	height: 36px;
-	border-radius: 4px;
-	border: none;
-	background: var(--rr-bg);
-	color: #fff;
+	border-radius: 50%;
+	border: 1px solid var(--rr-bg);
+	background: #fff;
+	color: var(--rr-bg);
 	font-size: 1.25rem;
 	font-weight: 700;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	transition: background 200ms ease;
+	transition: background 200ms ease, color 200ms ease;
 }
 
 .combo-controls .qty-btn:not(:disabled):hover {
-	background: #5a1d28;
+	background: var(--rr-bg);
+	color: #fff;
 }
 
 .combo-controls .qty-btn:disabled {
@@ -2812,6 +2813,9 @@ footer {
     .sheet-remove-btn {
         width: 28px;
         height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+        aspect-ratio: 1;
         border: none;
         border-radius: 4px;
         background: rgba(220,53,69,0.9);
@@ -2821,6 +2825,7 @@ footer {
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
         margin-left: 0.25rem;
         transition: background 0.15s ease;
     }
