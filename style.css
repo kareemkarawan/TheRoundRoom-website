@@ -1173,10 +1173,8 @@ footer {
 	box-shadow: 0 14px 28px rgba(0,0,0,0.12);
 	border-color: rgba(109,36,48,0.35);
 }
-.small-menu-title {
-	text-align: center;
-	margin: 1.5rem;
-}
+
+/* Moved to bottom - Mobile UI Improvements section */
 
 .small-menu-title h3 {
 	font-size: 1.25em;
@@ -2598,4 +2596,294 @@ footer {
     color: #6d2430;
 }
 
+/* ==========================================
+   MOBILE UI IMPROVEMENTS
+   ========================================== */
+
+/* ==========================================
+   MOBILE BOTTOM SHEET CART
+   ========================================== */
+
+/* Hide bottom sheet on desktop */
+.cart-bottom-sheet,
+.bottom-sheet-overlay {
+    display: none;
+}
+
+@media (max-width: 970px) {
+    /* Hide old cart sidebar on mobile */
+    .cart-sidebar {
+        display: none !important;
+    }
+    
+    /* Show bottom sheet on mobile */
+    .cart-bottom-sheet {
+        display: flex;
+    }
+    
+    /* Overlay backdrop */
+    .bottom-sheet-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        z-index: 998;
+    }
+    
+    .bottom-sheet-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* The bottom sheet container */
+    .cart-bottom-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--rr-text);
+        color: var(--rr-bg);
+        border-radius: 20px 20px 0 0;
+        z-index: 999;
+        transform: translateY(calc(100% - 72px)); /* Peek state - show header */
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        max-height: 80vh;
+        flex-direction: column;
+        touch-action: none;
+        box-shadow: 0 -4px 30px rgba(0,0,0,0.2);
+    }
+    
+    /* States */
+    .cart-bottom-sheet.peek {
+        transform: translateY(calc(100% - 72px));
+    }
+    
+    .cart-bottom-sheet.half {
+        transform: translateY(45%);
+    }
+    
+    .cart-bottom-sheet.expanded {
+        transform: translateY(0);
+    }
+    
+    .cart-bottom-sheet.hidden {
+        transform: translateY(100%);
+    }
+    
+    /* Drag handle */
+    .sheet-handle {
+        width: 100%;
+        padding: 12px 0 4px;
+        display: flex;
+        justify-content: center;
+        cursor: grab;
+        flex-shrink: 0;
+    }
+    
+    .sheet-handle-bar {
+        width: 36px;
+        height: 5px;
+        background: rgba(245,240,235,0.35);
+        border-radius: 3px;
+    }
+    
+    /* Sheet header (always visible in peek) */
+    .sheet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1.25rem 1rem;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    
+    .sheet-header-left {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+    }
+    
+    .sheet-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+    
+    .sheet-item-count {
+        font-size: 0.9rem;
+        opacity: 0.7;
+    }
+    
+    .sheet-total {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    
+    /* Sheet content (scrollable, hidden in peek) */
+    .sheet-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 1.25rem;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        overscroll-behavior: contain;
+    }
+    
+    .cart-bottom-sheet.half .sheet-content,
+    .cart-bottom-sheet.expanded .sheet-content {
+        opacity: 1;
+    }
+    
+    .sheet-cart-items {
+        max-height: 180px;
+        overflow-y: auto;
+        border-bottom: 1px solid rgba(245,240,235,0.2);
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .sheet-cart-items .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+    
+    .sheet-summary {
+        padding: 0.5rem 0;
+    }
+    
+    .sheet-summary .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.35rem 0;
+        font-size: 0.95rem;
+    }
+    
+    .sheet-summary .summary-row.total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(245,240,235,0.2);
+        margin-top: 0.5rem;
+    }
+    
+    /* Sheet footer with checkout button */
+    .sheet-footer {
+        padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        flex-shrink: 0;
+    }
+    
+    .cart-bottom-sheet.half .sheet-footer,
+    .cart-bottom-sheet.expanded .sheet-footer {
+        opacity: 1;
+    }
+    
+    .sheet-checkout-btn {
+        width: 100%;
+        background: var(--rr-bg);
+        color: var(--rr-text);
+        border: none;
+        padding: 1rem;
+        border-radius: 10px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        cursor: pointer;
+        min-height: 52px;
+        transition: transform 0.15s ease;
+    }
+    
+    .sheet-checkout-btn:active {
+        transform: scale(0.98);
+    }
+    
+    /* Add padding to page bottom for bottom sheet peek */
+    body.has-cart-items .menu-container {
+        padding-bottom: 90px;
+    }
+}
+
+/* 2. STICKY SECTION HEADERS */
+.small-menu-title {
+    text-align: center;
+    margin: 1.5rem;
+    position: sticky;
+    top: 0;
+    background: var(--rr-bg);
+    padding: 1rem 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    z-index: 50;
+}
+
+@media (max-width: 970px) {
+    .small-menu-title {
+        top: var(--top-nav-height, 60px);
+        margin: 0.5rem 0;
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* 3. LARGER TOUCH TARGETS (44x44px minimum for mobile accessibility) */
+@media (max-width: 768px) {
+    /* Quantity buttons in menu */
+    .qty-controls .qty-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.4rem;
+    }
+    
+    /* Combo quantity buttons */
+    .combo-controls .qty-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.4rem;
+    }
+    
+    /* Cart toggle button */
+    .cart-toggle {
+        min-height: 44px;
+        padding: 0.5rem;
+    }
+    
+    /* All buttons should have minimum touch target */
+    button, 
+    .btn,
+    input[type="submit"],
+    input[type="button"] {
+        min-height: 44px;
+    }
+    
+    /* Checkout item quantity buttons */
+    .checkout-item .qty-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+    
+    .checkout-item .remove-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+    }
+}
+
+/* Override the too-small mobile buttons */
+@media (max-width: 480px) {
+    .checkout-item .qty-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    .checkout-item .remove-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+}
 

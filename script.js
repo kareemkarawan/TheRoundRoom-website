@@ -125,6 +125,160 @@ document.addEventListener('DOMContentLoaded', function () {
     initCarousel('bagelCarousel');
 });
 
+// ==========================================
+// MOBILE BOTTOM SHEET CART
+// ==========================================
+let bottomSheetState = 'hidden'; // hidden, peek, half, expanded
+let sheetDragging = false;
+let sheetStartY = 0;
+let sheetCurrentY = 0;
+
+function setBottomSheetState(state) {
+    const sheet = document.getElementById('cartBottomSheet');
+    const overlay = document.getElementById('bottomSheetOverlay');
+    if (!sheet) return;
+    
+    bottomSheetState = state;
+    sheet.className = 'cart-bottom-sheet ' + state;
+    
+    if (overlay) {
+        if (state === 'half' || state === 'expanded') {
+            overlay.classList.add('visible');
+        } else {
+            overlay.classList.remove('visible');
+        }
+    }
+}
+
+function toggleBottomSheet() {
+    if (bottomSheetState === 'peek') {
+        setBottomSheetState('half');
+    } else if (bottomSheetState === 'half') {
+        setBottomSheetState('expanded');
+    } else if (bottomSheetState === 'expanded') {
+        setBottomSheetState('peek');
+    }
+}
+
+// Initialize bottom sheet event handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const sheet = document.getElementById('cartBottomSheet');
+    const handle = document.getElementById('sheetHandle');
+    const header = document.getElementById('sheetHeader');
+    const overlay = document.getElementById('bottomSheetOverlay');
+    const checkoutBtn = document.getElementById('sheetCheckoutBtn');
+    
+    if (!sheet) return;
+    
+    // Tap header to toggle
+    if (header) {
+        header.addEventListener('click', toggleBottomSheet);
+    }
+    
+    // Tap overlay to minimize
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            setBottomSheetState('peek');
+        });
+    }
+    
+    // Checkout button
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function() {
+            // Trigger the same checkout flow as desktop
+            const mainCheckoutBtn = document.getElementById('checkoutBtn');
+            if (mainCheckoutBtn) mainCheckoutBtn.click();
+        });
+    }
+    
+    // Drag handling
+    function startDrag(clientY) {
+        sheetDragging = true;
+        sheetStartY = clientY;
+        sheetCurrentY = clientY;
+        sheet.style.transition = 'none';
+    }
+    
+    function moveDrag(clientY) {
+        if (!sheetDragging) return;
+        sheetCurrentY = clientY;
+        
+        const diff = sheetCurrentY - sheetStartY;
+        const windowHeight = window.innerHeight;
+        
+        // Calculate base position based on current state
+        let baseTranslateY;
+        if (bottomSheetState === 'peek') {
+            baseTranslateY = windowHeight - 72;
+        } else if (bottomSheetState === 'half') {
+            baseTranslateY = windowHeight * 0.45;
+        } else if (bottomSheetState === 'expanded') {
+            baseTranslateY = 0;
+        } else {
+            baseTranslateY = windowHeight;
+        }
+        
+        const newTranslateY = Math.max(0, Math.min(windowHeight - 72, baseTranslateY + diff));
+        sheet.style.transform = `translateY(${newTranslateY}px)`;
+    }
+    
+    function endDrag() {
+        if (!sheetDragging) return;
+        sheetDragging = false;
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+        
+        const diff = sheetCurrentY - sheetStartY;
+        
+        // Determine new state based on drag direction and distance
+        if (Math.abs(diff) > 50) {
+            if (diff < 0) {
+                // Dragged up
+                if (bottomSheetState === 'peek') setBottomSheetState('half');
+                else if (bottomSheetState === 'half') setBottomSheetState('expanded');
+            } else {
+                // Dragged down
+                if (bottomSheetState === 'expanded') setBottomSheetState('half');
+                else if (bottomSheetState === 'half') setBottomSheetState('peek');
+            }
+        } else {
+            // Snap back to current state
+            setBottomSheetState(bottomSheetState);
+        }
+    }
+    
+    // Touch events
+    if (handle) {
+        handle.addEventListener('touchstart', function(e) {
+            startDrag(e.touches[0].clientY);
+        }, { passive: true });
+    }
+    
+    document.addEventListener('touchmove', function(e) {
+        if (sheetDragging) {
+            moveDrag(e.touches[0].clientY);
+        }
+    }, { passive: true });
+    
+    document.addEventListener('touchend', endDrag);
+    
+    // Mouse events (for desktop testing)
+    if (handle) {
+        handle.addEventListener('mousedown', function(e) {
+            startDrag(e.clientY);
+            e.preventDefault();
+        });
+    }
+    
+    document.addEventListener('mousemove', function(e) {
+        if (sheetDragging) {
+            moveDrag(e.clientY);
+        }
+    });
+    
+    document.addEventListener('mouseup', endDrag);
+});
+
 // Menu rendering and quantity button initialization moved to an ES module: js/renderMenu.js
 // This keeps `script.js` focused on site behaviour (carousels, cart updates, checkout, etc.).
 
@@ -219,6 +373,49 @@ function updateCart() {
     }
     const reviewTotalEl = document.getElementById('reviewTotal');
     if (reviewTotalEl) reviewTotalEl.textContent = `₹${total.toFixed(2)}`;
+
+    // Update mobile bottom sheet cart
+    const totalQty = cartItems.reduce((sum, item) => sum + item.qty, 0);
+    const sheetItemCount = document.getElementById('sheetItemCount');
+    const sheetTotal = document.getElementById('sheetTotal');
+    const sheetCartItems = document.getElementById('sheetCartItems');
+    const sheetSubtotal = document.getElementById('sheetSubtotal');
+    const sheetSgst = document.getElementById('sheetSgst');
+    const sheetCgst = document.getElementById('sheetCgst');
+    const sheetTotalFull = document.getElementById('sheetTotalFull');
+    
+    if (sheetItemCount) sheetItemCount.textContent = `(${totalQty} item${totalQty !== 1 ? 's' : ''})`;
+    if (sheetTotal) sheetTotal.textContent = `₹${total.toFixed(2)}`;
+    if (sheetSubtotal) sheetSubtotal.textContent = `₹${subtotal.toFixed(2)}`;
+    if (sheetSgst) sheetSgst.textContent = `₹${sgst.toFixed(2)}`;
+    if (sheetCgst) sheetCgst.textContent = `₹${cgst.toFixed(2)}`;
+    if (sheetTotalFull) sheetTotalFull.textContent = `₹${total.toFixed(2)}`;
+    
+    // Update sheet cart items
+    if (sheetCartItems) {
+        if (cartItems.length === 0) {
+            sheetCartItems.innerHTML = '<p class="empty-cart">No items added</p>';
+        } else {
+            sheetCartItems.innerHTML = cartItems.map(item => 
+                `<div class="cart-item">
+                    <span>${item.qty}x ${item.name}</span>
+                    <span>₹${item.itemTotal.toFixed(2)}</span>
+                </div>`
+            ).join('');
+        }
+    }
+    
+    // Show/hide bottom sheet based on cart contents
+    if (totalQty > 0) {
+        document.body.classList.add('has-cart-items');
+        // Show bottom sheet in peek state if hidden
+        if (bottomSheetState === 'hidden') {
+            setBottomSheetState('peek');
+        }
+    } else {
+        document.body.classList.remove('has-cart-items');
+        setBottomSheetState('hidden');
+    }
 
     // Save cart to localStorage so checkout can pick it up
     try {

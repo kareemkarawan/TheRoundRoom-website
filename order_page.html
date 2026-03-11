@@ -112,6 +112,48 @@
             <p class="cart-warning" id="cartWarning" role="status" aria-live="polite" style="display:none;">Your basket is empty.</p>
         </aside>
     </div>
+
+    <!-- MOBILE BOTTOM SHEET CART -->
+    <div class="bottom-sheet-overlay" id="bottomSheetOverlay"></div>
+    <div class="cart-bottom-sheet hidden" id="cartBottomSheet">
+        <div class="sheet-handle" id="sheetHandle">
+            <span class="sheet-handle-bar"></span>
+        </div>
+        <div class="sheet-header" id="sheetHeader">
+            <div class="sheet-header-left">
+                <span class="sheet-title">Your Cart</span>
+                <span class="sheet-item-count" id="sheetItemCount">(0 items)</span>
+            </div>
+            <span class="sheet-total" id="sheetTotal">₹0.00</span>
+        </div>
+        <div class="sheet-content" id="sheetContent">
+            <div class="sheet-cart-items" id="sheetCartItems">
+                <p class="empty-cart">No items added</p>
+            </div>
+            <div class="sheet-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="sheetSubtotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>SGST (2.5%)</span>
+                    <span id="sheetSgst">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>CGST (2.5%)</span>
+                    <span id="sheetCgst">₹0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="sheetTotalFull">₹0.00</span>
+                </div>
+            </div>
+        </div>
+        <div class="sheet-footer">
+            <button class="sheet-checkout-btn" id="sheetCheckoutBtn">Proceed to Checkout</button>
+        </div>
+    </div>
+
     <footer class="site-footer">
         <div class="footer-inner">
             <div class="footer-links">
