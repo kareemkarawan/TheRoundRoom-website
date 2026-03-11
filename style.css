@@ -1092,6 +1092,8 @@ footer {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
 	padding-top: 1rem;
 	border-top: 1px solid rgba(0,0,0,0.08);
 }
@@ -1140,6 +1142,29 @@ footer {
 	font-weight: 600;
 	min-width: 24px;
 	text-align: center;
+}
+
+.combo-confirm-btn {
+	width: 100%;
+	background: var(--rr-bg);
+	color: var(--rr-text);
+	border: none;
+	padding: 0.9rem 1.2rem;
+	font-size: 1rem;
+	font-weight: 600;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background 200ms ease, opacity 200ms ease;
+	margin-top: -0.5rem;
+}
+
+.combo-confirm-btn:not(:disabled):hover {
+	background: #8a3344;
+}
+
+.combo-confirm-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
 
 @media (min-width: 600px) {

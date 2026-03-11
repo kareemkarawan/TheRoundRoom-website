@@ -1,3 +1,14 @@
+/**
+ * FILE: user-stats.js
+ * PURPOSE: Netlify function to return user statistics for admin dashboard.
+ *
+ * NOTES:
+ * - GET only, requires admin token in x-admin-token header
+ * - Returns count of registered users and currently logged-in users
+ * - Active sessions are non-revoked with future expiry date
+ * - Uses shared getDB() connection from db.js
+ */
+
 const { getDB } = require("./db");
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;

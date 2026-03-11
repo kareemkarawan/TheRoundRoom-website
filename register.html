@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: register.html
+  PURPOSE: User registration page for creating new accounts with email, phone, and password.
+  
+  NOTES:
+  - Form submits to handleRegister() function in script.js
+  - Requires email, phone number, and password (min 8 characters)
+  - Supports redirect parameter to return users after registration
+  - Error messages displayed in #registerError element
+  - Loading overlay shows during registration request
+  - Token stored in localStorage as rr_token on success
+  - Links to login page with redirect preservation
+  - Inline styles for auth-specific components
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -241,7 +255,6 @@
         </div>
     </main>
 
-    <!-- Loading Overlay -->
     <div class="auth-loading-overlay" id="authLoading" style="display: none;">
         <div class="auth-loading-spinner"></div>
         <p>Creating account...</p>

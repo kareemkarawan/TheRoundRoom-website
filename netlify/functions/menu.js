@@ -1,3 +1,16 @@
+/**
+ * FILE: menu.js
+ * PURPOSE: Netlify function for CRUD operations on menu items.
+ *
+ * NOTES:
+ * - GET: Public, returns all menu items (no-cache headers)
+ * - POST: Admin only, creates new menu item with id, name, category, price
+ * - PUT: Admin only, updates menu item by id query param
+ * - DELETE: Admin only, removes menu item by id query param
+ * - Admin routes require x-admin-token header
+ * - Stored in MongoDB round_room.menu collection
+ */
+
 const { MongoClient } = require("mongodb");
 const { isAdminAuthorized } = require("./utils");
 

@@ -1,4 +1,16 @@
 <!DOCTYPE html>
+<!--
+  FILE: thankyou.html
+  PURPOSE: Order confirmation page displayed after successful payment, showing order summary and receipt download.
+  
+  NOTES:
+  - Fetches order details from URL params or session storage
+  - Uses jsPDF library for PDF receipt generation
+  - Displays payment confirmation message
+  - Shows loading overlay while preparing receipt
+  - Order summary includes items, pricing breakdown, and customer details
+  - Links back to order page for new orders
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

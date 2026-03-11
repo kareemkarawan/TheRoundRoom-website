@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: discounts-admin.html
+  PURPOSE: Admin page for creating and managing discount codes with percentage-based discounts.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Discount fields: code ID, display name, description, percentage, uses per user
+  - Active/inactive toggle controls availability at checkout
+  - Uses per user: set to 0 for unlimited uses
+  - Code IDs allow only letters, numbers, underscores, hyphens
+  - Card-based grid display with edit/delete actions
+  - CRUD operations via /.netlify/functions/discounts API
+  - Discounts shown to logged-in users only at checkout
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

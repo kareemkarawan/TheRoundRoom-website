@@ -1,6 +1,18 @@
-// Attempt to dynamically import MenuItem if modules are supported, but don't fail if import is blocked
+/**
+ * FILE: renderMenu.js
+ * PURPOSE: Fetches menu items from API and renders them to the DOM with combo support.
+ *
+ * NOTES:
+ * - Fetches from /.netlify/functions/menu and /.netlify/functions/combo-settings
+ * - Stores menu items globally in window._rrMenuItems for combo dropdowns
+ * - Dynamically imports MenuItem model, falls back to inline HTML if import fails
+ * - Categories map to DOM containers: bagels→bagelMenu, schmears→schmearMenu, desserts→dessertMenu
+ * - Restores cart quantities from localStorage on load
+ * - Handles combo item separately with bagel/schmear selection dropdowns
+ * - Uses delegated click handler for +/- quantity buttons
+ * - Shows loading indicator with retry button on error
+ */
 
-// Global store for menu items (needed for combo dropdowns)
 window._rrMenuItems = [];
 
 async function renderCombo(menuItems, comboSettings) {
@@ -9,13 +21,11 @@ async function renderCombo(menuItems, comboSettings) {
   if (!comboSection || !comboContainer) return;
 
   try {
-    // Use pre-fetched settings or hide section if unavailable
     if (!comboSettings || !comboSettings.isAvailable || comboSettings.price <= 0) {
       comboSection.style.display = 'none';
       return;
     }
 
-    // Filter available bagels and schmears from menu
     const availableBagels = menuItems.filter(item => 
       item.category?.toLowerCase() === 'bagels' && 
       item.isAvailable !== false &&
@@ -32,7 +42,9 @@ async function renderCombo(menuItems, comboSettings) {
       return;
     }
 
-    // Render combo selector
+    // Store combo price globally for cart calculations
+    window._rrComboPrice = comboSettings.price;
+
     comboContainer.innerHTML = `
       <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Combo" data-price="${comboSettings.price}">
         <div class="combo-selectors">
@@ -55,81 +67,74 @@ async function renderCombo(menuItems, comboSettings) {
           <p class="combo-price">₹${Number(comboSettings.price).toFixed(2)}</p>
           <div class="combo-controls">
             <button class="qty-btn combo-minus" data-id="combo_bagel_schmear" disabled>−</button>
-            <span class="qty combo-qty" data-id="combo_bagel_schmear">0</span>
-            <button class="qty-btn combo-plus" data-id="combo_bagel_schmear">+</button>
+            <span class="qty combo-qty" data-id="combo_bagel_schmear">1</span>
+            <button class="qty-btn combo-plus" data-id="combo_bagel_schmear" disabled>+</button>
           </div>
         </div>
+        <button class="combo-confirm-btn" disabled>Add to Cart</button>
       </div>
     `;
 
     comboSection.style.display = 'block';
 
-    // Restore combo from cart if saved
-    try {
-      const raw = localStorage.getItem('rr_cart');
-      if (raw) {
-        const cart = JSON.parse(raw);
-        const comboItem = (cart.items || []).find(it => it.id === 'combo_bagel_schmear');
-        if (comboItem && comboItem.qty > 0) {
-          const qtyEl = comboContainer.querySelector('.combo-qty');
-          if (qtyEl) qtyEl.textContent = comboItem.qty;
-          // Restore selections if present
-          if (comboItem.bagelId) {
-            const bagelSelect = document.getElementById('comboBagelSelect');
-            if (bagelSelect) bagelSelect.value = comboItem.bagelId;
-          }
-          if (comboItem.schmearId) {
-            const schmearSelect = document.getElementById('comboSchmearSelect');
-            if (schmearSelect) schmearSelect.value = comboItem.schmearId;
-          }
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // Attach combo button handlers
     const comboMinusBtn = comboContainer.querySelector('.combo-minus');
     const comboPlusBtn = comboContainer.querySelector('.combo-plus');
     const comboQtyEl = comboContainer.querySelector('.combo-qty');
+    const confirmBtn = comboContainer.querySelector('.combo-confirm-btn');
     const bagelSelect = document.getElementById('comboBagelSelect');
     const schmearSelect = document.getElementById('comboSchmearSelect');
 
     function updateComboButtons() {
       const bagelSelected = bagelSelect && bagelSelect.value;
       const schmearSelected = schmearSelect && schmearSelect.value;
-      const qty = parseInt(comboQtyEl.textContent) || 0;
+      const qty = parseInt(comboQtyEl.textContent) || 1;
+      const bothSelected = bagelSelected && schmearSelected;
       
-      // Enable plus only if both selections are made
-      comboPlusBtn.disabled = !bagelSelected || !schmearSelected;
-      // Enable minus only if qty > 0
-      comboMinusBtn.disabled = qty === 0;
+      comboPlusBtn.disabled = !bothSelected;
+      comboMinusBtn.disabled = !bothSelected || qty <= 1;
+      confirmBtn.disabled = !bothSelected;
     }
 
-    bagelSelect.addEventListener('change', () => {
+    function resetComboSelector() {
+      bagelSelect.value = '';
+      schmearSelect.value = '';
+      comboQtyEl.textContent = '1';
       updateComboButtons();
-      if (typeof updateCart === 'function') updateCart();
-    });
-    schmearSelect.addEventListener('change', () => {
-      updateComboButtons();
-      if (typeof updateCart === 'function') updateCart();
-    });
+    }
+
+    bagelSelect.addEventListener('change', updateComboButtons);
+    schmearSelect.addEventListener('change', updateComboButtons);
 
     comboPlusBtn.addEventListener('click', () => {
       if (comboPlusBtn.disabled) return;
-      let qty = parseInt(comboQtyEl.textContent) || 0;
+      let qty = parseInt(comboQtyEl.textContent) || 1;
       qty++;
       comboQtyEl.textContent = qty;
       updateComboButtons();
-      if (typeof updateCart === 'function') updateCart();
     });
 
     comboMinusBtn.addEventListener('click', () => {
-      let qty = parseInt(comboQtyEl.textContent) || 0;
-      qty = Math.max(0, qty - 1);
+      let qty = parseInt(comboQtyEl.textContent) || 1;
+      qty = Math.max(1, qty - 1);
       comboQtyEl.textContent = qty;
       updateComboButtons();
-      if (typeof updateCart === 'function') updateCart();
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      if (confirmBtn.disabled) return;
+      
+      const bagelId = bagelSelect.value;
+      const schmearId = schmearSelect.value;
+      const bagelName = bagelSelect.selectedOptions[0]?.dataset?.name || '';
+      const schmearName = schmearSelect.selectedOptions[0]?.dataset?.name || '';
+      const qty = parseInt(comboQtyEl.textContent) || 1;
+      const price = parseFloat(comboContainer.querySelector('.combo-item').dataset.price);
+      
+      if (typeof addComboToCart === 'function') {
+        addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price);
+      }
+      
+      resetComboSelector();
     });
 
     updateComboButtons();
@@ -150,20 +155,17 @@ async function renderMenu() {
   }
   if (!grid) return;
 
-  // Try dynamic import, but continue if it fails (e.g., file:// restrictions)
   let MenuItemClass = null;
   try {
     const mod = await import('./models/MenuItem.js');
     MenuItemClass = mod && (mod.default || mod.MenuItem);
   } catch (e) {
-    // dynamic import failed — we'll fall back to rendering bare HTML
     console.warn('Dynamic import of MenuItem failed, falling back to inline renderer', e);
   }
 
   try {
-    // Fetch menu AND combo settings in parallel for faster loading
     const controller = new AbortController();
-    const timeoutMs = 8000; // 8s
+    const timeoutMs = 8000;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     
     const menuUrl = `/.netlify/functions/menu?ts=${Date.now()}`;
@@ -182,7 +184,6 @@ async function renderMenu() {
     if (!menuRes || !menuRes.ok) throw new Error('HTTP ' + (menuRes ? menuRes.status : 'NO_RESPONSE'));
     const items = await menuRes.json();
     
-    // Parse combo settings (may be null if fetch failed)
     let comboSettings = null;
     if (comboRes && comboRes.ok) {
       try {
@@ -192,13 +193,10 @@ async function renderMenu() {
       }
     }
 
-    // Store items globally for combo dropdown access
     window._rrMenuItems = items;
 
-    // Remove existing dynamic menu-item nodes, leave section headers intact
     grid.querySelectorAll('.menu-item').forEach(el => el.remove());
 
-    // map categories -> container ids (lowercased keys)
     const categoryMap = {
       'bagels': 'bagelMenu',
       'schmears': 'schmearMenu',
@@ -213,7 +211,6 @@ async function renderMenu() {
         const mi = MenuItemClass.fromData(data);
         html = mi.renderHTML();
       } else {
-        // fallback minimal HTML if MenuItem isn't available
         html = `<div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">` +
           `${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}` +
           `<div class="menu-item-info"><h3>${data.name}</h3><p class="price">₹${Number(data.price).toFixed(2)}</p>` +
@@ -229,12 +226,10 @@ async function renderMenu() {
         if (target) target.insertAdjacentHTML('beforeend', html);
         else grid.insertAdjacentHTML('beforeend', html);
       } else {
-        // unknown category -> append to main grid as fallback
         grid.insertAdjacentHTML('beforeend', html);
       }
     });
 
-    // Restore quantities from saved cart (if any)
     try {
       const raw = localStorage.getItem('rr_cart');
       if (raw) {
@@ -244,41 +239,32 @@ async function renderMenu() {
           if (qEl) qEl.textContent = it.qty;
         });
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
 
-    // attach delegated handler once
     if (!grid._rr_init) {
       grid.addEventListener('click', function (e) {
         const btn = e.target.closest('.qty-btn');
         if (!btn) return;
-        // Skip combo buttons - they have their own handlers
         if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
         const id = btn.dataset.id;
         const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
         let qty = parseInt(qtyEl.textContent) || 0;
         if (btn.classList.contains('plus')) qty++; else qty = Math.max(0, qty - 1);
         qtyEl.textContent = qty;
-        // call global updateCart defined in script.js
         if (typeof updateCart === 'function') updateCart();
       });
       grid._rr_init = true;
     }
 
-    // hide loader
     if (loader) loader.style.display = 'none';
 
-    // Render combo section with pre-fetched settings (no extra API call)
     await renderCombo(items, comboSettings);
 
-    // initial update
     if (typeof updateCart === 'function') updateCart();
   } catch (err) {
     console.error('Failed to load menu.json', err);
     if (loader) {
       loader.classList.add('error');
-      // show a clearer error message including error type
       const msg = (err && err.name === 'AbortError') ? 'Request timed out' : (err && err.message) || 'Failed to load';
       loader.innerHTML = `${msg}. <button id="menuRetry">Retry</button>`;
       const retryBtn = document.getElementById('menuRetry');
@@ -287,7 +273,6 @@ async function renderMenu() {
   }
 }
 
-// Run on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', renderMenu);
 } else {

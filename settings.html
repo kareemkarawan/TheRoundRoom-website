@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<!--
+  FILE: settings.html
+  PURPOSE: Admin settings page for configuring store parameters like tax rate, currency, and shop status.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Settings: tax rate, currency, invoice prefix, shop status, min order, collection toggle
+  - Fetches/saves settings via /.netlify/functions/settings API
+  - Shop status controls whether orders can be placed
+  - Collection at Popup option can be enabled/disabled
+  - Navigate back to /pookie (staff orders page)
+  - HTML structure incomplete - missing closing tags (intentional?)
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

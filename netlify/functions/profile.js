@@ -1,3 +1,15 @@
+/**
+ * FILE: profile.js
+ * PURPOSE: Netlify function to fetch authenticated user's profile.
+ *
+ * NOTES:
+ * - GET only, requires valid JWT in Authorization header
+ * - Returns email, phone, addresses array, and createdAt
+ * - Excludes sensitive fields like passwordHash
+ * - Uses verifyAuth() middleware for token validation
+ * - Returns 401 for invalid/expired tokens
+ */
+
 const { ObjectId } = require("mongodb");
 const { getDB } = require("./db");
 const { verifyAuth } = require("./auth");

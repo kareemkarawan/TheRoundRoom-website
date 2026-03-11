@@ -1,3 +1,16 @@
+/**
+ * FILE: combo-settings.js
+ * PURPOSE: Netlify function to manage bagel+schmear combo settings and availability.
+ *
+ * NOTES:
+ * - GET: Returns combo price, availability, and allowed bagel/schmear IDs
+ * - PUT: Updates combo settings (admin only, requires x-admin-token)
+ * - Settings stored in MongoDB round_room.combo_settings collection
+ * - Single document with id="combo" holds all combo configuration
+ * - Uses no-cache headers for GET requests
+ * - Default returns unavailable combo if no settings exist
+ */
+
 const { MongoClient } = require("mongodb");
 const { isAdminAuthorized } = require("./utils");
 

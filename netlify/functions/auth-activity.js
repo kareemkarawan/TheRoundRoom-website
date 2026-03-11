@@ -1,3 +1,15 @@
+/**
+ * FILE: auth-activity.js
+ * PURPOSE: Utility functions for recording authentication events and extracting client IP.
+ *
+ * NOTES:
+ * - getClientIp() extracts IP from x-forwarded-for or client-ip headers
+ * - recordAuthEvent() logs auth events to audit_logs collection
+ * - Events include login, logout, registration attempts
+ * - Each event has type, level, message, details, source, userAgent, meta
+ * - Silently fails if audit log write fails (non-blocking)
+ */
+
 function getClientIp(headers = {}) {
   return (
     headers["x-forwarded-for"] ||

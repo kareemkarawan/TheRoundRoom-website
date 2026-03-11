@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<!--
+  FILE: login.html
+  PURPOSE: User login page for authentication to access account features and discounts.
+  
+  NOTES:
+  - Form submits to handleLogin() function in script.js
+  - Supports redirect parameter to return users to previous page after login
+  - Error messages displayed in #loginError element
+  - Loading overlay shows during authentication request
+  - Token stored in localStorage as rr_token on success
+  - Links to register page with redirect preservation
+  - Inline styles for auth-specific components
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -225,7 +238,6 @@
         </div>
     </main>
 
-    <!-- Loading Overlay -->
     <div class="auth-loading-overlay" id="authLoading" style="display: none;">
         <div class="auth-loading-spinner"></div>
         <p>Signing in...</p>

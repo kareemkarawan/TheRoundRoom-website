@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!--
+  FILE: checkout.html
+  PURPOSE: Checkout page where customers enter delivery/collection details and complete payment via Razorpay.
+  
+  NOTES:
+  - Supports two order types: delivery and collection at popup
+  - Pincode validation against allowed delivery areas
+  - Discount codes loaded from API for logged-in users only
+  - Razorpay SDK loaded for payment processing
+  - jsPDF included for receipt generation
+  - Form validation requires: name, address (delivery only), phone, email, pincode (delivery)
+  - Store status banner shows if shop is closed
+  - Payment modal confirms amount before Razorpay checkout
+  - Tax calculation: SGST 2.5% + CGST 2.5%
+-->
 <html>
 <head>
     <meta charset="UTF-8">
@@ -111,7 +126,6 @@
             </div>
         </form>
 
-        <!-- Payment Modal -->
         <div id="paymentModal" class="modal" style="display:none;" aria-hidden="true" role="dialog" aria-modal="true">
             <div class="modal-content payment-modal" role="document">
                 <h3>Payment Portal</h3>

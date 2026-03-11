@@ -1,3 +1,16 @@
+/**
+ * FILE: settings.js
+ * PURPOSE: Netlify function to manage store settings (tax rate, currency, open/closed status).
+ *
+ * NOTES:
+ * - GET: Public endpoint returns storeOpen, minOrder, collectionEnabled
+ * - GET with admin=1: Returns full settings (requires admin token)
+ * - PUT: Updates settings (admin only, requires x-admin-token header)
+ * - Settings stored in MongoDB round_room.settings collection
+ * - Uses cached MongoDB client for connection reuse
+ * - CORS headers allow cross-origin requests
+ */
+
 const { MongoClient } = require("mongodb");
 const { isAdminAuthorized } = require("./utils");
 

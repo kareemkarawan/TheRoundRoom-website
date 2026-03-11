@@ -1,10 +1,15 @@
 /**
- * MenuItem — lightweight model + renderer for menu items
- * Provides helpers to create instances from DOM elements or plain data,
- * render HTML, and produce a minimal cart object.
+ * FILE: MenuItem.js
+ * PURPOSE: Lightweight model and renderer for menu items with DOM and data conversion utilities.
  *
- * Designed to be usable as an ES module (export default) and attach to
- * window.MenuItem for legacy usage.
+ * NOTES:
+ * - Constructor accepts { id, name, price, image/imageUrl, description, stock }
+ * - toCartObject(qty) returns plain object for cart/serialization
+ * - renderHTML() generates menu-item DOM string with +/- controls
+ * - Static fromElement(el) creates instance from .menu-item DOM element
+ * - Static fromData(obj) creates instance from plain object
+ * - Static allFromDOM(root) returns array of all MenuItem instances in DOM
+ * - Exported as ES module default and attached to window.MenuItem
  */
 
 class MenuItem {
@@ -13,8 +18,8 @@ class MenuItem {
    * @param {string|number} opts.id
    * @param {string} opts.name
    * @param {number} opts.price
-  * @param {string} [opts.image]
-  * @param {string} [opts.imageUrl]
+   * @param {string} [opts.image]
+   * @param {string} [opts.imageUrl]
    * @param {string} [opts.description]
    * @param {number} [opts.stock]
    */
@@ -27,7 +32,6 @@ class MenuItem {
     this.stock = typeof stock === 'number' ? stock : Infinity;
   }
 
-  // Returns a plain object suitable for storing in a cart or serializing
   toCartObject(qty = 1) {
     return {
       id: this.id,
@@ -38,7 +42,6 @@ class MenuItem {
     };
   }
 
-  // Render a menu-item DOM element (string) used by our page markup
   renderHTML() {
     return `
       <div class="menu-item" data-id="${this.id}" data-name="${this.name}" data-price="${this.price}">
@@ -56,7 +59,6 @@ class MenuItem {
     `.trim();
   }
 
-  // Create instance from a DOM element (.menu-item)
   static fromElement(el) {
     if (!el) return null;
     const id = el.dataset.id;
@@ -67,12 +69,10 @@ class MenuItem {
     return new MenuItem({ id, name, price, image: img, description: desc });
   }
 
-  // Create an instance from a plain data object
   static fromData(obj) {
     return new MenuItem(obj);
   }
 
-  // Find all .menu-item elements and return instances
   static allFromDOM(root = document) {
     return Array.from(root.querySelectorAll('.menu-item')).map(el => MenuItem.fromElement(el));
   }

@@ -1,3 +1,16 @@
+/**
+ * FILE: create-orders.js
+ * PURPOSE: Netlify function to create Razorpay orders for payment processing.
+ *
+ * NOTES:
+ * - POST only, accepts { items: [{ id, qty }] } payload
+ * - Fetches menu prices from MongoDB to calculate server-side totals
+ * - Creates Razorpay order via their API
+ * - Returns orderId, amount, currency, keyId for frontend checkout
+ * - Tax rate fetched from settings collection
+ * - Amount converted to paise (INR smallest unit)
+ */
+
 const { MongoClient } = require("mongodb");
 
 const uri = process.env.MONGODB_URI;

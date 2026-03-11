@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: pookie.html
+  PURPOSE: Staff orders dashboard for viewing and managing customer orders with status updates.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Orders table with status dropdown (CREATED, PAYMENT_PENDING, PAID, PREPARING, COMPLETED, CANCELLED)
+  - View order details in modal with customer info, items, and pricing
+  - "Clear" hides orders from view (stored in localStorage, not deleted from DB)
+  - Navigation links to: menu-admin, discounts-admin, collections-admin, pincodes-admin, settings, admin
+  - Commented-out Valentine's Day feature with fireworks animation (kept for future use)
+  - Real-time status updates via select dropdown
+  - ordersUpdated event listener for external updates
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -79,7 +93,6 @@
             </table>
         </div>
 
-        <!-- Order details modal -->
         <div id="orderModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
             <div class="modal-content" role="document">
                 <button class="modal-close" id="modalClose" aria-label="Close">✕</button>

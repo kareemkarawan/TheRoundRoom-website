@@ -1,3 +1,14 @@
+/**
+ * FILE: product.js
+ * PURPOSE: Fetches and displays a single product from the menu based on URL parameter.
+ *
+ * NOTES:
+ * - Reads product ID from URL query string (?id=xxx)
+ * - Fetches menu data from /.netlify/functions/menu
+ * - Calls rendererProduct() to display the product (defined elsewhere)
+ * - Shows error message if product not found or network fails
+ */
+
 const container = document.getElementById('product')
 
 const params = new URLSearchParams(window.location.search);

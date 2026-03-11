@@ -1,3 +1,17 @@
+/**
+ * FILE: login.js
+ * PURPOSE: Netlify function to authenticate users and issue JWT tokens.
+ *
+ * NOTES:
+ * - POST only, accepts { email, password } payload
+ * - Uses bcrypt to verify password hash
+ * - Issues JWT with 7-day expiration and unique jti
+ * - Creates session record in sessions collection
+ * - Implements account lockout after 5 failed attempts (30 min lock)
+ * - Revokes all existing sessions on successful login
+ * - Records auth events to audit log
+ */
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");

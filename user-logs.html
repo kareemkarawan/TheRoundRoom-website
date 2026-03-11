@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: user-logs.html
+  PURPOSE: Admin page displaying user activity logs (registrations, logins, logouts) from audit system.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Filters logs by source (register, login, logout), level, and type
+  - Text search across message, URL, source fields
+  - User stats panel: registered users count, currently logged in count
+  - Logs fetched from /.netlify/functions/audit with source filter
+  - Auto-refresh on filter change with debounce on search
+  - Linked from admin.html "User logs" button
+  - Stats from /.netlify/functions/user-stats endpoint
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

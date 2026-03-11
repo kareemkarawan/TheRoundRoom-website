@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: order_page.html
+  PURPOSE: Order/menu page where customers browse products, select items, and manage their cart before checkout.
+  
+  NOTES:
+  - Menu items loaded dynamically via renderMenu.js from Netlify functions API
+  - Cart state persisted in localStorage and synced with bottom sheet on mobile
+  - Combo section (bagel + schmear) can be toggled via admin settings
+  - Store status modal appears when shop is closed
+  - Sticky cart sidebar on desktop, bottom sheet on mobile
+  - Tax breakdown shows SGST and CGST (2.5% each for India)
+  - Preloads menu-bg.webp for faster rendering
+  - Checkout button redirects to /checkout with cart data
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33,7 +47,6 @@
                 <p id="storeStatusMessage">Store is currently closed. We are not accepting orders right now.</p>
             </div>
         </div>
-        <!-- MENU SECTION -->
         <section class="section-menu">
             <div class="big-menu-title">
                 <h2>MENU</h2>
@@ -41,14 +54,12 @@
             <p class="order-note order-note-inline" role="status" aria-live="polite">Orders take around 24 hrs.</p>
             <div id="menuLoader" class="menu-loader" role="status" aria-live="polite">Loading menu…</div>
             <div class="menu-grid">
-                <!-- COMBO SECTION -->
                 <div id="comboSection" class="combo-section" style="display:none;">
                     <div class="small-menu-title">
                         <h3>BAGEL &amp; SCHMEAR COMBO</h3>
                         <div class="section-line"></div>
                     </div>
                     <div id="comboContainer" class="combo-container">
-                        <!-- Combo selector will be rendered here by JS -->
                     </div>
                 </div>
 
@@ -78,7 +89,6 @@
             </div>
         </section>
 
-        <!-- CART SUMMARY (Sticky on mobile, side panel on desktop) -->
         <aside class="cart-sidebar">
             <div class="cart-header">
                 <h3>YOUR CART</h3>
@@ -113,7 +123,6 @@
         </aside>
     </div>
 
-    <!-- MOBILE BOTTOM SHEET CART -->
     <div class="bottom-sheet-overlay" id="bottomSheetOverlay"></div>
     <div class="cart-bottom-sheet peek" id="cartBottomSheet">
         <div class="sheet-handle" id="sheetHandle">

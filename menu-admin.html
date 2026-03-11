@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: menu-admin.html
+  PURPOSE: Admin page for managing menu items (add, edit, delete) and combo settings.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Menu items grouped by category: bagels, schmears, desserts
+  - Supports image upload (base64) or URL for item images
+  - Combo settings: price, availability, allowed bagels/schmears for combos
+  - CRUD operations via /.netlify/functions/menu API
+  - Combo settings via /.netlify/functions/combo-settings API
+  - Forces menu cache refresh via localStorage flag
+  - Item availability toggle controls display on order page
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

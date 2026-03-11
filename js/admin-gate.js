@@ -1,3 +1,15 @@
+/**
+ * FILE: admin-gate.js
+ * PURPOSE: Provides admin authentication gate UI and token verification for admin pages.
+ *
+ * NOTES:
+ * - Stores admin token in localStorage (key: rr_admin_token)
+ * - Displays modal overlay requiring token input for admin access
+ * - Verifies token against /.netlify/functions/settings?admin=1
+ * - Exposes global AdminGate object with requireAdminAccess(), getToken(), lock()
+ * - Uses timing-safe comparison on server side for security
+ */
+
 (function () {
   const STORAGE_KEY = 'rr_admin_token';
 

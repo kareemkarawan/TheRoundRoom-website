@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: pincodes-admin.html
+  PURPOSE: Admin page for managing delivery pincodes/ZIP codes where orders can be delivered.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Bulk add feature: paste pincodes separated by newlines or commas
+  - Duplicates automatically skipped during bulk add
+  - Pincodes displayed in sorted numeric order
+  - Individual delete with confirmation
+  - CRUD operations via /.netlify/functions/pincodes API
+  - Ctrl+Enter shortcut for quick bulk add
+  - Valid pincodes must be numeric only
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

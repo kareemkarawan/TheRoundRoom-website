@@ -1,3 +1,16 @@
+/**
+ * FILE: discounts.js
+ * PURPOSE: Netlify function for discount code CRUD operations.
+ *
+ * NOTES:
+ * - GET: Public, returns discounts (activeOnly=true for active only)
+ * - POST: Admin only, create discount with id, name, percentage (0-100)
+ * - PUT: Admin only, update discount by id query param
+ * - DELETE: Admin only, remove discount by id query param
+ * - Supports usesAllowedPerUser limit
+ * - Discounts stored in MongoDB round_room.discounts collection
+ */
+
 const { MongoClient } = require("mongodb");
 const { isAdminAuthorized } = require("./utils");
 

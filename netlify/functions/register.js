@@ -1,3 +1,17 @@
+/**
+ * FILE: register.js
+ * PURPOSE: Netlify function to register new users and auto-login.
+ *
+ * NOTES:
+ * - POST only, accepts { email, phone, password } payload
+ * - Password must be at least 8 characters
+ * - Checks for existing email and phone before creating user
+ * - Hashes password with bcrypt (12 rounds)
+ * - Creates user with role "customer" and empty addresses array
+ * - Auto-issues JWT and creates session after registration
+ * - Records registration and login events to audit log
+ */
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");

@@ -1,14 +1,64 @@
+/**
+ * FILE: script.js
+ * PURPOSE: Main site script handling navigation, carousel, cart, checkout, payments, and authentication.
+ *
+ * NOTES:
+ * - Handles hamburger menu toggle and mobile nav behavior
+ * - Implements carousel with keyboard, touch, and button navigation
+ * - Manages mobile bottom sheet cart with drag gestures
+ * - Cart state synced to localStorage (key: rr_cart)
+ * - Checkout flow integrates with Razorpay payment gateway
+ * - Store open/closed status fetched from /.netlify/functions/settings
+ * - User authentication via JWT tokens stored in rr_token
+ * - Auto-logout after 30 minutes of inactivity
+ * - PDF receipt generation using jsPDF library
+ * - Discount codes support for logged-in users only
+ * - Combos stored in window._rrCombos array with unique IDs
+ */
+
+// Global array to store confirmed combos
+window._rrCombos = [];
+
+// Load saved combos from localStorage
+(function loadSavedCombos() {
+    try {
+        const raw = localStorage.getItem('rr_cart');
+        if (raw) {
+            const cart = JSON.parse(raw);
+            window._rrCombos = (cart.items || []).filter(item => item.isCombo) || [];
+        }
+    } catch (e) {}
+})();
+
+// Add a confirmed combo to the cart
+function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) {
+    const comboId = `combo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const displayName = `Combo: ${bagelName} + ${schmearName}`;
+    
+    window._rrCombos.push({
+        id: comboId,
+        name: displayName,
+        price: price,
+        qty: qty,
+        itemTotal: qty * price,
+        isCombo: true,
+        bagelId,
+        schmearId,
+        bagelName,
+        schmearName
+    });
+    
+    updateCart();
+}
+
 function changeHamburger(x) {
-    // Toggle visual hamburger animation
     x.classList.toggle("change");
-    // Toggle the nav visibility by switching the 'active' class on the UL
     var y = document.getElementById("TopNav");
     if (y) {
         y.classList.toggle('active');
     }
 }
 
-// Attach listeners after DOM is ready in case the script is loaded in the head
 document.addEventListener('DOMContentLoaded', function () {
     var navLinks = document.querySelectorAll('.nav-links a');
     var topNav = document.getElementById('TopNav');
@@ -16,18 +66,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     navLinks.forEach(function (link) {
         link.addEventListener('click', function () {
-            // Only attempt to close if the panel is active
             if (topNav && topNav.classList.contains('active')) {
                 topNav.classList.remove('active');
             }
-            // Reset hamburger animation if present
             if (hamburger && hamburger.classList.contains('change')) {
                 hamburger.classList.remove('change');
             }
         });
     });
 
-    /* --- Carousel initialization --- */
     function initCarousel(carouselId) {
         var carousel = document.getElementById(carouselId);
         if (!carousel) return;
@@ -36,11 +83,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var slides = Array.from(track.querySelectorAll('.carousel-slide'));
         if (slides.length === 0) return;
 
-        // Linear carousel (no clones)
-        var currentIndex = 0; // start at the first slide
+        var currentIndex = 0;
         var isMobile = (window.innerWidth <= 600);
 
-        // Helper to center the given slide index
         function centerIndex(index, withTransition) {
             var slide = slides[index];
             if (!slide) return;
@@ -62,10 +107,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var nextIndex = index + 1;
             if (prevIndex >= 0) slides[prevIndex].classList.add('prev');
             if (nextIndex < slides.length) slides[nextIndex].classList.add('next');
-            // enable/disable buttons
             if (btnPrev) btnPrev.disabled = (index === 0);
             if (btnNext) btnNext.disabled = (index === slides.length - 1);
-            // if we reached the last slide, stop autoplay
             if (btnNext && btnNext.disabled && typeof autoplayTimer !== 'undefined' && autoplayTimer) {
                 clearInterval(autoplayTimer);
                 autoplayTimer = null;
@@ -73,17 +116,13 @@ document.addEventListener('DOMContentLoaded', function () {
             currentIndex = index;
         }
 
-        // Move to next / prev (bounded)
         function moveNext() { if (currentIndex < slides.length - 1) centerIndex(currentIndex + 1, true); }
         function movePrev() { if (currentIndex > 0) centerIndex(currentIndex - 1, true); }
 
-        // Buttons
         var btnPrev = carousel.querySelector('.carousel-btn.prev');
         var btnNext = carousel.querySelector('.carousel-btn.next');
         if (btnPrev) btnPrev.addEventListener('click', movePrev);
         if (btnNext) btnNext.addEventListener('click', moveNext);
-
-        // No clone handling needed for a linear carousel
 
         // Keyboard support
         document.addEventListener('keydown', function (e) {
@@ -91,15 +130,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (e.key === 'ArrowRight') moveNext();
         });
 
-        // Resize handler: re-center current and update mobile flag
         window.addEventListener('resize', function () {
-            // re-calc after a small debounce
             clearTimeout(window._carouselResizeTimer);
             window._carouselResizeTimer = setTimeout(function () { centerIndex(currentIndex, false); }, 120);
             isMobile = (window.innerWidth <= 600);
         });
-
-        // Autoplay disabled: user-driven navigation only
 
         // Wait for images to load before computing initial layout
         var imgs = track.querySelectorAll('img');
@@ -117,22 +152,16 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (loaded === imgs.length) centerIndex(currentIndex, false);
         }
-
-        /* Swipe disabled by design: button-only navigation */
     }
 
-    // Kick off the bagel carousel if present
     initCarousel('bagelCarousel');
 });
 
-// ==========================================
-// MOBILE BOTTOM SHEET CART
-// ==========================================
-let bottomSheetState = 'peek'; // hidden, peek, half, expanded
+let bottomSheetState = 'peek';
 let sheetDragging = false;
 let sheetStartY = 0;
 let sheetCurrentY = 0;
-let sheetDidMove = false; // Track if user actually dragged
+let sheetDidMove = false;
 
 function setBottomSheetState(state) {
     const sheet = document.getElementById('cartBottomSheet');
@@ -159,7 +188,6 @@ function toggleBottomSheet() {
     }
 }
 
-// Initialize bottom sheet event handlers
 document.addEventListener('DOMContentLoaded', function() {
     const sheet = document.getElementById('cartBottomSheet');
     const handle = document.getElementById('sheetHandle');
@@ -169,24 +197,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!sheet) return;
     
-    // Tap overlay to minimize
     if (overlay) {
         overlay.addEventListener('click', function() {
             setBottomSheetState('peek');
         });
     }
     
-    // Checkout button
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            // Trigger the same checkout flow as desktop
             const mainCheckoutBtn = document.getElementById('checkoutBtn');
             if (mainCheckoutBtn) mainCheckoutBtn.click();
         });
     }
     
-    // Drag handling
     function startDrag(clientY) {
         sheetDragging = true;
         sheetDidMove = false;
@@ -199,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const diff = clientY - sheetStartY;
         
-        // Only start visual drag after moving at least 10px
         if (Math.abs(diff) > 10) {
             sheetDidMove = true;
             sheet.style.transition = 'none';
@@ -210,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
         sheetCurrentY = clientY;
         const windowHeight = window.innerHeight;
         
-        // Calculate base position based on current state
         let baseTranslateY;
         if (bottomSheetState === 'peek') {
             baseTranslateY = windowHeight - 72;
@@ -232,35 +254,28 @@ document.addEventListener('DOMContentLoaded', function() {
         sheet.style.transition = '';
         sheet.style.transform = '';
         
-        // If user actually dragged (moved finger), handle the swipe
         if (wasDrag) {
             const diff = sheetCurrentY - sheetStartY;
             
             if (Math.abs(diff) > 50) {
                 if (diff < 0) {
-                    // Swiped up
                     setBottomSheetState('expanded');
                 } else {
-                    // Swiped down
                     setBottomSheetState('peek');
                 }
             } else {
-                // Small movement - snap back
                 setBottomSheetState(bottomSheetState);
             }
         } else {
-            // It was a tap, not a drag - toggle the sheet
             toggleBottomSheet();
         }
         
         sheetDidMove = false;
     }
     
-    // Touch events on the sheet top area
     sheet.addEventListener('touchstart', function(e) {
         const rect = sheet.getBoundingClientRect();
         const touchY = e.touches[0].clientY - rect.top;
-        // Start drag if touching top 90px (handle + header area)
         if (touchY < 90) {
             startDrag(e.touches[0].clientY);
         }
@@ -274,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.addEventListener('touchend', endDrag);
     
-    // Mouse events (for desktop testing)
     sheet.addEventListener('mousedown', function(e) {
         const rect = sheet.getBoundingClientRect();
         const mouseY = e.clientY - rect.top;
@@ -293,21 +307,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('mouseup', endDrag);
 });
 
-// Menu rendering and quantity button initialization moved to an ES module: js/renderMenu.js
-// This keeps `script.js` focused on site behaviour (carousels, cart updates, checkout, etc.).
-
-// Adjust quantity from bottom sheet
 function adjustSheetQty(itemId, delta) {
-    if (itemId === 'combo_bagel_schmear') {
-        // Handle combo item
-        const comboQtyEl = document.querySelector('.combo-qty');
-        if (comboQtyEl) {
-            let qty = parseInt(comboQtyEl.textContent) || 0;
-            qty = Math.max(0, qty + delta);
-            comboQtyEl.textContent = qty;
+    // Check if it's a combo item (starts with "combo_")
+    if (itemId.startsWith('combo_')) {
+        const comboIndex = window._rrCombos.findIndex(c => c.id === itemId);
+        if (comboIndex !== -1) {
+            window._rrCombos[comboIndex].qty = Math.max(0, window._rrCombos[comboIndex].qty + delta);
+            window._rrCombos[comboIndex].itemTotal = window._rrCombos[comboIndex].qty * window._rrCombos[comboIndex].price;
+            if (window._rrCombos[comboIndex].qty === 0) {
+                window._rrCombos.splice(comboIndex, 1);
+            }
         }
     } else {
-        // Handle regular menu item
         const qtyEl = document.querySelector(`.qty[data-id="${itemId}"]`);
         if (qtyEl) {
             let qty = parseInt(qtyEl.textContent) || 0;
@@ -318,11 +329,13 @@ function adjustSheetQty(itemId, delta) {
     updateCart();
 }
 
-// Remove item from bottom sheet
 function removeSheetItem(itemId) {
-    if (itemId === 'combo_bagel_schmear') {
-        const comboQtyEl = document.querySelector('.combo-qty');
-        if (comboQtyEl) comboQtyEl.textContent = '0';
+    // Check if it's a combo item (starts with "combo_")
+    if (itemId.startsWith('combo_')) {
+        const comboIndex = window._rrCombos.findIndex(c => c.id === itemId);
+        if (comboIndex !== -1) {
+            window._rrCombos.splice(comboIndex, 1);
+        }
     } else {
         const qtyEl = document.querySelector(`.qty[data-id="${itemId}"]`);
         if (qtyEl) qtyEl.textContent = '0';
@@ -334,7 +347,6 @@ function updateCart() {
     let cartItems = [];
     let subtotal = 0;
 
-    // Handle regular menu items
     document.querySelectorAll('.menu-item').forEach(item => {
         const id = item.dataset.id;
         const qty = parseInt(document.querySelector(`.qty[data-id="${id}"]`).textContent);
@@ -349,41 +361,12 @@ function updateCart() {
         }
     });
 
-    // Handle combo item separately
-    const comboItem = document.querySelector('.combo-item');
-    if (comboItem) {
-        const comboQtyEl = comboItem.querySelector('.combo-qty');
-        const comboQty = parseInt(comboQtyEl?.textContent) || 0;
-        
-        if (comboQty > 0) {
-            const bagelSelect = document.getElementById('comboBagelSelect');
-            const schmearSelect = document.getElementById('comboSchmearSelect');
-            const bagelId = bagelSelect?.value || '';
-            const schmearId = schmearSelect?.value || '';
-            const bagelName = bagelSelect?.selectedOptions[0]?.dataset?.name || 'No bagel';
-            const schmearName = schmearSelect?.selectedOptions[0]?.dataset?.name || 'No schmear';
-            
-            const comboPrice = parseFloat(comboItem.dataset.price);
-            const comboTotal = comboQty * comboPrice;
-            const displayName = `Combo: ${bagelName} + ${schmearName}`;
-            
-            cartItems.push({
-                id: 'combo_bagel_schmear',
-                name: displayName,
-                price: comboPrice,
-                qty: comboQty,
-                itemTotal: comboTotal,
-                isCombo: true,
-                bagelId,
-                schmearId,
-                bagelName,
-                schmearName
-            });
-            subtotal += comboTotal;
-        }
-    }
+    // Add confirmed combos from global array
+    window._rrCombos.forEach(combo => {
+        cartItems.push(combo);
+        subtotal += combo.itemTotal;
+    });
 
-    // Update cart display
     const cartItemsDiv = document.getElementById('cartItems');
     if (cartItems.length === 0) {
         cartItemsDiv.innerHTML = '<p class="empty-cart">No items added</p>';
@@ -409,7 +392,6 @@ function updateCart() {
     if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
     document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
 
-    // Update review section (if present)
     const reviewItemsDiv = document.getElementById('reviewItems');
     if (reviewItemsDiv) {
         reviewItemsDiv.innerHTML = cartItems.map(item => 
@@ -422,7 +404,6 @@ function updateCart() {
     const reviewTotalEl = document.getElementById('reviewTotal');
     if (reviewTotalEl) reviewTotalEl.textContent = `₹${total.toFixed(2)}`;
 
-    // Update mobile bottom sheet cart
     const totalQty = cartItems.reduce((sum, item) => sum + item.qty, 0);
     const sheetItemCount = document.getElementById('sheetItemCount');
     const sheetTotal = document.getElementById('sheetTotal');
@@ -461,18 +442,15 @@ function updateCart() {
         }
     }
     
-    // Update body class for cart state (bottom sheet always visible on mobile)
     if (totalQty > 0) {
         document.body.classList.add('has-cart-items');
     } else {
         document.body.classList.remove('has-cart-items');
-        // Keep bottom sheet in peek state even when empty
         if (bottomSheetState !== 'peek') {
             setBottomSheetState('peek');
         }
     }
 
-    // Save cart to localStorage so checkout can pick it up
     try {
         if (cartItems.length === 0) {
             localStorage.removeItem('rr_cart');
@@ -483,7 +461,6 @@ function updateCart() {
         console.warn('Could not save cart to localStorage', err);
     }
 
-    // Update header toggle total (for mobile collapsed bar)
     const toggleTotalEl = document.getElementById('toggleTotal');
     if (toggleTotalEl) toggleTotalEl.textContent = document.getElementById('total').textContent;
 

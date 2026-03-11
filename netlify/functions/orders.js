@@ -1,3 +1,18 @@
+/**
+ * FILE: orders.js
+ * PURPOSE: Netlify function for order management including payment verification.
+ *
+ * NOTES:
+ * - POST: Creates order with Razorpay order, validates items/prices server-side
+ * - GET: Admin only, fetches orders with optional status/orderType filters
+ * - PATCH: Verify payment signature or update order status
+ * - DELETE: Admin only, remove order by orderNumber (or all with all=1)
+ * - Supports combo items with bagel/schmear selections
+ * - Applies discounts if discountId provided and valid
+ * - Orders stored in MongoDB round_room.orders collection
+ * - Payment verification uses HMAC SHA256 signature check
+ */
+
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
 const { isAdminAuthorized } = require("./utils");

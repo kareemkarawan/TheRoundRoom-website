@@ -1,3 +1,16 @@
+/**
+ * FILE: razorpay-webhook.js
+ * PURPOSE: Netlify function to handle Razorpay payment webhooks.
+ *
+ * NOTES:
+ * - POST only, receives webhook payload from Razorpay
+ * - Verifies signature using RAZORPAY_WEBHOOK_SECRET (HMAC SHA256)
+ * - Handles payment.captured and payment.failed events
+ * - Updates order status and payment details in MongoDB
+ * - Verifies amount matches expected order total
+ * - Logs events to order's events array for audit trail
+ */
+
 const crypto = require("crypto");
 const { MongoClient } = require("mongodb");
 

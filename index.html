@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: index.html
+  PURPOSE: Main homepage/landing page for The Round Room bagel shop with story, product carousels, and order CTA.
+  
+  NOTES:
+  - Uses video background from Cloudinary CDN
+  - Carousels for bagels, schmears, and desserts sections
+  - Welcome popup prompts login/register for new visitors (dismissible)
+  - Auth state managed via localStorage (rr_token, rr_welcome_dismissed)
+  - Hamburger menu for mobile navigation (changeHamburger function)
+  - Footer links to privacy, terms, refund, and contact pages
+  - Section anchors: #story, #bagels, #schmear, #dessert, #order
+  - Logout loading overlay for smooth UX during sign-out
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -233,7 +247,6 @@
         </div>
     </footer>
 
-    <!-- Welcome Popup -->
     <div class="welcome-popup-overlay" id="welcomePopup">
         <div class="welcome-popup">
             <h2>Welcome to The Round Room</h2>
@@ -276,7 +289,6 @@
     });
     </script>
 
-    <!-- Logout Loading Overlay -->
     <div id="logoutLoading" class="loading-overlay" style="display: none;">
         <div class="loading-card">Logging out...</div>
     </div>

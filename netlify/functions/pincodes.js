@@ -1,3 +1,16 @@
+/**
+ * FILE: pincodes.js
+ * PURPOSE: Netlify function for managing delivery pincodes.
+ *
+ * NOTES:
+ * - GET: Public, returns all serviceable pincodes
+ * - POST: Admin only, add new pincode with code field required
+ * - PUT: Admin only, update pincode by id query param
+ * - DELETE: Admin only, remove pincode by id query param
+ * - Pincodes stored in MongoDB round_room.pincodes collection
+ * - Frontend uses pincode list to validate delivery addresses
+ */
+
 const { MongoClient } = require("mongodb");
 const { isAdminAuthorized } = require("./utils");
 

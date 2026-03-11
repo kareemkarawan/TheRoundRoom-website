@@ -1,3 +1,15 @@
+/**
+ * FILE: logout.js
+ * PURPOSE: Netlify function to log out users by revoking their session.
+ *
+ * NOTES:
+ * - POST only, requires valid JWT in Authorization header
+ * - Marks session as revoked with current timestamp
+ * - Records logout event to audit log
+ * - Returns success even if session already revoked
+ * - Returns 401 for invalid/expired tokens
+ */
+
 const { getDB } = require("./db");
 const { verifyAuth } = require("./auth");
 const { getClientIp, recordAuthEvent } = require("./auth-activity");

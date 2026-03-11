@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<!--
+  FILE: admin.html
+  PURPOSE: Admin dashboard with system health checks, audit logging, order exports, and store diagnostics.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Quick actions: refresh data, user logs, export orders (CSV/JSON), clear data
+  - System health checks: Database, Settings, Orders, Menu, Audit APIs
+  - Store snapshot: status, total orders, menu items, revenue
+  - Audit log with filters (type, level, search) and admin notes
+  - Client-side error monitoring logs to audit API
+  - Destructive actions (clear orders/audit) require confirmation
+  - User logs accessible via separate page (/user-logs.html)
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

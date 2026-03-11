@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combo Section Example</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 2rem;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .demo-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: var(--rr-bg);
+            margin-bottom: 2rem;
+        }
+        .added-combos {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .added-combos h3 {
+            margin-top: 0;
+            color: var(--rr-bg);
+        }
+        .added-combo-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .added-combo-item:last-child {
+            border-bottom: none;
+        }
+        #comboList:empty::before {
+            content: "No combos added yet - select a bagel and schmear above";
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>Combo Section Demo</h1>
+        
+        <!-- COMBO SECTION -->
+        <div id="comboSection" class="combo-section">
+            <div class="small-menu-title">
+                <h3>BAGEL & SCHMEAR COMBO</h3>
+            </div>
+            <div id="comboContainer" class="combo-container">
+                <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Combo" data-price="250">
+                    <div class="combo-selectors">
+                        <div class="combo-selector-group">
+                            <label for="comboBagelSelect">Choose your bagel:</label>
+                            <select id="comboBagelSelect" class="combo-select" data-type="bagel">
+                                <option value="">Select a bagel</option>
+                                <option value="plain" data-name="Plain Bagel">Plain Bagel</option>
+                                <option value="everything" data-name="Everything Bagel">Everything Bagel</option>
+                                <option value="sesame" data-name="Sesame Bagel">Sesame Bagel</option>
+                                <option value="cinnamon" data-name="Cinnamon Raisin">Cinnamon Raisin</option>
+                            </select>
+                        </div>
+                        <div class="combo-selector-group">
+                            <label for="comboSchmearSelect">Choose your schmear:</label>
+                            <select id="comboSchmearSelect" class="combo-select" data-type="schmear">
+                                <option value="">Select a schmear</option>
+                                <option value="plain_cc" data-name="Plain Cream Cheese">Plain Cream Cheese</option>
+                                <option value="chive" data-name="Chive Cream Cheese">Chive Cream Cheese</option>
+                                <option value="strawberry" data-name="Strawberry Cream Cheese">Strawberry Cream Cheese</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="combo-info">
+                        <p class="combo-price">₹250.00</p>
+                        <div class="combo-controls">
+                            <button class="qty-btn combo-minus" data-id="combo_bagel_schmear" disabled>−</button>
+                            <span class="qty combo-qty" data-id="combo_bagel_schmear">1</span>
+                            <button class="qty-btn combo-plus" data-id="combo_bagel_schmear" disabled>+</button>
+                        </div>
+                    </div>
+                    <button class="combo-confirm-btn" disabled>Add to Cart</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Show added combos -->
+        <div class="added-combos">
+            <h3>Added Combos:</h3>
+            <div id="comboList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Demo script
+        const bagelSelect = document.getElementById('comboBagelSelect');
+        const schmearSelect = document.getElementById('comboSchmearSelect');
+        const comboQtyEl = document.querySelector('.combo-qty');
+        const comboMinusBtn = document.querySelector('.combo-minus');
+        const comboPlusBtn = document.querySelector('.combo-plus');
+        const confirmBtn = document.querySelector('.combo-confirm-btn');
+        const comboList = document.getElementById('comboList');
+        
+        let addedCombos = [];
+
+        function updateButtons() {
+            const bagelSelected = bagelSelect.value;
+            const schmearSelected = schmearSelect.value;
+            const qty = parseInt(comboQtyEl.textContent) || 1;
+            const bothSelected = bagelSelected && schmearSelected;
+            
+            comboPlusBtn.disabled = !bothSelected;
+            comboMinusBtn.disabled = !bothSelected || qty <= 1;
+            confirmBtn.disabled = !bothSelected;
+        }
+
+        function resetSelector() {
+            bagelSelect.value = '';
+            schmearSelect.value = '';
+            comboQtyEl.textContent = '1';
+            updateButtons();
+        }
+
+        function renderAddedCombos() {
+            comboList.innerHTML = addedCombos.map((combo, i) => 
+                `<div class="added-combo-item">
+                    <span>${combo.qty}x ${combo.name}</span>
+                    <span>₹${combo.total.toFixed(2)}</span>
+                </div>`
+            ).join('');
+        }
+
+        bagelSelect.addEventListener('change', updateButtons);
+        schmearSelect.addEventListener('change', updateButtons);
+
+        comboPlusBtn.addEventListener('click', () => {
+            if (comboPlusBtn.disabled) return;
+            let qty = parseInt(comboQtyEl.textContent) || 1;
+            qty++;
+            comboQtyEl.textContent = qty;
+            updateButtons();
+        });
+
+        comboMinusBtn.addEventListener('click', () => {
+            let qty = parseInt(comboQtyEl.textContent) || 1;
+            qty = Math.max(1, qty - 1);
+            comboQtyEl.textContent = qty;
+            updateButtons();
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (confirmBtn.disabled) return;
+            
+            const bagelName = bagelSelect.selectedOptions[0]?.dataset?.name || '';
+            const schmearName = schmearSelect.selectedOptions[0]?.dataset?.name || '';
+            const qty = parseInt(comboQtyEl.textContent) || 1;
+            const price = 250;
+            
+            addedCombos.push({
+                name: `Combo: ${bagelName} + ${schmearName}`,
+                qty: qty,
+                total: qty * price
+            });
+            
+            renderAddedCombos();
+            resetSelector();
+        });
+
+        updateButtons();
+    </script>
+</body>
+</html>

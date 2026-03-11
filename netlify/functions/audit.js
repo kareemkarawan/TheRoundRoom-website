@@ -1,3 +1,16 @@
+/**
+ * FILE: audit.js
+ * PURPOSE: Netlify function for audit log CRUD operations (admin only).
+ *
+ * NOTES:
+ * - GET: Fetch logs with optional filters (type, level, source, since, limit)
+ * - POST: Create new audit log entry with message, level, source, details
+ * - DELETE: Remove logs (all=1 or before=ISO date)
+ * - All routes require admin token in x-admin-token header
+ * - Logs stored in MongoDB round_room.audit_logs collection
+ * - Default limit is 100, max 300 entries per request
+ */
+
 const { MongoClient } = require("mongodb");
 const { isAdminAuthorized } = require("./utils");
 

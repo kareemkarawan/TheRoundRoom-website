@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!--
+  FILE: collections-admin.html
+  PURPOSE: Admin page for managing collection (pickup) orders with a mobile-optimized card interface.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Toggle to enable/disable collection at popup feature
+  - Displays PAID, PREPARING, READY orders only (orderType=collection)
+  - Card-based UI optimized for mobile staff use
+  - "Mark as Collected" button updates order status to COMPLETED
+  - Auto-refresh every 30 seconds for real-time updates
+  - Smooth card removal animation on completion
+  - Order notes highlighted in yellow for visibility
+  - Settings update via /.netlify/functions/settings API
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">

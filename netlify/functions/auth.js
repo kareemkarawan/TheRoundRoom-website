@@ -1,3 +1,17 @@
+/**
+ * FILE: auth.js
+ * PURPOSE: JWT verification middleware for protected Netlify functions.
+ *
+ * NOTES:
+ * - verifyAuth() extracts and validates JWT from Authorization header
+ * - Expects "Bearer <token>" format
+ * - Verifies token signature against JWT_SECRET env var
+ * - Checks session validity in sessions collection if jti present
+ * - Session must not be revoked and must not be expired
+ * - Returns decoded token payload { userId, role, jti }
+ * - Throws error for invalid/expired tokens or sessions
+ */
+
 const jwt = require("jsonwebtoken");
 const { getDB } = require("./db");
 
