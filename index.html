@@ -32,7 +32,11 @@
             <div class="auth-buttons" id="authButtons">
                 <a href="/login.html" class="auth-btn login-register-btn" id="loginRegisterBtn">Login/Register</a>
                 <div class="auth-user" id="authUser" style="display: none;">
-                    <button type="button" class="auth-btn account-btn" id="accountBtn">Account</button>
+                    <button type="button" class="account-btn" id="accountBtn" aria-label="Account">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                            <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/>
+                        </svg>
+                    </button>
                     <div class="auth-dropdown" id="authDropdown" style="display: none;">
                         <span class="user-email" id="userEmail"></span>
                         <a href="#" class="auth-btn logout-btn" id="logoutBtn">Logout</a>

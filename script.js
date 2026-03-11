@@ -1553,9 +1553,10 @@ async function handleLogin(email, password, errorElementId, loadingElementId) {
             return;
         }
 
-        // Store token in localStorage
+        // Store token and email in localStorage
         if (data.token) {
             localStorage.setItem("rr_token", data.token);
+            localStorage.setItem("rr_email", email.toLowerCase().trim());
         }
 
         // Update nav and redirect
@@ -1654,9 +1655,10 @@ async function handleRegister(email, phone, password, errorElementId, loadingEle
             return;
         }
 
-        // Store token in localStorage if provided
+        // Store token and email in localStorage if provided
         if (data.token) {
             localStorage.setItem("rr_token", data.token);
+            localStorage.setItem("rr_email", email.toLowerCase().trim());
         }
 
         // Update nav and redirect
@@ -1728,6 +1730,7 @@ async function authenticatedFetch(url, options = {}) {
  */
 async function updateAuthNav() {
     const token = localStorage.getItem("rr_token");
+    const cachedEmail = localStorage.getItem("rr_email");
     const authButtons = document.getElementById("authButtons");
     const loginRegisterBtn = document.getElementById("loginRegisterBtn");
     const authUser = document.getElementById("authUser");
@@ -1737,24 +1740,30 @@ async function updateAuthNav() {
     if (!authButtons) return;
 
     if (token) {
-        // User is logged in - fetch and display user info
+        // Immediately show Account button using cached email (no delay)
+        loginRegisterBtn.style.display = "none";
+        authUser.style.display = "flex";
+        if (userEmail && cachedEmail) userEmail.textContent = cachedEmail;
+        if (authDropdown) authDropdown.style.display = "none";
+
+        // Verify token in background and update email if needed
         try {
             const response = await authenticatedFetch("/.netlify/functions/profile");
             if (response.profile && response.profile.email) {
-                loginRegisterBtn.style.display = "none";
-                authUser.style.display = "flex";
-                userEmail.textContent = response.profile.email;
-                if (authDropdown) authDropdown.style.display = "none";
+                if (userEmail) userEmail.textContent = response.profile.email;
+                localStorage.setItem("rr_email", response.profile.email);
             }
         } catch (err) {
-            // Token invalid, clear it
+            // Token invalid, clear it and revert UI
             localStorage.removeItem("rr_token");
+            localStorage.removeItem("rr_email");
             loginRegisterBtn.style.display = "inline-block";
             authUser.style.display = "none";
             if (authDropdown) authDropdown.style.display = "none";
         }
     } else {
         // User is not logged in
+        localStorage.removeItem("rr_email");
         loginRegisterBtn.style.display = "inline-block";
         authUser.style.display = "none";
         if (authDropdown) authDropdown.style.display = "none";
@@ -1813,6 +1822,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             localStorage.removeItem("rr_token");
+            localStorage.removeItem("rr_email");
             authDropdown.classList.remove("active");
             if (authDropdown) authDropdown.style.display = "none";
             updateAuthNav();

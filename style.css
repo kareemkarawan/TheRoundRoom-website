@@ -312,7 +312,24 @@ footer {
 }
 
 .account-btn {
-	background-color: transparent;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 0.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--rr-text);
+	transition: opacity 0.2s ease;
+}
+
+.account-btn:hover {
+	opacity: 0.7;
+}
+
+.account-btn svg {
+	width: 28px;
+	height: 28px;
 }
 
 .auth-dropdown {
@@ -331,16 +348,17 @@ footer {
 }
 
 .logout-btn {
-  background-color: transparent;
-  color: var(--rr-bg);
-  border-color: var(--rr-bg);
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-  margin: auto;
+  background-color: var(--rr-bg);
+  color: var(--rr-text);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  font-weight: 500;
 }
 
 .logout-btn:hover {
-  background-color: var(--rr-bg);
+  background-color: #8a3344;
   color: var(--rr-text);
 }
 
@@ -825,9 +843,18 @@ footer {
 	.auth-btn {
 		width: auto;
 		text-align: center;
-		font-size: 0.7rem;
-		padding: 0.3rem 0.5rem;
+		font-size: 0.65rem;
+		padding: 0.2rem 0.4rem;
 		align-self: flex-start;
+	}
+
+	.account-btn {
+		padding: 0.15rem;
+	}
+
+	.account-btn svg {
+		width: 24px;
+		height: 24px;
 	}
 
 	.auth-user {
@@ -868,8 +895,12 @@ footer {
 	}
 
 	.logout-btn {
-		width: 100%;
+		width: auto;
 		text-align: center;
+		padding: 0.75rem 1.5rem;
+		font-size: 1rem;
+		border-radius: 8px;
+		margin-top: 0.5rem;
 	}
 
 	.section .ss {
@@ -1232,33 +1263,6 @@ footer {
 	margin: 0;
 } 
 
-.qty-btn {
-	width: 32px;
-	height: 32px;
-	border-radius: 4px;
-	background-color: var(--rr-bg);
-	border: none;
-	color: #fff;
-	font-size: 1.2rem;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s ease;
-}
-
-.qty-btn:active {
-	background-color: #5a1d28;
-}
-
-.qty {
-	font-weight: 600;
-	font-size: 1rem;
-	min-width: 30px;
-	text-align: center;
-	color: #1b1b1b;
-}
-
 .item-controls {
 	display: flex;
 	align-items: center;
@@ -1268,7 +1272,7 @@ footer {
 	padding: 0.35rem 0.5rem;
 }
 
-.qty-btn {
+.item-controls .qty-btn {
 	width: 44px;
 	height: 44px;
 	border-radius: 4px;
@@ -1284,16 +1288,17 @@ footer {
 	transition: all 0.2s ease;
 }
 
-.qty-btn:active {
+.item-controls .qty-btn:active {
 	background-color: #5a1d28;
 	transform: scale(0.95);
 }
 
-.qty {
+.item-controls .qty {
 	font-weight: 600;
 	font-size: 1rem;
 	min-width: 30px;
 	text-align: center;
+	color: #1b1b1b;
 }
 
 /* CART SIDEBAR - Mobile: Sticky bottom */
@@ -1535,7 +1540,7 @@ footer {
 	border-radius: 6px;
 	padding: 0.15rem;
 }
-.qty-btn {
+.qty-controls .qty-btn {
 	width: 24px;
 	height: 24px;
 	border: none;
@@ -1550,7 +1555,7 @@ footer {
 	justify-content: center;
 	transition: background 0.15s ease;
 }
-.qty-btn:hover {
+.qty-controls .qty-btn:hover {
 	background: var(--rr-bg);
 	color: #fff;
 }
@@ -1579,16 +1584,6 @@ footer {
 	.checkout-item .name {
 		font-size: 0.9rem;
 		max-width: 100px;
-	}
-	.qty-btn {
-		width: 22px;
-		height: 22px;
-		font-size: 0.9rem;
-	}
-	.remove-btn {
-		width: 22px;
-		height: 22px;
-		font-size: 1rem;
 	}
 	.checkout-item .item-price {
 		font-size: 0.9rem;
@@ -2956,17 +2951,5 @@ footer {
     }
 }
 
-/* Override the too-small mobile buttons */
-@media (max-width: 480px) {
-    .checkout-item .qty-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-    }
-    .checkout-item .remove-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1.1rem;
-    }
-}
+
 
