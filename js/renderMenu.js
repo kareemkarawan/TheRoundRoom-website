@@ -149,13 +149,14 @@ async function renderCombo(menuItems, comboSettings) {
 let currentBoxData = null;
 let availableBagels = [];
 let availableSchmears = [];
-let selectedBagels = [];
-let selectedSchmears = [];
+// Store quantities per item: { 'Plain': 2, 'Everything': 1 }
+let bagelQuantities = {};
+let schmearQuantities = {};
 
 function openBoxPopup(box) {
   currentBoxData = box;
-  selectedBagels = [];
-  selectedSchmears = [];
+  bagelQuantities = {};
+  schmearQuantities = {};
 
   const popup = document.getElementById('boxPopup');
   const bagelGrid = document.getElementById('bagelSelections');
@@ -166,21 +167,27 @@ function openBoxPopup(box) {
 
   titleEl.textContent = box.name;
 
-  // Render bagel options
+  // Render bagel options with qty controls
   bagelGrid.innerHTML = availableBagels.map(b => `
     <div class="box-selection-item" data-type="bagel" data-name="${b.name}">
-      <input type="checkbox" id="bagel-${b.name.replace(/\s+/g, '-')}">
-      <span class="box-selection-check"></span>
       <span class="box-selection-name">${b.name}</span>
+      <div class="box-qty-controls">
+        <button type="button" class="box-qty-btn minus" data-type="bagel" data-name="${b.name}">−</button>
+        <span class="box-qty-value" data-type="bagel" data-name="${b.name}">0</span>
+        <button type="button" class="box-qty-btn plus" data-type="bagel" data-name="${b.name}">+</button>
+      </div>
     </div>
   `).join('');
 
-  // Render schmear options
+  // Render schmear options with qty controls
   schmearGrid.innerHTML = availableSchmears.map(s => `
     <div class="box-selection-item" data-type="schmear" data-name="${s.name}">
-      <input type="checkbox" id="schmear-${s.name.replace(/\s+/g, '-')}">
-      <span class="box-selection-check"></span>
       <span class="box-selection-name">${s.name}</span>
+      <div class="box-qty-controls">
+        <button type="button" class="box-qty-btn minus" data-type="schmear" data-name="${s.name}">−</button>
+        <span class="box-qty-value" data-type="schmear" data-name="${s.name}">0</span>
+        <button type="button" class="box-qty-btn plus" data-type="schmear" data-name="${s.name}">+</button>
+      </div>
     </div>
   `).join('');
 
@@ -196,32 +203,34 @@ function closeBoxPopup() {
     popup.setAttribute('aria-hidden', 'true');
   }
   currentBoxData = null;
-  selectedBagels = [];
-  selectedSchmears = [];
+  bagelQuantities = {};
+  schmearQuantities = {};
 }
 
-function toggleBoxSelection(el) {
+function adjustBoxItemQty(type, name, delta) {
   if (!currentBoxData) return;
-  const type = el.dataset.type;
-  const name = el.dataset.name;
-  const isSelected = el.classList.contains('selected');
 
-  if (type === 'bagel') {
-    if (isSelected) {
-      selectedBagels = selectedBagels.filter(n => n !== name);
-      el.classList.remove('selected');
-    } else if (selectedBagels.length < currentBoxData.bagelCount) {
-      selectedBagels.push(name);
-      el.classList.add('selected');
-    }
-  } else if (type === 'schmear') {
-    if (isSelected) {
-      selectedSchmears = selectedSchmears.filter(n => n !== name);
-      el.classList.remove('selected');
-    } else if (selectedSchmears.length < currentBoxData.schmearCount) {
-      selectedSchmears.push(name);
-      el.classList.add('selected');
-    }
+  const quantities = type === 'bagel' ? bagelQuantities : schmearQuantities;
+  const maxCount = type === 'bagel' ? currentBoxData.bagelCount : currentBoxData.schmearCount;
+  const currentTotal = Object.values(quantities).reduce((sum, q) => sum + q, 0);
+  const currentQty = quantities[name] || 0;
+  let newQty = currentQty + delta;
+
+  // Clamp to valid range
+  if (newQty < 0) newQty = 0;
+  if (delta > 0 && currentTotal >= maxCount) return; // Can't add more
+
+  quantities[name] = newQty;
+  if (newQty === 0) delete quantities[name];
+
+  // Update display
+  const qtyEl = document.querySelector(`.box-qty-value[data-type="${type}"][data-name="${name}"]`);
+  if (qtyEl) qtyEl.textContent = newQty;
+
+  // Highlight row if has qty
+  const row = qtyEl?.closest('.box-selection-item');
+  if (row) {
+    row.classList.toggle('selected', newQty > 0);
   }
 
   updateBoxCounters();
@@ -234,15 +243,18 @@ function updateBoxCounters() {
   const schmearCounter = document.getElementById('schmearCounter');
   const confirmBtn = document.getElementById('boxConfirmBtn');
 
+  const bagelTotal = Object.values(bagelQuantities).reduce((sum, q) => sum + q, 0);
+  const schmearTotal = Object.values(schmearQuantities).reduce((sum, q) => sum + q, 0);
+
   if (bagelCounter) {
-    bagelCounter.textContent = `Selected ${selectedBagels.length} of ${currentBoxData.bagelCount}`;
+    bagelCounter.textContent = `Selected ${bagelTotal} of ${currentBoxData.bagelCount}`;
   }
   if (schmearCounter) {
-    schmearCounter.textContent = `Selected ${selectedSchmears.length} of ${currentBoxData.schmearCount}`;
+    schmearCounter.textContent = `Selected ${schmearTotal} of ${currentBoxData.schmearCount}`;
   }
 
-  const bagelOk = selectedBagels.length === currentBoxData.bagelCount;
-  const schmearOk = selectedSchmears.length === currentBoxData.schmearCount;
+  const bagelOk = bagelTotal === currentBoxData.bagelCount;
+  const schmearOk = schmearTotal === currentBoxData.schmearCount;
 
   if (confirmBtn) {
     confirmBtn.disabled = !(bagelOk && schmearOk);
@@ -251,12 +263,26 @@ function updateBoxCounters() {
 
 function confirmBoxSelection() {
   if (!currentBoxData) return;
-  if (selectedBagels.length !== currentBoxData.bagelCount) return;
-  if (selectedSchmears.length !== currentBoxData.schmearCount) return;
+
+  const bagelTotal = Object.values(bagelQuantities).reduce((sum, q) => sum + q, 0);
+  const schmearTotal = Object.values(schmearQuantities).reduce((sum, q) => sum + q, 0);
+
+  if (bagelTotal !== currentBoxData.bagelCount) return;
+  if (schmearTotal !== currentBoxData.schmearCount) return;
+
+  // Build arrays with quantities (e.g., { 'Plain': 2 } => ['Plain', 'Plain'])
+  const selectedBagels = [];
+  for (const [name, qty] of Object.entries(bagelQuantities)) {
+    for (let i = 0; i < qty; i++) selectedBagels.push(name);
+  }
+  const selectedSchmears = [];
+  for (const [name, qty] of Object.entries(schmearQuantities)) {
+    for (let i = 0; i < qty; i++) selectedSchmears.push(name);
+  }
 
   // Add to cart using the script.js function
   if (typeof window.addBoxToCart === 'function') {
-    window.addBoxToCart(currentBoxData, [...selectedBagels], [...selectedSchmears]);
+    window.addBoxToCart(currentBoxData, selectedBagels, selectedSchmears);
   }
 
   closeBoxPopup();
@@ -277,12 +303,17 @@ function initBoxPopup() {
   if (cancelBtn) cancelBtn.addEventListener('click', closeBoxPopup);
   if (confirmBtn) confirmBtn.addEventListener('click', confirmBoxSelection);
 
-  // Delegated click handlers for selection items
+  // Delegated click handlers for qty +/- buttons
   [bagelGrid, schmearGrid].forEach(grid => {
     if (grid) {
       grid.addEventListener('click', e => {
-        const item = e.target.closest('.box-selection-item');
-        if (item) toggleBoxSelection(item);
+        const btn = e.target.closest('.box-qty-btn');
+        if (btn) {
+          const type = btn.dataset.type;
+          const name = btn.dataset.name;
+          const delta = btn.classList.contains('plus') ? 1 : -1;
+          adjustBoxItemQty(type, name, delta);
+        }
       });
     }
   });

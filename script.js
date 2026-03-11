@@ -59,8 +59,18 @@ function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) 
 // Add a box set with selected bagels and schmears to the cart
 window.addBoxToCart = function(boxData, selectedBagels, selectedSchmears) {
     const boxId = `box_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    const bagelsStr = selectedBagels.join(', ');
-    const schmearsStr = selectedSchmears.length > 0 ? selectedSchmears.join(', ') : 'None';
+    
+    // Consolidate duplicates into count format: "2x Plain, 1x Everything"
+    function consolidateItems(items) {
+        const counts = {};
+        items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+        return Object.entries(counts)
+            .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+            .join(', ');
+    }
+    
+    const bagelsStr = consolidateItems(selectedBagels);
+    const schmearsStr = selectedSchmears.length > 0 ? consolidateItems(selectedSchmears) : 'None';
     const displayName = `${boxData.name}`;
     
     window._rrBoxes.push({
@@ -397,7 +407,10 @@ function updateCart() {
 
     document.querySelectorAll('.menu-item').forEach(item => {
         const id = item.dataset.id;
-        const qty = parseInt(document.querySelector(`.qty[data-id="${id}"]`).textContent);
+        // Skip box items that use ADD button (no qty element)
+        const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
+        if (!qtyEl) return;
+        const qty = parseInt(qtyEl.textContent) || 0;
                 
         if (qty > 0) {
             const name = item.dataset.name;
@@ -1579,12 +1592,15 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
 });
 
-document.querySelector('.carousel-track').addEventListener('click', function(e) {
-    const item = e.target.closest('.carousel-slide');
-    if (!item) return;
-    const id = item.dataset.id;
-    window.loacation.href = '/product?id=${encodeURIComponent(id)}';
-});
+const carouselTrack = document.querySelector('.carousel-track');
+if (carouselTrack) {
+    carouselTrack.addEventListener('click', function(e) {
+        const item = e.target.closest('.carousel-slide');
+        if (!item) return;
+        const id = item.dataset.id;
+        window.location.href = `/product?id=${encodeURIComponent(id)}`;
+    });
+}
 
 /**
  * Frontend login function

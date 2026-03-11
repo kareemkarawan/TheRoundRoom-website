@@ -1286,11 +1286,11 @@ footer {
 .box-selection-item {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 0.75rem;
 	padding: 0.75rem;
 	border: 1px solid #ddd;
 	border-radius: 8px;
-	cursor: pointer;
 	transition: border-color 200ms, background 200ms;
 }
 .box-selection-item:hover {
@@ -1301,32 +1301,37 @@ footer {
 	border-color: var(--rr-bg);
 	background: rgba(109,36,48,0.08);
 }
-.box-selection-item input {
-	display: none;
+.box-qty-controls {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
 }
-.box-selection-check {
-	width: 20px;
-	height: 20px;
-	border: 2px solid #ccc;
+.box-qty-btn {
+	width: 28px;
+	height: 28px;
+	border: 1px solid #ccc;
 	border-radius: 4px;
+	background: #fff;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	flex-shrink: 0;
 	transition: border-color 200ms, background 200ms;
 }
-.box-selection-item.selected .box-selection-check {
+.box-qty-btn:hover {
 	border-color: var(--rr-bg);
-	background: var(--rr-bg);
-	color: #fff;
+	background: rgba(109,36,48,0.05);
 }
-.box-selection-check::after {
-	content: "✓";
-	font-size: 0.8rem;
-	opacity: 0;
+.box-qty-btn:active {
+	background: rgba(109,36,48,0.15);
 }
-.box-selection-item.selected .box-selection-check::after {
-	opacity: 1;
+.box-qty-value {
+	min-width: 1.5rem;
+	text-align: center;
+	font-weight: 600;
+	color: var(--rr-bg);
 }
 .box-selection-name {
 	flex: 1;
