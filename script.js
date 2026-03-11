@@ -128,10 +128,11 @@ document.addEventListener('DOMContentLoaded', function () {
 // ==========================================
 // MOBILE BOTTOM SHEET CART
 // ==========================================
-let bottomSheetState = 'hidden'; // hidden, peek, half, expanded
+let bottomSheetState = 'peek'; // hidden, peek, half, expanded
 let sheetDragging = false;
 let sheetStartY = 0;
 let sheetCurrentY = 0;
+let sheetDidMove = false; // Track if user actually dragged
 
 function setBottomSheetState(state) {
     const sheet = document.getElementById('cartBottomSheet');
@@ -142,7 +143,7 @@ function setBottomSheetState(state) {
     sheet.className = 'cart-bottom-sheet ' + state;
     
     if (overlay) {
-        if (state === 'half' || state === 'expanded') {
+        if (state === 'expanded') {
             overlay.classList.add('visible');
         } else {
             overlay.classList.remove('visible');
@@ -152,10 +153,8 @@ function setBottomSheetState(state) {
 
 function toggleBottomSheet() {
     if (bottomSheetState === 'peek') {
-        setBottomSheetState('half');
-    } else if (bottomSheetState === 'half') {
         setBottomSheetState('expanded');
-    } else if (bottomSheetState === 'expanded') {
+    } else {
         setBottomSheetState('peek');
     }
 }
@@ -170,11 +169,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!sheet) return;
     
-    // Tap header to toggle
-    if (header) {
-        header.addEventListener('click', toggleBottomSheet);
-    }
-    
     // Tap overlay to minimize
     if (overlay) {
         overlay.addEventListener('click', function() {
@@ -184,7 +178,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Checkout button
     if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', function() {
+        checkoutBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
             // Trigger the same checkout flow as desktop
             const mainCheckoutBtn = document.getElementById('checkoutBtn');
             if (mainCheckoutBtn) mainCheckoutBtn.click();
@@ -194,24 +189,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Drag handling
     function startDrag(clientY) {
         sheetDragging = true;
+        sheetDidMove = false;
         sheetStartY = clientY;
         sheetCurrentY = clientY;
-        sheet.style.transition = 'none';
     }
     
     function moveDrag(clientY) {
         if (!sheetDragging) return;
-        sheetCurrentY = clientY;
         
-        const diff = sheetCurrentY - sheetStartY;
+        const diff = clientY - sheetStartY;
+        
+        // Only start visual drag after moving at least 10px
+        if (Math.abs(diff) > 10) {
+            sheetDidMove = true;
+            sheet.style.transition = 'none';
+        }
+        
+        if (!sheetDidMove) return;
+        
+        sheetCurrentY = clientY;
         const windowHeight = window.innerHeight;
         
         // Calculate base position based on current state
         let baseTranslateY;
         if (bottomSheetState === 'peek') {
             baseTranslateY = windowHeight - 72;
-        } else if (bottomSheetState === 'half') {
-            baseTranslateY = windowHeight * 0.45;
         } else if (bottomSheetState === 'expanded') {
             baseTranslateY = 0;
         } else {
@@ -224,35 +226,45 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function endDrag() {
         if (!sheetDragging) return;
+        
+        const wasDrag = sheetDidMove;
         sheetDragging = false;
         sheet.style.transition = '';
         sheet.style.transform = '';
         
-        const diff = sheetCurrentY - sheetStartY;
-        
-        // Determine new state based on drag direction and distance
-        if (Math.abs(diff) > 50) {
-            if (diff < 0) {
-                // Dragged up
-                if (bottomSheetState === 'peek') setBottomSheetState('half');
-                else if (bottomSheetState === 'half') setBottomSheetState('expanded');
+        // If user actually dragged (moved finger), handle the swipe
+        if (wasDrag) {
+            const diff = sheetCurrentY - sheetStartY;
+            
+            if (Math.abs(diff) > 50) {
+                if (diff < 0) {
+                    // Swiped up
+                    setBottomSheetState('expanded');
+                } else {
+                    // Swiped down
+                    setBottomSheetState('peek');
+                }
             } else {
-                // Dragged down
-                if (bottomSheetState === 'expanded') setBottomSheetState('half');
-                else if (bottomSheetState === 'half') setBottomSheetState('peek');
+                // Small movement - snap back
+                setBottomSheetState(bottomSheetState);
             }
         } else {
-            // Snap back to current state
-            setBottomSheetState(bottomSheetState);
+            // It was a tap, not a drag - toggle the sheet
+            toggleBottomSheet();
         }
+        
+        sheetDidMove = false;
     }
     
-    // Touch events
-    if (handle) {
-        handle.addEventListener('touchstart', function(e) {
+    // Touch events on the sheet top area
+    sheet.addEventListener('touchstart', function(e) {
+        const rect = sheet.getBoundingClientRect();
+        const touchY = e.touches[0].clientY - rect.top;
+        // Start drag if touching top 90px (handle + header area)
+        if (touchY < 90) {
             startDrag(e.touches[0].clientY);
-        }, { passive: true });
-    }
+        }
+    }, { passive: true });
     
     document.addEventListener('touchmove', function(e) {
         if (sheetDragging) {
@@ -263,12 +275,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('touchend', endDrag);
     
     // Mouse events (for desktop testing)
-    if (handle) {
-        handle.addEventListener('mousedown', function(e) {
+    sheet.addEventListener('mousedown', function(e) {
+        const rect = sheet.getBoundingClientRect();
+        const mouseY = e.clientY - rect.top;
+        if (mouseY < 90) {
             startDrag(e.clientY);
             e.preventDefault();
-        });
-    }
+        }
+    });
     
     document.addEventListener('mousemove', function(e) {
         if (sheetDragging) {
@@ -405,16 +419,15 @@ function updateCart() {
         }
     }
     
-    // Show/hide bottom sheet based on cart contents
+    // Update body class for cart state (bottom sheet always visible on mobile)
     if (totalQty > 0) {
         document.body.classList.add('has-cart-items');
-        // Show bottom sheet in peek state if hidden
-        if (bottomSheetState === 'hidden') {
-            setBottomSheetState('peek');
-        }
     } else {
         document.body.classList.remove('has-cart-items');
-        setBottomSheetState('hidden');
+        // Keep bottom sheet in peek state even when empty
+        if (bottomSheetState !== 'peek') {
+            setBottomSheetState('peek');
+        }
     }
 
     // Save cart to localStorage so checkout can pick it up

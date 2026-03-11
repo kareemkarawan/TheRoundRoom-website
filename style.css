@@ -2618,7 +2618,7 @@ footer {
     
     /* Show bottom sheet on mobile */
     .cart-bottom-sheet {
-        display: flex;
+        display: flex !important;
     }
     
     /* Overlay backdrop */
@@ -2644,8 +2644,8 @@ footer {
         left: 0;
         right: 0;
         bottom: 0;
-        background: var(--rr-text);
-        color: var(--rr-bg);
+        background: var(--rr-bg);
+        color: var(--rr-text);
         border-radius: 20px 20px 0 0;
         z-index: 999;
         transform: translateY(calc(100% - 72px)); /* Peek state - show header */
@@ -2686,7 +2686,7 @@ footer {
     .sheet-handle-bar {
         width: 36px;
         height: 5px;
-        background: rgba(245,240,235,0.35);
+        background: rgba(245,240,235,0.4);
         border-radius: 3px;
     }
     
@@ -2786,8 +2786,8 @@ footer {
     
     .sheet-checkout-btn {
         width: 100%;
-        background: var(--rr-bg);
-        color: var(--rr-text);
+        background: var(--rr-text);
+        color: var(--rr-bg);
         border: none;
         padding: 1rem;
         border-radius: 10px;
@@ -2802,8 +2802,9 @@ footer {
         transform: scale(0.98);
     }
     
-    /* Add padding to page bottom for bottom sheet peek */
-    body.has-cart-items .menu-container {
+    /* Add padding to page bottom for bottom sheet peek - always on mobile */
+    .menu-container,
+    .order-page {
         padding-bottom: 90px;
     }
 }
@@ -2814,7 +2815,7 @@ footer {
     margin: 1.5rem;
     position: sticky;
     top: 0;
-    background: var(--rr-bg);
+    background: var(--rr-text);
     padding: 1rem 0.5rem;
     margin-left: -0.5rem;
     margin-right: -0.5rem;
