@@ -514,6 +514,36 @@ async function handlePatch(body, orderNumber) {
         };
       }
 
+      // Remove one discount use from user if discount was applied
+      if (orderDoc?.pricing?.discount?.id && orderDoc?.customer?.email) {
+        try {
+          const usersCollection = db.collection("users");
+          const userEmail = orderDoc.customer.email.toLowerCase().trim();
+          const discountIdUsed = orderDoc.pricing.discount.id;
+          
+          // Find user and remove exactly one matching discount entry
+          const user = await usersCollection.findOne({ email: userEmail });
+          if (user && Array.isArray(user.discounts)) {
+            const discountIndex = user.discounts.findIndex(d => d.discountId === discountIdUsed);
+            if (discountIndex !== -1) {
+              // Remove the discount at that index
+              await usersCollection.updateOne(
+                { email: userEmail },
+                { $unset: { [`discounts.${discountIndex}`]: 1 } }
+              );
+              // Clean up null values
+              await usersCollection.updateOne(
+                { email: userEmail },
+                { $pull: { discounts: null } }
+              );
+            }
+          }
+        } catch (discountErr) {
+          console.error("Error removing discount from user:", discountErr);
+          // Don't fail the payment verification if discount removal fails
+        }
+      }
+
       return {
         statusCode: 200,
         body: JSON.stringify({ success: true, message: "Payment verified" }),

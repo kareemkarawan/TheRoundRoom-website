@@ -373,8 +373,15 @@ function updateCart() {
     } else {
         cartItemsDiv.innerHTML = cartItems.map(item => 
             `<div class="cart-item">
-                <span>${item.qty}x ${item.name}</span>
-                <span>₹${item.itemTotal.toFixed(2)}</span>
+                <div class="cart-item-left">
+                    <div class="cart-item-controls">
+                        <button class="cart-item-btn" onclick="adjustSheetQty('${item.id}', -1)">−</button>
+                        <span class="cart-item-qty">${item.qty}</span>
+                        <button class="cart-item-btn" onclick="adjustSheetQty('${item.id}', 1)">+</button>
+                    </div>
+                    <span class="cart-item-name">${item.name}</span>
+                </div>
+                <span class="cart-item-price">₹${item.itemTotal.toFixed(2)}</span>
             </div>`
         ).join('');
     }
@@ -598,9 +605,38 @@ document.addEventListener('DOMContentLoaded', function() {
         if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
         
         try {
-            const response = await fetch('/.netlify/functions/discounts?activeOnly=true');
+            // Fetch user's personal discounts from profile
+            const response = await fetch('/.netlify/functions/profile', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             if (response.ok) {
-                availableDiscounts = await response.json();
+                const data = await response.json();
+                
+                // Auto-fill email and phone from profile
+                const emailInput = document.getElementById('email');
+                const phoneInput = document.getElementById('phone');
+                if (emailInput && data.profile?.email) {
+                    emailInput.value = data.profile.email;
+                }
+                if (phoneInput && data.profile?.phone) {
+                    phoneInput.value = data.profile.phone;
+                }
+                
+                // Group discounts by discountId and count uses available
+                const discountMap = new Map();
+                (data.profile?.discounts || []).forEach(d => {
+                    if (discountMap.has(d.discountId)) {
+                        discountMap.get(d.discountId).count += 1;
+                    } else {
+                        discountMap.set(d.discountId, { ...d, count: 1 });
+                    }
+                });
+                availableDiscounts = Array.from(discountMap.values()).map(d => ({
+                    id: d.discountId,
+                    name: d.name,
+                    percentage: d.percentage,
+                    usesRemaining: d.count
+                }));
                 populateDiscountDropdown();
             }
         } catch (e) { console.error('Could not load discounts', e); }
@@ -613,7 +649,8 @@ document.addEventListener('DOMContentLoaded', function() {
         availableDiscounts.forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.id;
-            opt.textContent = `${d.name} (${d.percentage}% off)`;
+            const usesText = d.usesRemaining > 1 ? ` (${d.usesRemaining} uses left)` : '';
+            opt.textContent = `${d.name} (${d.percentage}% off)${usesText}`;
             select.appendChild(opt);
         });
     }
@@ -1834,8 +1871,15 @@ document.addEventListener("DOMContentLoaded", function () {
         const now = Date.now();
 
         if (lastActivity && (now - lastActivity) > INACTIVITY_TIMEOUT) {
-            // Auto logout due to inactivity
+            // Auto logout due to inactivity - revoke session server-side
             console.log("Auto logout due to inactivity");
+            
+            // Call logout API to revoke session (fire and forget)
+            fetch("/.netlify/functions/logout", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => {}); // Ignore errors
+            
             localStorage.removeItem("rr_token");
             localStorage.removeItem("rr_email");
             localStorage.removeItem("rr_last_activity");

@@ -51,7 +51,12 @@ exports.handler = async (event) => {
 
     const [registeredUsers, currentlyLoggedInUsers] = await Promise.all([
       users.countDocuments({}),
-      sessions.countDocuments({ revokedAt: null, expiresAt: { $gt: now } }),
+      // Count distinct users with recent session activity (last 30 minutes)
+      sessions.distinct("userId", { 
+        revokedAt: null, 
+        expiresAt: { $gt: now },
+        lastSeenAt: { $gt: new Date(now.getTime() - 30 * 60 * 1000) }
+      }).then(userIds => userIds.length),
     ]);
 
     return buildResponse(200, {

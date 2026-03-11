@@ -105,6 +105,24 @@ exports.handler = async (event) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // Fetch active discounts to give to new user
+    const discountsCollection = db.collection("discounts");
+    const activeDiscounts = await discountsCollection.find({ isActive: true }).toArray();
+    
+    // Build user's discounts array: N copies per discount (usesAllowedPerUser)
+    const userDiscounts = [];
+    for (const d of activeDiscounts) {
+      const usesAllowed = Number(d.usesAllowedPerUser || 1);
+      for (let i = 0; i < usesAllowed; i++) {
+        userDiscounts.push({
+          discountId: d.id,
+          name: d.name,
+          percentage: d.percentage,
+          addedAt: new Date(),
+        });
+      }
+    }
+
     // Create user document
     const now = new Date();
     const userDoc = {
@@ -112,6 +130,7 @@ exports.handler = async (event) => {
       phone: normalizedPhone,
       passwordHash,
       addresses: [],
+      discounts: userDiscounts,
       role: "customer",
       loginAttempts: 0,
       lockUntil: null,

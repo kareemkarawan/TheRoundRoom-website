@@ -57,6 +57,12 @@ async function verifyAuth(event) {
       throw new Error("Invalid or expired session");
     }
 
+    // Update lastSeenAt for activity tracking (fire and forget)
+    sessions.updateOne(
+      { jti: decoded.jti },
+      { $set: { lastSeenAt: new Date() } }
+    ).catch(() => {});
+
     return decoded; // Contains userId, role, etc.
   } catch (err) {
     throw new Error("Invalid or expired token");

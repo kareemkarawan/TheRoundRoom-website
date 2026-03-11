@@ -122,22 +122,52 @@ async function handlePost(body) {
     }
 
     const now = new Date();
-    const result = await collection.insertOne({
+    const usesAllowed = Number.isNaN(usesPerUser) || usesPerUser < 0 ? 1 : usesPerUser;
+    const isActive = discount.isActive !== false;
+    
+    const discountDoc = {
       id: discount.id,
       name: discount.name,
       description: discount.description || "",
       percentage: percentageValue,
-      usesAllowedPerUser: Number.isNaN(usesPerUser) || usesPerUser < 0 ? 1 : usesPerUser,
-      isActive: discount.isActive !== false,
+      usesAllowedPerUser: usesAllowed,
+      isActive,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    
+    const result = await collection.insertOne(discountDoc);
+
+    // Distribute discount to all existing users if active
+    let usersUpdated = 0;
+    if (isActive) {
+      const usersCollection = db.collection("users");
+      
+      // Build discount entries to push to each user
+      const discountEntries = [];
+      for (let i = 0; i < usesAllowed; i++) {
+        discountEntries.push({
+          discountId: discount.id,
+          name: discount.name,
+          percentage: percentageValue,
+          addedAt: now,
+        });
+      }
+      
+      // Push to all users
+      const updateResult = await usersCollection.updateMany(
+        {},
+        { $push: { discounts: { $each: discountEntries } } }
+      );
+      usersUpdated = updateResult.modifiedCount;
+    }
 
     return {
       statusCode: 201,
       body: JSON.stringify({
         success: true,
         id: result.insertedId,
+        usersUpdated,
         message: "Discount added successfully",
       }),
     };
