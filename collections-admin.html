@@ -222,6 +222,17 @@
             padding: 2rem;
             color: #666;
         }
+        .box-item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            margin-top: 0.25rem;
+        }
+        .box-item-details small {
+            color: #888;
+            font-size: 0.8rem;
+            padding-left: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -248,6 +259,15 @@
 
     <script src="js/admin-gate.js"></script>
     <script>
+        // Consolidate duplicate items: ['Plain', 'Plain', 'Everything'] => '2x Plain, Everything'
+        function formatSelections(items) {
+            if (!items || items.length === 0) return '';
+            const counts = {};
+            items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+            return Object.entries(counts)
+                .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+                .join(', ');
+        }
         let ADMIN_TOKEN = localStorage.getItem('rr_admin_token');
 
         function initPage() {
@@ -321,11 +341,26 @@
                     const timeStr = createdAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
                     const dateStr = createdAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
                     
-                    const itemsHtml = (order.items || []).map(item => `
+                    const itemsHtml = (order.items || []).map(item => {
+                        let detailsHtml = '';
+                        if (item.isBox && (item.selectedBagels?.length || item.selectedSchmears?.length)) {
+                            const bagelsFormatted = formatSelections(item.selectedBagels || []);
+                            const schmearsFormatted = formatSelections(item.selectedSchmears || []);
+                            detailsHtml = `<div class="box-item-details">
+                                ${bagelsFormatted ? `<small>Bagels: ${bagelsFormatted}</small>` : ''}
+                                ${schmearsFormatted ? `<small>Schmears: ${schmearsFormatted}</small>` : ''}
+                            </div>`;
+                        }
+                        return `
                         <div class="order-item">
-                            <span><span class="item-qty">${item.qty}x</span> <span class="item-name">${item.name}</span></span>
+                            <span>
+                                <span class="item-qty">${item.qty}x</span>
+                                <span class="item-name">${item.name}</span>
+                                ${detailsHtml}
+                            </span>
                         </div>
-                    `).join('');
+                    `;
+                    }).join('');
                     
                     const noteHtml = order.customer?.note ? `
                         <div class="order-note">

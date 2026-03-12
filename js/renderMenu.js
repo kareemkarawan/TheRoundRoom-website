@@ -256,6 +256,25 @@ function updateBoxCounters() {
   const bagelOk = bagelTotal === currentBoxData.bagelCount;
   const schmearOk = schmearTotal === currentBoxData.schmearCount;
 
+  // Update button disabled states
+  document.querySelectorAll('.box-qty-btn').forEach(btn => {
+    const type = btn.dataset.type;
+    const name = btn.dataset.name;
+    const isPlus = btn.classList.contains('plus');
+    const isMinus = btn.classList.contains('minus');
+    
+    const quantities = type === 'bagel' ? bagelQuantities : schmearQuantities;
+    const maxCount = type === 'bagel' ? currentBoxData.bagelCount : currentBoxData.schmearCount;
+    const currentTotal = Object.values(quantities).reduce((sum, q) => sum + q, 0);
+    const currentQty = quantities[name] || 0;
+    
+    if (isMinus) {
+      btn.disabled = currentQty === 0;
+    } else if (isPlus) {
+      btn.disabled = currentTotal >= maxCount;
+    }
+  });
+
   if (confirmBtn) {
     confirmBtn.disabled = !(bagelOk && schmearOk);
   }

@@ -1314,18 +1314,25 @@ footer {
 	background: #fff;
 	font-size: 1rem;
 	font-weight: 600;
+	color: var(--rr-bg);
 	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	transition: border-color 200ms, background 200ms;
+	transition: border-color 200ms, background 200ms, color 200ms, opacity 200ms;
 }
-.box-qty-btn:hover {
+.box-qty-btn:hover:not(:disabled) {
 	border-color: var(--rr-bg);
 	background: rgba(109,36,48,0.05);
 }
-.box-qty-btn:active {
+.box-qty-btn:active:not(:disabled) {
 	background: rgba(109,36,48,0.15);
+}
+.box-qty-btn:disabled {
+	color: #ccc;
+	border-color: #e5e5e5;
+	background: #f9f9f9;
+	cursor: not-allowed;
 }
 .box-qty-value {
 	min-width: 1.5rem;

@@ -118,9 +118,40 @@
     </footer>
 
     <script src="js/admin-gate.js"></script>
+    <style>
+        .box-order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            margin-top: 0.25rem;
+        }
+        .box-order-details small {
+            color: #666;
+            font-size: 0.8rem;
+        }
+        .checkout-item .left {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .checkout-item .item-info {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
     <script>
     function fmtDate(iso) {
         try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+    }
+
+    // Consolidate duplicate items: ['Plain', 'Plain', 'Everything'] => '2x Plain, Everything'
+    function formatSelections(items) {
+        if (!items || items.length === 0) return '';
+        const counts = {};
+        items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+        return Object.entries(counts)
+            .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+            .join(', ');
     }
 
     function initValentine() {
@@ -252,12 +283,30 @@
         const body = document.getElementById('modalBody');
         if (!modal || !body) return;
 
-        const itemsHtml = (order.items || []).map(i => `
+        const itemsHtml = (order.items || []).map(i => {
+            let detailsHtml = '';
+            // Show selected items for box orders
+            if (i.isBox && (i.selectedBagels?.length || i.selectedSchmears?.length)) {
+                const bagelsFormatted = formatSelections(i.selectedBagels || []);
+                const schmearsFormatted = formatSelections(i.selectedSchmears || []);
+                detailsHtml = `<div class="box-order-details">
+                    ${bagelsFormatted ? `<small>Bagels: ${bagelsFormatted}</small>` : ''}
+                    ${schmearsFormatted ? `<small>Schmears: ${schmearsFormatted}</small>` : ''}
+                </div>`;
+            }
+            return `
             <div class="checkout-item">
-                <div class="left"><span class="qty">${i.qty}x</span><span class="name">${i.name}</span></div>
+                <div class="left">
+                    <span class="qty">${i.qty}x</span>
+                    <div class="item-info">
+                        <span class="name">${i.name}</span>
+                        ${detailsHtml}
+                    </div>
+                </div>
                 <div>₹${Number(i.lineTotal || 0).toFixed(2)}</div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         body.innerHTML = `
             <h3>Order ${order.orderNumber}</h3>

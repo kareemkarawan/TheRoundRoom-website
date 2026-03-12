@@ -1271,12 +1271,36 @@ document.addEventListener('DOMContentLoaded', function () {
     const cgst = Number(tax / 2);
     const total = Number(pricing.total ?? cart.total ?? 0);
     
-    const itemsHtml = (cart.items || []).map(item => `
+    // Consolidate duplicate items for display
+    function formatBoxSelections(items) {
+        if (!items || items.length === 0) return '';
+        const counts = {};
+        items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+        return Object.entries(counts)
+            .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+            .join(', ');
+    }
+    
+    const itemsHtml = (cart.items || []).map(item => {
+        let detailsHtml = '';
+        if (item.isBox && (item.selectedBagels?.length || item.selectedSchmears?.length)) {
+            const bagelsFormatted = formatBoxSelections(item.selectedBagels || []);
+            const schmearsFormatted = formatBoxSelections(item.selectedSchmears || []);
+            detailsHtml = `<div class="box-order-details" style="font-size:0.8rem;color:#666;margin-top:0.15rem;">
+                ${bagelsFormatted ? `<div>Bagels: ${bagelsFormatted}</div>` : ''}
+                ${schmearsFormatted ? `<div>Schmears: ${schmearsFormatted}</div>` : ''}
+            </div>`;
+        }
+        return `
         <div class="checkout-item">
-            <div class="left"><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
+            <div class="left" style="display:flex;flex-direction:column;align-items:flex-start;">
+                <div><span class="qty">${item.qty}x</span><span class="name">${item.name}</span></div>
+                ${detailsHtml}
+            </div>
             <div>₹${Number(item.itemTotal || 0).toFixed(2)}</div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     // Build discount row if applicable
     const discountHtml = discount ? `
@@ -1424,15 +1448,37 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
                 ? data.items
                 : [];
 
+        // Helper to consolidate duplicate items
+        function formatBoxSelections(items) {
+            if (!items || items.length === 0) return '';
+            const counts = {};
+            items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+            return Object.entries(counts)
+                .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+                .join(', ');
+        }
+
         const items = rawItems.map((item) => {
             const qty = Number(item.qty ?? item.quantity ?? item.count ?? 0) || 0;
             const name = item.name || item.title || item.menuItemName || item.menuItemId || item.id || 'Item';
             const price = Number(item.price ?? item.unitPrice ?? item.unit_price ?? 0) || 0;
             const itemTotal = Number(item.itemTotal ?? item.lineTotal ?? item.total ?? (price * qty)) || 0;
+            
+            // Include box selections
+            let boxDetails = null;
+            if (item.isBox && (item.selectedBagels?.length || item.selectedSchmears?.length)) {
+                boxDetails = {
+                    bagels: formatBoxSelections(item.selectedBagels || []),
+                    schmears: formatBoxSelections(item.selectedSchmears || [])
+                };
+            }
+            
             return {
                 qty,
                 name: sanitizeText(name),
-                itemTotal: Number(itemTotal) || 0
+                itemTotal: Number(itemTotal) || 0,
+                isBox: item.isBox || false,
+                boxDetails
             };
         }).filter((item) => item.qty > 0 || item.name);
 
@@ -1516,6 +1562,21 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
             const line = `${item.qty}x ${item.name} - Rs ${Number(item.itemTotal || 0).toFixed(2)}`;
             doc.text(line, 16, y);
             y += 5;
+            // Add box selection details
+            if (item.isBox && item.boxDetails) {
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                if (item.boxDetails.bagels) {
+                    doc.text(`  Bagels: ${item.boxDetails.bagels}`, 18, y);
+                    y += 4;
+                }
+                if (item.boxDetails.schmears) {
+                    doc.text(`  Schmears: ${item.boxDetails.schmears}`, 18, y);
+                    y += 4;
+                }
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+            }
             if (y > 270) { doc.addPage(); y = 14; }
         });
 
