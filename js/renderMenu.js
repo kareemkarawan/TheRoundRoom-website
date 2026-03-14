@@ -20,7 +20,8 @@ window._rrMenuItems = [];
 const MENU_CACHE_KEY = 'rr_menu_cache';
 const COMBO_CACHE_KEY = 'rr_combo_cache';
 const BOXES_CACHE_KEY = 'rr_boxes_cache';
-const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
+const ALL_DATA_CACHE_KEY = 'rr_all_data_cache'; // Combined cache
+const CACHE_MAX_AGE = 60 * 1000; // 60 seconds - balance between speed and freshness
 
 function getCachedData(key) {
   try {
@@ -505,6 +506,7 @@ async function renderMenu() {
   // Try to show cached data instantly for perceived performance
   const cachedMenu = getCachedData(MENU_CACHE_KEY);
   const cachedCombo = getCachedData(COMBO_CACHE_KEY);
+  const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
   
   if (cachedMenu && cachedMenu.length > 0) {
     // Render cached data immediately - no loading state
@@ -532,11 +534,16 @@ async function renderMenu() {
       grid._rr_init = true;
     }
     
-    // Render combo and boxes from cache too
-    await Promise.all([
-      renderCombo(cachedMenu, cachedCombo),
-      renderBagelBoxes()
-    ]);
+    // Render combo and boxes from cache (no API calls needed)
+    await renderCombo(cachedMenu, cachedCombo);
+    
+    const boxSection = document.getElementById('boxSection');
+    const boxContainer = document.getElementById('boxContainer');
+    if (boxSection && boxContainer && cachedBoxes && cachedBoxes.length > 0) {
+      renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
+    } else if (boxSection) {
+      boxSection.style.display = 'none';
+    }
     
     if (typeof updateCart === 'function') updateCart();
   } else {
@@ -548,40 +555,33 @@ async function renderMenu() {
     }
   }
 
-  // Fetch fresh data in background
+  // Fetch fresh data in background using COMBINED endpoint (1 call instead of 3)
   try {
     const controller = new AbortController();
     const timeoutMs = 8000;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     
-    const menuUrl = '/.netlify/functions/menu';
-    const comboUrl = '/.netlify/functions/combo-settings';
+    // Single combined endpoint for all menu data
+    const dataUrl = '/.netlify/functions/menu-data';
     
-    let menuRes, comboRes;
+    let dataRes;
     try {
-      [menuRes, comboRes] = await Promise.all([
-        fetch(menuUrl, { signal: controller.signal }),
-        fetch(comboUrl, { signal: controller.signal }).catch(() => null)
-      ]);
+      dataRes = await fetch(dataUrl, { signal: controller.signal });
     } finally {
       clearTimeout(timer);
     }
     
-    if (!menuRes || !menuRes.ok) throw new Error('HTTP ' + (menuRes ? menuRes.status : 'NO_RESPONSE'));
-    const items = await menuRes.json();
+    if (!dataRes || !dataRes.ok) throw new Error('HTTP ' + (dataRes ? dataRes.status : 'NO_RESPONSE'));
+    const allData = await dataRes.json();
     
-    let comboSettings = null;
-    if (comboRes && comboRes.ok) {
-      try {
-        comboSettings = await comboRes.json();
-      } catch (e) {
-        comboSettings = null;
-      }
-    }
+    const items = allData.menu || [];
+    const comboSettings = allData.combo || null;
+    const boxes = allData.boxes || [];
 
     // Cache the fresh data
     setCachedData(MENU_CACHE_KEY, items);
     if (comboSettings) setCachedData(COMBO_CACHE_KEY, comboSettings);
+    setCachedData(BOXES_CACHE_KEY, boxes);
 
     // Check if data changed from cache
     const menuChanged = JSON.stringify(items) !== JSON.stringify(cachedMenu);
@@ -615,10 +615,17 @@ async function renderMenu() {
 
     // Re-render combo/boxes if data changed
     if (!cachedMenu || menuChanged || comboChanged) {
-      await Promise.all([
-        renderCombo(items, comboSettings),
-        renderBagelBoxes()
-      ]);
+      // Render combo
+      await renderCombo(items, comboSettings);
+      
+      // Render boxes directly from combined response (no extra fetch needed)
+      const boxSection = document.getElementById('boxSection');
+      const boxContainer = document.getElementById('boxContainer');
+      if (boxSection && boxContainer && boxes.length > 0) {
+        renderBoxesToDOM(boxes, boxSection, boxContainer);
+      } else if (boxSection) {
+        boxSection.style.display = 'none';
+      }
     }
 
     if (typeof updateCart === 'function') updateCart();

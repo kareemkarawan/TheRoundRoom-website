@@ -22,6 +22,8 @@
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://api.fontshare.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload critical API call for faster menu loading -->
+    <link rel="preload" href="/.netlify/functions/menu-data" as="fetch" crossorigin>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js"></script>

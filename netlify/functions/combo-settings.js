@@ -150,8 +150,8 @@ exports.handler = async (event) => {
   // CORS headers
   const headers = buildHeaders(isAdminRoute);
   if (method === "GET") {
-    // Allow 60s browser caching + CDN caching for faster repeat loads
-    headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300";
+    // 30s cache, 60s stale-while-revalidate - fast but updates within ~90s
+    headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=60";
   }
 
   // Handle preflight

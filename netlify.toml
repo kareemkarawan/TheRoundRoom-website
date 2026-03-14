@@ -1,0 +1,50 @@
+# Netlify configuration for The Round Room
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Enable modern bundling for functions (faster cold starts)
+[functions]
+  node_bundler = "esbuild"
+  
+# Scheduled function to keep the main functions warm (prevents cold starts)
+[functions."keep-warm"]
+  schedule = "*/5 * * * *"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/webpimages/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# Preload hints for menu page
+[[headers]]
+  for = "/order_page.html"
+  [headers.values]
+    Link = '''
+      </.netlify/functions/menu>; rel=preload; as=fetch; crossorigin,
+      </style.css>; rel=preload; as=style,
+      </script.js>; rel=preload; as=script
+    '''

@@ -38,7 +38,7 @@ function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
   const cacheControl = isAdminRoute 
     ? "no-store, no-cache, must-revalidate" 
-    : "public, max-age=60, stale-while-revalidate=300";
+    : "public, max-age=30, stale-while-revalidate=60";
   return {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": origin,
