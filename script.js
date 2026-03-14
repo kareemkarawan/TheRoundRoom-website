@@ -1653,16 +1653,6 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
 });
 
-const carouselTrack = document.querySelector('.carousel-track');
-if (carouselTrack) {
-    carouselTrack.style.cursor = 'pointer';
-    carouselTrack.addEventListener('click', function(e) {
-        const item = e.target.closest('.carousel-slide');
-        if (!item) return;
-        window.location.href = '/order_page';
-    });
-}
-
 /**
  * Frontend login function
  * @param {string} email - User email
@@ -2112,24 +2102,3 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 })();
-
-// ============================================
-// HOMEPAGE PRODUCT CLICK -> ORDER PAGE REDIRECT
-// ============================================
-document.addEventListener('DOMContentLoaded', function () {
-    // Selectors for all clickable product items on the homepage (carousel handled separately)
-    const productSelectors = [
-        '.menu-item-w',              // Desktop schmears & desserts
-        '.menu-item-p-w',            // Mobile schmears
-        '.menu-item-p'               // Mobile desserts
-    ];
-
-    const products = document.querySelectorAll(productSelectors.join(', '));
-
-    products.forEach(function (product) {
-        product.style.cursor = 'pointer';
-        product.addEventListener('click', function () {
-            window.location.href = '/order_page';
-        });
-    });
-});
