@@ -1655,11 +1655,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 const carouselTrack = document.querySelector('.carousel-track');
 if (carouselTrack) {
+    carouselTrack.style.cursor = 'pointer';
     carouselTrack.addEventListener('click', function(e) {
         const item = e.target.closest('.carousel-slide');
         if (!item) return;
-        const id = item.dataset.id;
-        window.location.href = `/product?id=${encodeURIComponent(id)}`;
+        window.location.href = '/order_page';
     });
 }
 
@@ -2117,9 +2117,8 @@ document.addEventListener("DOMContentLoaded", function () {
 // HOMEPAGE PRODUCT CLICK -> ORDER PAGE REDIRECT
 // ============================================
 document.addEventListener('DOMContentLoaded', function () {
-    // Selectors for all clickable product items on the homepage
+    // Selectors for all clickable product items on the homepage (carousel handled separately)
     const productSelectors = [
-        '.carousel-slide',           // Bagels carousel
         '.menu-item-w',              // Desktop schmears & desserts
         '.menu-item-p-w',            // Mobile schmears
         '.menu-item-p'               // Mobile desserts
