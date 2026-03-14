@@ -4,6 +4,7 @@
  *
  * NOTES:
  * - Fetches from /.netlify/functions/menu and /.netlify/functions/combo-settings
+ * - Uses localStorage cache for instant display while fetching fresh data
  * - Stores menu items globally in window._rrMenuItems for combo dropdowns
  * - Dynamically imports MenuItem model, falls back to inline HTML if import fails
  * - Categories map to DOM containers: bagels→bagelMenu, schmears→schmearMenu, desserts→dessertMenu
@@ -14,6 +15,31 @@
  */
 
 window._rrMenuItems = [];
+
+// Cache keys for localStorage
+const MENU_CACHE_KEY = 'rr_menu_cache';
+const COMBO_CACHE_KEY = 'rr_combo_cache';
+const BOXES_CACHE_KEY = 'rr_boxes_cache';
+const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
+
+function getCachedData(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, timestamp } = JSON.parse(raw);
+    // Return cached data if it's less than 5 minutes old
+    if (Date.now() - timestamp < CACHE_MAX_AGE) {
+      return data;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function setCachedData(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (e) {}
+}
 
 async function renderCombo(menuItems, comboSettings) {
   const comboSection = document.getElementById('comboSection');
@@ -349,56 +375,123 @@ async function renderBagelBoxes() {
   if (!boxSection || !boxContainer) return;
 
   try {
-    const response = await fetch(`/.netlify/functions/bagel-boxes?activeOnly=true&ts=${Date.now()}`, { cache: 'no-store' });
+    // Try cached boxes first
+    const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
+    
+    const response = await fetch('/.netlify/functions/bagel-boxes?activeOnly=true');
     if (!response.ok) {
+      // If network fails but we have cache, use it
+      if (cachedBoxes && cachedBoxes.length > 0) {
+        renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
+        return;
+      }
       boxSection.style.display = 'none';
       return;
     }
 
     const boxes = await response.json();
+    
+    // Cache the fresh data
+    setCachedData(BOXES_CACHE_KEY, boxes);
+    
     if (!boxes || boxes.length === 0) {
       boxSection.style.display = 'none';
       return;
     }
 
-    boxContainer.innerHTML = boxes.map(box => `
-      <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${box.bagelCount}" data-schmears="${box.schmearCount}" data-is-box="true">
-        <div class="menu-item-info">
-          <h3>${box.name}</h3>
-          <p class="box-contents">${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}</p>
-          ${box.description ? `<p class="box-desc">${box.description}</p>` : ''}
-          <p class="price">₹${Number(box.price).toFixed(2)}</p>
-          <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
-        </div>
-      </div>
-    `).join('');
-
-    boxSection.style.display = 'block';
-
-    // Add click handler for ADD buttons
-    boxContainer.querySelectorAll('.box-add-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const boxData = JSON.parse(btn.dataset.box.replace(/&#39;/g, "'"));
-        openBoxPopup(boxData);
-      });
-    });
-
-    initBoxPopup();
+    renderBoxesToDOM(boxes, boxSection, boxContainer);
 
   } catch (err) {
     console.warn('Failed to load bagel boxes', err);
-    boxSection.style.display = 'none';
+    // Try to use cached data on error
+    const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
+    if (cachedBoxes && cachedBoxes.length > 0) {
+      renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
+    } else {
+      boxSection.style.display = 'none';
+    }
   }
+}
+
+function renderBoxesToDOM(boxes, boxSection, boxContainer) {
+  boxContainer.innerHTML = boxes.map(box => `
+    <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${box.bagelCount}" data-schmears="${box.schmearCount}" data-is-box="true">
+      <div class="menu-item-info">
+        <h3>${box.name}</h3>
+        <p class="box-contents">${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}</p>
+        ${box.description ? `<p class="box-desc">${box.description}</p>` : ''}
+        <p class="price">₹${Number(box.price).toFixed(2)}</p>
+        <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
+      </div>
+    </div>
+  `).join('');
+
+  boxSection.style.display = 'block';
+
+  // Add click handler for ADD buttons
+  boxContainer.querySelectorAll('.box-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const boxData = JSON.parse(btn.dataset.box.replace(/&#39;/g, "'"));
+      openBoxPopup(boxData);
+    });
+  });
+
+  initBoxPopup();
+}
+
+// Helper to render menu items to the DOM
+function renderMenuItems(items, MenuItemClass, grid) {
+  grid.querySelectorAll('.menu-item').forEach(el => el.remove());
+
+  const categoryMap = {
+    'bagels': 'bagelMenu',
+    'schmears': 'schmearMenu',
+    'desserts': 'dessertMenu'
+  };
+
+  items
+    .filter(data => data.isAvailable !== false)
+    .forEach(data => {
+    let html;
+    if (MenuItemClass && MenuItemClass.fromData) {
+      const mi = MenuItemClass.fromData(data);
+      html = mi.renderHTML();
+    } else {
+      html = `<div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">` +
+        `${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}` +
+        `<div class="menu-item-info"><h3>${data.name}</h3><p class="price">₹${Number(data.price).toFixed(2)}</p>` +
+        `<div class="item-controls"><button class="qty-btn minus" data-id="${data.id}">−</button>` +
+        `<span class="qty" data-id="${data.id}">0</span>` +
+        `<button class="qty-btn plus" data-id="${data.id}">+</button></div></div></div>`;
+    }
+
+    const cat = (data.category || '').trim().toLowerCase();
+    const targetId = categoryMap[cat];
+    if (targetId) {
+      const target = document.getElementById(targetId);
+      if (target) target.insertAdjacentHTML('beforeend', html);
+      else grid.insertAdjacentHTML('beforeend', html);
+    } else {
+      grid.insertAdjacentHTML('beforeend', html);
+    }
+  });
+
+  // Restore cart quantities
+  try {
+    const raw = localStorage.getItem('rr_cart');
+    if (raw) {
+      const cart = JSON.parse(raw);
+      (cart.items || []).forEach(it => {
+        const qEl = document.querySelector(`.qty[data-id="${it.id}"]`);
+        if (qEl) qEl.textContent = it.qty;
+      });
+    }
+  } catch (e) {}
 }
 
 async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
-  if (loader) {
-    loader.classList.remove('error');
-    loader.style.display = '';
-    loader.textContent = 'Loading menu…';
-  }
   if (!grid) return;
 
   let MenuItemClass = null;
@@ -409,19 +502,66 @@ async function renderMenu() {
     console.warn('Dynamic import of MenuItem failed, falling back to inline renderer', e);
   }
 
+  // Try to show cached data instantly for perceived performance
+  const cachedMenu = getCachedData(MENU_CACHE_KEY);
+  const cachedCombo = getCachedData(COMBO_CACHE_KEY);
+  
+  if (cachedMenu && cachedMenu.length > 0) {
+    // Render cached data immediately - no loading state
+    if (loader) loader.style.display = 'none';
+    
+    window._rrMenuItems = cachedMenu;
+    availableBagels = cachedMenu.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
+    availableSchmears = cachedMenu.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
+    
+    renderMenuItems(cachedMenu, MenuItemClass, grid);
+    
+    // Setup click handlers once
+    if (!grid._rr_init) {
+      grid.addEventListener('click', function (e) {
+        const btn = e.target.closest('.qty-btn');
+        if (!btn) return;
+        if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
+        const id = btn.dataset.id;
+        const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
+        let qty = parseInt(qtyEl.textContent) || 0;
+        if (btn.classList.contains('plus')) qty++; else qty = Math.max(0, qty - 1);
+        qtyEl.textContent = qty;
+        if (typeof updateCart === 'function') updateCart();
+      });
+      grid._rr_init = true;
+    }
+    
+    // Render combo and boxes from cache too
+    await Promise.all([
+      renderCombo(cachedMenu, cachedCombo),
+      renderBagelBoxes()
+    ]);
+    
+    if (typeof updateCart === 'function') updateCart();
+  } else {
+    // No cache - show loading indicator
+    if (loader) {
+      loader.classList.remove('error');
+      loader.style.display = '';
+      loader.textContent = 'Loading menu…';
+    }
+  }
+
+  // Fetch fresh data in background
   try {
     const controller = new AbortController();
     const timeoutMs = 8000;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     
-    const menuUrl = `/.netlify/functions/menu?ts=${Date.now()}`;
-    const comboUrl = `/.netlify/functions/combo-settings?ts=${Date.now()}`;
+    const menuUrl = '/.netlify/functions/menu';
+    const comboUrl = '/.netlify/functions/combo-settings';
     
     let menuRes, comboRes;
     try {
       [menuRes, comboRes] = await Promise.all([
-        fetch(menuUrl, { signal: controller.signal, cache: 'no-store' }),
-        fetch(comboUrl, { signal: controller.signal, cache: 'no-store' }).catch(() => null)
+        fetch(menuUrl, { signal: controller.signal }),
+        fetch(comboUrl, { signal: controller.signal }).catch(() => null)
       ]);
     } finally {
       clearTimeout(timer);
@@ -439,84 +579,53 @@ async function renderMenu() {
       }
     }
 
-    window._rrMenuItems = items;
+    // Cache the fresh data
+    setCachedData(MENU_CACHE_KEY, items);
+    if (comboSettings) setCachedData(COMBO_CACHE_KEY, comboSettings);
 
-    // Populate available bagels and schmears for box selection popup
-    availableBagels = items.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
-    availableSchmears = items.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
+    // Check if data changed from cache
+    const menuChanged = JSON.stringify(items) !== JSON.stringify(cachedMenu);
+    const comboChanged = JSON.stringify(comboSettings) !== JSON.stringify(cachedCombo);
 
-    grid.querySelectorAll('.menu-item').forEach(el => el.remove());
+    // Only re-render if data changed or we had no cache
+    if (!cachedMenu || menuChanged) {
+      window._rrMenuItems = items;
+      availableBagels = items.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
+      availableSchmears = items.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
 
-    const categoryMap = {
-      'bagels': 'bagelMenu',
-      'schmears': 'schmearMenu',
-      'desserts': 'dessertMenu'
-    };
+      renderMenuItems(items, MenuItemClass, grid);
 
-    items
-      .filter(data => data.isAvailable !== false)
-      .forEach(data => {
-      let html;
-      if (MenuItemClass && MenuItemClass.fromData) {
-        const mi = MenuItemClass.fromData(data);
-        html = mi.renderHTML();
-      } else {
-        html = `<div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">` +
-          `${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}` +
-          `<div class="menu-item-info"><h3>${data.name}</h3><p class="price">₹${Number(data.price).toFixed(2)}</p>` +
-          `<div class="item-controls"><button class="qty-btn minus" data-id="${data.id}">−</button>` +
-          `<span class="qty" data-id="${data.id}">0</span>` +
-          `<button class="qty-btn plus" data-id="${data.id}">+</button></div></div></div>`;
-      }
-
-      const cat = (data.category || '').trim().toLowerCase();
-      const targetId = categoryMap[cat];
-      if (targetId) {
-        const target = document.getElementById(targetId);
-        if (target) target.insertAdjacentHTML('beforeend', html);
-        else grid.insertAdjacentHTML('beforeend', html);
-      } else {
-        grid.insertAdjacentHTML('beforeend', html);
-      }
-    });
-
-    try {
-      const raw = localStorage.getItem('rr_cart');
-      if (raw) {
-        const cart = JSON.parse(raw);
-        (cart.items || []).forEach(it => {
-          const qEl = document.querySelector(`.qty[data-id="${it.id}"]`);
-          if (qEl) qEl.textContent = it.qty;
+      if (!grid._rr_init) {
+        grid.addEventListener('click', function (e) {
+          const btn = e.target.closest('.qty-btn');
+          if (!btn) return;
+          if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
+          const id = btn.dataset.id;
+          const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
+          let qty = parseInt(qtyEl.textContent) || 0;
+          if (btn.classList.contains('plus')) qty++; else qty = Math.max(0, qty - 1);
+          qtyEl.textContent = qty;
+          if (typeof updateCart === 'function') updateCart();
         });
+        grid._rr_init = true;
       }
-    } catch (e) {}
-
-    if (!grid._rr_init) {
-      grid.addEventListener('click', function (e) {
-        const btn = e.target.closest('.qty-btn');
-        if (!btn) return;
-        if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
-        const id = btn.dataset.id;
-        const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
-        let qty = parseInt(qtyEl.textContent) || 0;
-        if (btn.classList.contains('plus')) qty++; else qty = Math.max(0, qty - 1);
-        qtyEl.textContent = qty;
-        if (typeof updateCart === 'function') updateCart();
-      });
-      grid._rr_init = true;
     }
 
     if (loader) loader.style.display = 'none';
 
-    await Promise.all([
-      renderCombo(items, comboSettings),
-      renderBagelBoxes()
-    ]);
+    // Re-render combo/boxes if data changed
+    if (!cachedMenu || menuChanged || comboChanged) {
+      await Promise.all([
+        renderCombo(items, comboSettings),
+        renderBagelBoxes()
+      ]);
+    }
 
     if (typeof updateCart === 'function') updateCart();
   } catch (err) {
-    console.error('Failed to load menu.json', err);
-    if (loader) {
+    console.error('Failed to load menu', err);
+    // Only show error if we have no cached data
+    if (!cachedMenu && loader) {
       loader.classList.add('error');
       const msg = (err && err.name === 'AbortError') ? 'Request timed out' : (err && err.message) || 'Failed to load';
       loader.innerHTML = `${msg}. <button id="menuRetry">Retry</button>`;

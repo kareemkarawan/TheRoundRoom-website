@@ -87,6 +87,14 @@
                             <span class="label">Revenue (paid)</span>
                             <span class="value" id="snapshotRevenue">—</span>
                         </div>
+                        <div class="snapshot-card">
+                            <span class="label">Total Visits</span>
+                            <span class="value" id="snapshotVisits">—</span>
+                        </div>
+                        <div class="snapshot-card">
+                            <span class="label">Unique Visitors</span>
+                            <span class="value" id="snapshotUniqueVisitors">—</span>
+                        </div>
                     </div>
                 </section>
 
@@ -223,7 +231,9 @@
             storeOpen: '—',
             orders: '—',
             menu: '—',
-            revenue: '—'
+            revenue: '—',
+            visits: '—',
+            uniqueVisitors: '—'
         };
 
         try {
@@ -261,10 +271,24 @@
             snapshot.menu = 'Unavailable';
         }
 
+        try {
+            const visitorRes = await fetch('/.netlify/functions/visitor-counter');
+            if (visitorRes.ok) {
+                const visitorData = await visitorRes.json();
+                snapshot.visits = visitorData.totalVisits?.toLocaleString() || '0';
+                snapshot.uniqueVisitors = visitorData.uniqueVisitors?.toLocaleString() || '0';
+            }
+        } catch (e) {
+            snapshot.visits = 'Unavailable';
+            snapshot.uniqueVisitors = 'Unavailable';
+        }
+
         document.getElementById('snapshotStoreStatus').textContent = snapshot.storeOpen;
         document.getElementById('snapshotOrders').textContent = snapshot.orders;
         document.getElementById('snapshotMenu').textContent = snapshot.menu;
         document.getElementById('snapshotRevenue').textContent = snapshot.revenue;
+        document.getElementById('snapshotVisits').textContent = snapshot.visits;
+        document.getElementById('snapshotUniqueVisitors').textContent = snapshot.uniqueVisitors;
     }
 
     async function runHealthChecks() {

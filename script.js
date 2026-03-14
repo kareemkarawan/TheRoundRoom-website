@@ -2079,3 +2079,36 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 })();
+
+// ============================================
+// VISITOR COUNTER
+// ============================================
+(function initVisitorCounter() {
+    document.addEventListener('DOMContentLoaded', async function() {
+        const counterEl = document.getElementById('visitorCount');
+        if (!counterEl) return;
+
+        try {
+            // Record visit and get updated count
+            const response = await fetch('/.netlify/functions/visitor-counter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                counterEl.textContent = data.totalVisits.toLocaleString();
+            }
+        } catch (err) {
+            console.error('Visitor counter error:', err);
+            // Fallback: try to get count without recording
+            try {
+                const res = await fetch('/.netlify/functions/visitor-counter');
+                if (res.ok) {
+                    const data = await res.json();
+                    counterEl.textContent = data.totalVisits.toLocaleString();
+                }
+            } catch (e) {}
+        }
+    });
+})();

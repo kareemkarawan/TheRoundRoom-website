@@ -244,9 +244,12 @@
                 <a href="/contact">Contact</a>
             </div>
             <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
+            <div class="visitor-counter" id="visitorCounter">
+                <span id="visitorCount">--</span> visitors
+            </div>
         </div>
     </footer>
-
+    <!---
     <div class="welcome-popup-overlay" id="welcomePopup">
         <div class="welcome-popup">
             <h2>Welcome to The Round Room</h2>
@@ -259,7 +262,6 @@
         </div>
     </div>
     <script>
-    // Instant popup check - runs immediately
     (function() {
         const token = localStorage.getItem('rr_token');
         const dismissed = sessionStorage.getItem('rr_welcome_dismissed');
@@ -282,7 +284,7 @@
         });
     })();
     </script>
-
+-->
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});

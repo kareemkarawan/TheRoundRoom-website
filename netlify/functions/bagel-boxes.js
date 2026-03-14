@@ -36,12 +36,15 @@ async function getClient() {
 
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
+  const cacheControl = isAdminRoute 
+    ? "no-store, no-cache, must-revalidate" 
+    : "public, max-age=60, stale-while-revalidate=300";
   return {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, x-admin-token",
-    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "Cache-Control": cacheControl,
   };
 }
 
