@@ -973,6 +973,23 @@ footer {
 	.carousel-btn { width: 42px; height: 42px; }
 	.carousel-btn[disabled] { opacity: 0.35; pointer-events: none; }
 
+	/* Schmear section: 2 items per row on mobile */
+	.section-s .menu-p {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.75rem;
+		padding: 0 0.5rem;
+	}
+	.section-s .menu-p .section-line {
+		grid-column: span 2;
+	}
+	.section-s .menu-p .menu-item-p-w {
+		align-items: center;
+		text-align: center;
+	}
+	.section-s .menu-p .menu-item-p-w h3 {
+		font-size: 0.85rem;
+	}
 
 }
 
