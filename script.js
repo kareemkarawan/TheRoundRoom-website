@@ -685,6 +685,8 @@ document.addEventListener('DOMContentLoaded', function() {
     orderTypeRadios.forEach(radio => {
         radio.addEventListener('change', handleOrderTypeChange);
     });
+    // Ensure correct fields are shown/hidden on initial load
+    handleOrderTypeChange();
 
     async function loadAvailableDiscounts() {
         const discountSelector = document.getElementById('discountSelector');
