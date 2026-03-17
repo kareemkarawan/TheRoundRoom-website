@@ -634,17 +634,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const pincodeSection = document.getElementById('pincodeSection');
         const addressInput = document.getElementById('address');
         const pincodeInput = document.getElementById('pincode');
+        const emailSection = document.getElementById('email')?.closest('.form-section');
+        const phoneSection = document.getElementById('phone')?.closest('.form-section');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
 
         if (orderType === 'collection') {
             if (addressSection) addressSection.style.display = 'none';
             if (pincodeSection) pincodeSection.style.display = 'none';
             if (addressInput) addressInput.removeAttribute('required');
             if (pincodeInput) pincodeInput.removeAttribute('required');
+            if (emailSection) emailSection.style.display = 'none';
+            if (phoneSection) phoneSection.style.display = 'none';
+            if (emailInput) emailInput.removeAttribute('required');
+            if (phoneInput) phoneInput.removeAttribute('required');
         } else {
             if (addressSection) addressSection.style.display = '';
             if (pincodeSection) pincodeSection.style.display = '';
             if (addressInput) addressInput.setAttribute('required', 'true');
             if (pincodeInput) pincodeInput.setAttribute('required', 'true');
+            if (emailSection) emailSection.style.display = '';
+            if (phoneSection) phoneSection.style.display = '';
+            if (emailInput) emailInput.setAttribute('required', 'true');
+            if (phoneInput) phoneInput.setAttribute('required', 'true');
         }
     }
 
@@ -673,26 +685,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const discountLoginPrompt = document.getElementById('discountLoginPrompt');
         const token = localStorage.getItem('rr_token');
         
-        // Only logged-in users can use discounts
-        // Disable discounts in popup mode
-        if (window._rrOrderType === 'popup') {
+        // For collection orders, apply 15% discount automatically and disable further discounts
+        if (window._rrOrderType === 'collection') {
             if (discountSelector) {
                 discountSelector.style.display = 'none';
                 discountSelector.disabled = true;
             }
             if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
+            // Set selectedDiscount to special collection discount
+            selectedDiscount = { id: 'collection15', name: 'Popup Collection 15% Off', percentage: 15 };
+            updateCheckoutWithDiscount();
             return;
         }
-        if (!token) {
-            if (discountSelector) discountSelector.style.display = 'none';
-            if (discountLoginPrompt) discountLoginPrompt.style.display = '';
-            return;
-        }
-        if (discountSelector) {
-            discountSelector.style.display = '';
-            discountSelector.disabled = false;
-        }
-        if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
+        // ...existing code...
         
         try {
             // Fetch user's personal discounts from profile
