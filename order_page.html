@@ -1,41 +1,49 @@
 <!DOCTYPE html>
+<!--
+  FILE: order_page.html
+  PURPOSE: Order/menu page where customers browse products, select items, and manage their cart before checkout.
+  
+  NOTES:
+  - Menu items loaded dynamically via renderMenu.js from Netlify functions API
+  - Cart state persisted in localStorage and synced with bottom sheet on mobile
+  - Combo section (bagel + schmear) can be toggled via admin settings
+  - Store status modal appears when shop is closed
+  - Sticky cart sidebar on desktop, bottom sheet on mobile
+  - Tax breakdown shows SGST and CGST (2.5% each for India)
+  - Preloads menu-bg.webp for faster rendering
+  - Checkout button redirects to /checkout with cart data
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Round Room</title>
-
+    <!-- Preconnect for faster API and font loading -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://api.fontshare.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload critical API call for faster menu loading -->
     <link rel="preload" href="/.netlify/functions/menu-data" as="fetch" crossorigin>
-
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
-
     <script src="script.js"></script>
     <script type="module" src="js/renderMenu.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="webpimages/menu-bg.webp">
 </head>
-
 <body>
-
     <!-- Order Type Selection Popup -->
     <div id="orderTypePopup" class="order-type-popup-overlay">
         <div class="order-type-popup" role="dialog" aria-modal="true" aria-labelledby="orderTypeTitle">
             <h3 id="orderTypeTitle">How are you ordering?</h3>
             <p class="order-type-desc">Choose your ordering experience</p>
-
             <div class="order-type-buttons">
                 <button type="button" class="order-type-btn" id="homeOrderBtn">
                     <span class="order-type-icon">🏠</span>
                     <span class="order-type-label">Home Delivery</span>
                     <span class="order-type-sublabel">Full menu available</span>
                 </button>
-
                 <button type="button" class="order-type-btn popup-order" id="popupOrderBtn">
                     <span class="order-type-icon">🎪</span>
                     <span class="order-type-label">Popup Pickup</span>
@@ -45,25 +53,201 @@
         </div>
     </div>
 
-    <!-- YOUR EXISTING PAGE CONTENT (UNCHANGED) -->
-    <!-- (I’ve omitted repeating everything here for clarity since nothing else changed) -->
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='/'">
+                <div class = "bar4"></div>
+                <div class = "bar5"></div>
+            </button>
+            <div class="logo">
+                <h1 href="#story">THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
+        </div>
+    </nav>
+    <div class="order-page">
+        <div id="storeStatusModal" class="store-status-modal" aria-hidden="true" style="display:none;">
+            <div class="store-status-card" role="dialog" aria-modal="true" aria-labelledby="storeStatusTitle">
+                <button class="store-status-close" type="button" aria-label="Close">×</button>
+                <h3 id="storeStatusTitle">Store closed</h3>
+                <p id="storeStatusMessage">Store is currently closed. We are not accepting orders right now.</p>
+            </div>
+        </div>
+        <section class="section-menu">
+            <div class="big-menu-title">
+                <h2>MENU</h2>
+            </div>
+            <p class="order-note order-note-inline" role="status" aria-live="polite">Orders take around 24 hrs.</p>
+            <div id="menuLoader" class="menu-loader" role="status" aria-live="polite">Loading menu…</div>
+            <div class="menu-grid">
+                <div id="comboSection" class="combo-section" style="display:none;">
+                    <div class="small-menu-title">
+                        <h3>BAGEL &amp; SCHMEAR COMBO</h3>
+                        <div class="section-line"></div>
+                    </div>
+                    <div id="comboContainer" class="combo-container">
+                    </div>
+                </div>
 
+                <div id="boxSection" class="box-section" style="display:none;">
+                    <div class="small-menu-title">
+                        <h3>BAGEL BOXES</h3>
+                        <div class="section-line"></div>
+                    </div>
+                    <div id="boxContainer" class="category-grid">
+                    </div>
+                </div>
 
-    <!-- ✅ FIXED SCRIPT -->
+                <div class="small-menu-title">
+                    <h3>BAGELS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div id="bagelMenu" class="category-grid">
+
+                </div>
+
+                <div class="small-menu-title">
+                    <h3>SCHMEARS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div id="schmearMenu" class="category-grid">
+                    
+                </div>
+
+                <div class="small-menu-title">
+                    <h3>DESSERTS</h3>
+                    <div class="section-line"></div>
+                </div>
+                <div id="dessertMenu" class="category-grid">
+
+                </div>
+            </div>
+        </section>
+
+        <aside class="cart-sidebar">
+            <div class="cart-header">
+                <h3>YOUR CART</h3>
+                <button class="cart-toggle" id="cartToggle" aria-expanded="true" aria-controls="cartItems" aria-label="Toggle cart">
+                    <span class="cart-toggle-total" id="toggleTotal">₹0.00</span>
+                    <span class="cart-toggle-chevron" aria-hidden="true">▾</span>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <p class="empty-cart">No items added</p>
+            </div>
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="subtotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>SGST (2.5%)</span>
+                    <span id="sgst">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>CGST (2.5%)</span>
+                    <span id="cgst">₹0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="total">₹0.00</span>
+                </div>
+            </div>
+            <button class="checkout-btn" id="checkoutBtn" type="button">Checkout</button>
+            <p class="cart-warning" id="cartWarning" role="status" aria-live="polite" style="display:none;">Your basket is empty.</p>
+        </aside>
+    </div>
+
+    <div class="bottom-sheet-overlay" id="bottomSheetOverlay"></div>
+    <div class="cart-bottom-sheet peek" id="cartBottomSheet">
+        <div class="sheet-handle" id="sheetHandle">
+            <span class="sheet-handle-bar"></span>
+        </div>
+        <div class="sheet-header" id="sheetHeader">
+            <div class="sheet-header-left">
+                <span class="sheet-title">Your Cart</span>
+                <span class="sheet-item-count" id="sheetItemCount">(0 items)</span>
+            </div>
+            <span class="sheet-total" id="sheetTotal">₹0.00</span>
+        </div>
+        <div class="sheet-content" id="sheetContent">
+            <div class="sheet-cart-items" id="sheetCartItems">
+                <p class="empty-cart">No items added</p>
+            </div>
+            <div class="sheet-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="sheetSubtotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>SGST (2.5%)</span>
+                    <span id="sheetSgst">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>CGST (2.5%)</span>
+                    <span id="sheetCgst">₹0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="sheetTotalFull">₹0.00</span>
+                </div>
+            </div>
+        </div>
+        <div class="sheet-footer">
+            <button class="sheet-checkout-btn" id="sheetCheckoutBtn">Checkout</button>
+        </div>
+    </div>
+
+    <!-- Box Selection Popup -->
+    <div id="boxPopup" class="box-popup-overlay" aria-hidden="true">
+        <div class="box-popup" role="dialog" aria-modal="true" aria-labelledby="boxPopupTitle">
+            <div class="box-popup-header">
+                <h3 id="boxPopupTitle">Select Your Items</h3>
+                <button class="box-popup-close" id="boxPopupClose" type="button" aria-label="Close">×</button>
+            </div>
+            <div class="box-popup-body">
+                <div class="box-selection-group">
+                    <h4>Choose your bagels</h4>
+                    <p class="selection-counter" id="bagelCounter">Select 0 of 0</p>
+                    <div class="box-selection-grid" id="bagelSelections"></div>
+                </div>
+                <div class="box-selection-group">
+                    <h4>Choose your schmears</h4>
+                    <p class="selection-counter" id="schmearCounter">Select 0 of 0</p>
+                    <div class="box-selection-grid" id="schmearSelections"></div>
+                </div>
+            </div>
+            <div class="box-popup-footer">
+                <button class="box-cancel-btn" id="boxCancelBtn" type="button">Cancel</button>
+                <button class="box-confirm-btn" id="boxConfirmBtn" type="button" disabled>Add to Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="/privacy">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="/terms">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="/refund">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="/contact">Contact</a>
+            </div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
+        </div>
+    </footer>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    // Order type popup handler
+    document.addEventListener('DOMContentLoaded', function() {
         const popup = document.getElementById('orderTypePopup');
         const homeBtn = document.getElementById('homeOrderBtn');
         const popupBtn = document.getElementById('popupOrderBtn');
 
-        if (!popup || !homeBtn || !popupBtn) {
-            console.error("Popup elements not found");
-            return;
-        }
-
-        // Check if already selected
+        // Check if order type already selected this session
         const savedOrderType = sessionStorage.getItem('rr_order_type');
-
         if (savedOrderType) {
             popup.classList.add('hidden');
             window._rrOrderType = savedOrderType;
@@ -75,23 +259,18 @@
             sessionStorage.setItem('rr_order_type', 'home');
             window._rrOrderType = 'home';
             popup.classList.add('hidden');
-
-            window.dispatchEvent(
-                new CustomEvent('orderTypeSelected', { detail: 'home' })
-            );
+            // Dispatch event to re-render menu if already loaded
+            window.dispatchEvent(new CustomEvent('orderTypeSelected', { detail: 'home' }));
         });
 
         popupBtn.addEventListener('click', function() {
             sessionStorage.setItem('rr_order_type', 'popup');
             window._rrOrderType = 'popup';
             popup.classList.add('hidden');
-
-            window.dispatchEvent(
-                new CustomEvent('orderTypeSelected', { detail: 'popup' })
-            );
+            // Dispatch event to re-render menu if already loaded
+            window.dispatchEvent(new CustomEvent('orderTypeSelected', { detail: 'popup' }));
         });
-    });
+    })();
     </script>
-
 </body>
 </html>
