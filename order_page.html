@@ -33,6 +33,26 @@
     <link rel="preload" as="image" href="webpimages/menu-bg.webp">
 </head>
 <body>
+    <!-- Order Type Selection Popup -->
+    <div id="orderTypePopup" class="order-type-popup-overlay">
+        <div class="order-type-popup" role="dialog" aria-modal="true" aria-labelledby="orderTypeTitle">
+            <h3 id="orderTypeTitle">How are you ordering?</h3>
+            <p class="order-type-desc">Choose your ordering experience</p>
+            <div class="order-type-buttons">
+                <button type="button" class="order-type-btn" id="homeOrderBtn">
+                    <span class="order-type-icon">🏠</span>
+                    <span class="order-type-label">Home Delivery</span>
+                    <span class="order-type-sublabel">Full menu available</span>
+                </button>
+                <button type="button" class="order-type-btn popup-order" id="popupOrderBtn">
+                    <span class="order-type-icon">🎪</span>
+                    <span class="order-type-label">Popup Pickup</span>
+                    <span class="order-type-sublabel">15% off combos!</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <nav class="top-nav">
         <div class="container">
             <button class="arrow" onclick="window.location.href='/'">
@@ -218,5 +238,39 @@
             <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
         </div>
     </footer>
+
+    <script>
+    // Order type popup handler
+    (function() {
+        const popup = document.getElementById('orderTypePopup');
+        const homeBtn = document.getElementById('homeOrderBtn');
+        const popupBtn = document.getElementById('popupOrderBtn');
+
+        // Check if order type already selected this session
+        const savedOrderType = sessionStorage.getItem('rr_order_type');
+        if (savedOrderType) {
+            popup.classList.add('hidden');
+            window._rrOrderType = savedOrderType;
+        } else {
+            popup.classList.remove('hidden');
+        }
+
+        homeBtn.addEventListener('click', function() {
+            sessionStorage.setItem('rr_order_type', 'home');
+            window._rrOrderType = 'home';
+            popup.classList.add('hidden');
+            // Dispatch event to re-render menu if already loaded
+            window.dispatchEvent(new CustomEvent('orderTypeSelected', { detail: 'home' }));
+        });
+
+        popupBtn.addEventListener('click', function() {
+            sessionStorage.setItem('rr_order_type', 'popup');
+            window._rrOrderType = 'popup';
+            popup.classList.add('hidden');
+            // Dispatch event to re-render menu if already loaded
+            window.dispatchEvent(new CustomEvent('orderTypeSelected', { detail: 'popup' }));
+        });
+    })();
+    </script>
 </body>
 </html>

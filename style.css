@@ -1133,6 +1133,20 @@ footer {
 	margin: 0;
 }
 
+.combo-original-price {
+	text-decoration: line-through;
+	color: #999;
+	font-size: 1rem;
+	font-weight: 500;
+	margin-right: 0.5rem;
+}
+
+.combo-discounted-price {
+	color: #2e7d32;
+	font-size: 1.25rem;
+	font-weight: 700;
+}
+
 .combo-controls {
 	display: flex;
 	align-items: center;
@@ -1406,6 +1420,95 @@ footer {
 	margin-bottom: 0.5rem;
 }
 /* ====== END BOX SECTION ====== */
+
+/* ====== ORDER TYPE POPUP ====== */
+.order-type-popup-overlay {
+	display: flex;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.7);
+	z-index: 4000;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+.order-type-popup-overlay.hidden {
+	display: none;
+}
+.order-type-popup {
+	background: var(--rr-text);
+	border-radius: 16px;
+	max-width: 400px;
+	width: 100%;
+	padding: 2rem;
+	box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+	text-align: center;
+}
+.order-type-popup h3 {
+	margin: 0 0 0.5rem 0;
+	color: var(--rr-bg);
+	font-size: 1.5rem;
+}
+.order-type-desc {
+	color: #666;
+	margin: 0 0 1.5rem 0;
+	font-size: 0.95rem;
+}
+.order-type-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+.order-type-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 1.25rem;
+	border: 2px solid var(--rr-bg);
+	border-radius: 12px;
+	background: #fff;
+	cursor: pointer;
+	transition: all 200ms ease;
+}
+.order-type-btn:hover {
+	background: rgba(109,36,48,0.05);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(109,36,48,0.15);
+}
+.order-type-btn.popup-order {
+	background: var(--rr-bg);
+	color: #fff;
+}
+.order-type-btn.popup-order:hover {
+	background: #5a1e28;
+}
+.order-type-btn.popup-order .order-type-label,
+.order-type-btn.popup-order .order-type-sublabel {
+	color: #fff;
+}
+.order-type-icon {
+	font-size: 2rem;
+}
+.order-type-label {
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: inherit;
+}
+.order-type-btn:not(.popup-order) .order-type-label {
+	color: var(--rr-bg);
+}
+.order-type-sublabel {
+	font-size: 0.85rem;
+	opacity: 0.7;
+}
+.order-type-btn:not(.popup-order) .order-type-sublabel {
+	color: #666;
+}
+/* ====== END ORDER TYPE POPUP ====== */
 
 /* Loader shown while menu.json is fetched */
 .menu-loader {

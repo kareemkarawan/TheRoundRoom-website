@@ -674,13 +674,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const token = localStorage.getItem('rr_token');
         
         // Only logged-in users can use discounts
+        // Disable discounts in popup mode
+        if (window._rrOrderType === 'popup') {
+            if (discountSelector) {
+                discountSelector.style.display = 'none';
+                discountSelector.disabled = true;
+            }
+            if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
+            return;
+        }
         if (!token) {
             if (discountSelector) discountSelector.style.display = 'none';
             if (discountLoginPrompt) discountLoginPrompt.style.display = '';
             return;
         }
-        
-        if (discountSelector) discountSelector.style.display = '';
+        if (discountSelector) {
+            discountSelector.style.display = '';
+            discountSelector.disabled = false;
+        }
         if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
         
         try {

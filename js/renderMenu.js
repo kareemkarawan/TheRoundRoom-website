@@ -69,11 +69,21 @@ async function renderCombo(menuItems, comboSettings) {
       return;
     }
 
-    // Store combo price globally for cart calculations
-    window._rrComboPrice = comboSettings.price;
+    // Check if popup mode - apply 15% discount
+    const isPopupMode = window._rrOrderType === 'popup';
+    const originalPrice = comboSettings.price;
+    const discountedPrice = isPopupMode ? originalPrice * 0.85 : originalPrice;
+    
+    // Store combo price globally for cart calculations (use discounted price in popup mode)
+    window._rrComboPrice = discountedPrice;
+
+    // Build price display HTML
+    const priceHTML = isPopupMode 
+      ? `<span class="combo-original-price">₹${Number(originalPrice).toFixed(2)}</span> <span class="combo-discounted-price">₹${Number(discountedPrice).toFixed(2)}</span>`
+      : `₹${Number(originalPrice).toFixed(2)}`;
 
     comboContainer.innerHTML = `
-      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Combo" data-price="${comboSettings.price}">
+      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Combo" data-price="${discountedPrice}">
         <div class="combo-selectors">
           <div class="combo-selector-group">
             <label for="comboBagelSelect">Choose your bagel:</label>
@@ -91,7 +101,7 @@ async function renderCombo(menuItems, comboSettings) {
           </div>
         </div>
         <div class="combo-info">
-          <p class="combo-price">₹${Number(comboSettings.price).toFixed(2)}</p>
+          <p class="combo-price">${priceHTML}</p>
           <div class="combo-controls">
             <button class="qty-btn combo-minus" data-id="combo_bagel_schmear" disabled>−</button>
             <span class="qty combo-qty" data-id="combo_bagel_schmear">1</span>
@@ -640,7 +650,67 @@ async function renderMenu() {
       if (retryBtn) retryBtn.addEventListener('click', () => renderMenu());
     }
   }
+
+  // Apply section visibility based on order type
+  applyOrderTypeVisibility();
 }
+
+// Show/hide sections based on order type (popup mode = combos + desserts only)
+function applyOrderTypeVisibility() {
+  const isPopupMode = window._rrOrderType === 'popup';
+  
+  // Sections to hide in popup mode
+  const bagelMenu = document.getElementById('bagelMenu');
+  const schmearMenu = document.getElementById('schmearMenu');
+  const dessertMenu = document.getElementById('dessertMenu');
+  const boxSection = document.getElementById('boxSection');
+  
+  // Find the small-menu-title parents for hiding the titles too
+  const smallTitles = document.querySelectorAll('.small-menu-title');
+  
+  if (isPopupMode) {
+    // Hide individual menu categories (except desserts)
+    if (bagelMenu) bagelMenu.style.display = 'none';
+    if (schmearMenu) schmearMenu.style.display = 'none';
+    if (boxSection) boxSection.style.display = 'none';
+    // Keep desserts visible
+    if (dessertMenu) dessertMenu.style.display = '';
+    
+    // Hide titles for bagels, schmears only
+    smallTitles.forEach(title => {
+      const h3Text = title.querySelector('h3')?.textContent?.toLowerCase() || '';
+      if (h3Text.includes('bagel') && !h3Text.includes('combo') && !h3Text.includes('box')) {
+        title.style.display = 'none';
+      } else if (h3Text.includes('schmear') && !h3Text.includes('combo')) {
+        title.style.display = 'none';
+      }
+      // Keep desserts title visible
+    });
+  } else {
+    // Show all sections (home delivery mode)
+    if (bagelMenu) bagelMenu.style.display = '';
+    if (schmearMenu) schmearMenu.style.display = '';
+    if (dessertMenu) dessertMenu.style.display = '';
+    // boxSection visibility is controlled by renderBagelBoxes
+    
+    smallTitles.forEach(title => {
+      title.style.display = '';
+    });
+  }
+}
+
+// Listen for order type selection to re-render
+window.addEventListener('orderTypeSelected', async function(e) {
+  // Re-render combo with updated pricing
+  const cachedMenu = getCachedData(MENU_CACHE_KEY);
+  const cachedCombo = getCachedData(COMBO_CACHE_KEY);
+  
+  if (cachedMenu && cachedCombo) {
+    await renderCombo(cachedMenu, cachedCombo);
+  }
+  
+  applyOrderTypeVisibility();
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', renderMenu);
