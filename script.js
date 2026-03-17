@@ -782,7 +782,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const subtotal = Number(cart.subtotal || 0);
         let discountAmount = 0;
 
-        if (selectedDiscount) {
+        // Always auto-apply 15% discount for collection orders
+        if (window._rrOrderType === 'collection') {
+            discountAmount = subtotal * 0.15;
+            discountRow.style.display = 'flex';
+            discountNameEl.textContent = 'Popup Collection 15% Off';
+            discountAmtEl.textContent = `-₹${discountAmount.toFixed(2)}`;
+        } else if (selectedDiscount) {
             discountAmount = (subtotal * selectedDiscount.percentage) / 100;
             discountRow.style.display = 'flex';
             discountNameEl.textContent = selectedDiscount.name;
