@@ -17,10 +17,13 @@
 window._rrMenuItems = [];
 
 // Cache keys for localStorage
-const MENU_CACHE_KEY = 'rr_menu_cache';
-const COMBO_CACHE_KEY = 'rr_combo_cache';
-const BOXES_CACHE_KEY = 'rr_boxes_cache';
-const ALL_DATA_CACHE_KEY = 'rr_all_data_cache'; // Combined cache
+
+// Use Netlify deploy ID or timestamp for cache busting
+const DEPLOY_VERSION = window._rrDeployVersion || document.querySelector('meta[name="rr-deploy-version"]')?.content || Date.now();
+const MENU_CACHE_KEY = `rr_menu_cache_${DEPLOY_VERSION}`;
+const COMBO_CACHE_KEY = `rr_combo_cache_${DEPLOY_VERSION}`;
+const BOXES_CACHE_KEY = `rr_boxes_cache_${DEPLOY_VERSION}`;
+const ALL_DATA_CACHE_KEY = `rr_all_data_cache_${DEPLOY_VERSION}`; // Combined cache
 const CACHE_MAX_AGE = 60 * 1000; // 60 seconds - balance between speed and freshness
 
 function getCachedData(key) {
@@ -572,7 +575,7 @@ async function renderMenu() {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     
     // Single combined endpoint for all menu data
-    const dataUrl = '/.netlify/functions/menu-data';
+    const dataUrl = `/.netlify/functions/menu-data?version=${DEPLOY_VERSION}`;
     
     let dataRes;
     try {
