@@ -658,6 +658,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (emailInput) emailInput.setAttribute('required', 'true');
             if (phoneInput) phoneInput.setAttribute('required', 'true');
         }
+
+        // Always hide email and phone for collection, only show first name, surname, and order note
+        if (orderType === 'collection') {
+            if (emailSection) emailSection.style.display = 'none';
+            if (phoneSection) phoneSection.style.display = 'none';
+        }
     }
 
     async function loadCollectionSetting() {
