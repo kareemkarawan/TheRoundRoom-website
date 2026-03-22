@@ -628,8 +628,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let collectionEnabled = false;
 
     // Order type handling (delivery vs collection)
-    function handleOrderTypeChange() {
-        const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'delivery';
+        function handleOrderTypeChange() {
+            const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'delivery';
+            window._rrOrderType = orderType;
         const addressSection = document.getElementById('addressSection');
         const pincodeSection = document.getElementById('pincodeSection');
         const addressInput = document.getElementById('address');
@@ -664,6 +665,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (emailSection) emailSection.style.display = 'none';
             if (phoneSection) phoneSection.style.display = 'none';
         }
+            // Trigger discount logic update
+            loadAvailableDiscounts();
     }
 
     async function loadCollectionSetting() {

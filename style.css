@@ -544,18 +544,57 @@ footer {
 
 
 .video-container {
+	/* Overlay for video and centered order button */
+	.video-overlay {
+		position: relative;
+		width: 100%;
+		height: 450px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.video-overlay video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	.order-now-btn {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		background-color: var(--rr-text);
+		color: var(--rr-bg);
+		font-size: 0.85rem;
+		font-weight: 700;
+		padding: 0.75rem 2rem;
+		border-radius: 0;
+		border: none;
+		text-decoration: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 24px rgba(109,36,48,0.12);
+		transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+		z-index: 2;
+	}
+	.order-now-btn:hover,
+	.order-now-btn:focus {
+		background-color: var(--rr-bg);
+		color: var(--rr-text);
+		box-shadow: 0 6px 32px rgba(109,36,48,0.18);
+	}
 	position: relative;
 	overflow: hidden;
 	width: 100%;
-	/* allow the video to size itself so it can keep its original aspect ratio */
-	margin-top: 3.5rem; /* push video down by default */
+	margin-top: 3.5rem; 
 }
 
-/* Ensure the video always fills the available width and keeps its aspect ratio */
 .video-container video {
-	display: block; /* remove inline gaps */
+	display: block;
 	width: 100%;
-	height: auto; /* preserve original aspect ratio */
+	height: auto;
 	max-width: 100%;
 }
 
@@ -573,8 +612,8 @@ footer {
 .section-ms {
 	display: flex;
 	flex-direction: row;
-	justify-content: flex-start; /* align items next to each other without extra space */
-	gap: 0; /* remove flex gap */
+	justify-content: flex-start;
+	gap: 0;
 	padding: var(--spacing-lg) var(--spacing-md);
 	background-color: var(--rr-bg);
 	color: var(--rr-text);

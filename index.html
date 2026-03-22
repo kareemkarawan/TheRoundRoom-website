@@ -1,18 +1,4 @@
 <!DOCTYPE html>
-<!--
-  FILE: index.html
-  PURPOSE: Main homepage/landing page for The Round Room bagel shop with story, product carousels, and order CTA.
-  
-  NOTES:
-  - Uses video background from Cloudinary CDN
-  - Carousels for bagels, schmears, and desserts sections
-  - Welcome popup prompts login/register for new visitors (dismissible)
-  - Auth state managed via localStorage (rr_token, rr_welcome_dismissed)
-  - Hamburger menu for mobile navigation (changeHamburger function)
-  - Footer links to privacy, terms, refund, and contact pages
-  - Section anchors: #story, #bagels, #schmear, #dessert, #order
-  - Logout loading overlay for smooth UX during sign-out
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -61,10 +47,13 @@
         </div>
     </nav>
     <div class="video-container"> 
-        <video width=100% height="100%" autoplay muted loop playsinline webkit-playsinline>
-        <source src="https://res.cloudinary.com/dvxx1pnox/video/upload/front_syjs61" type="video/mp4">
-        Your browser does not support the video tag.
-        </video>
+        <div class="video-overlay">
+            <video width=100% height="100%" autoplay muted loop playsinline webkit-playsinline>
+                <source src="https://res.cloudinary.com/dvxx1pnox/video/upload/v1774182705/New_front_gueynp.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <a href="/order_page.html" class="order-now-btn">ORDER NOW</a>
+        </div>
     </div>
     <section class="section-ss" id="story">
         <h2>OUR STORY</h2>
@@ -138,27 +127,27 @@
         <h2>OUR SCHMEARS</h2>
         <div class="menu desktop-only">
             <div class="menu-item-w">
-                <img src="webpimages/plain_schmear.webp" alt="Plain Schmear" loading="lazy">
+                <img src="webpimages/Plain Schmear.webp" alt="Plain Schmear" loading="lazy">
                 <h3>PLAIN</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/zest_schmear.webp" alt="Zest Schmear" loading="lazy">
+                <img src="webpimages/Zest Schmear.webp" alt="Zest Schmear" loading="lazy">
                 <h3>SALT, PEPPER & ZEST</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/j_schmear.webp" alt="Jalapeño Schmear" loading="lazy">
+                <img src="webpimages/Jalapeno and Parm.webp" alt="Jalapeño Schmear" loading="lazy">
                 <h3>JALAPEÑO</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/tom_schmear.webp" alt="Tomato Schmear" loading="lazy">
+                <img src="webpimages/Chilli Sundried Tomato.webp" alt="Tomato Schmear" loading="lazy">
                 <h3>SUN-DRIED TOMATOES</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/pesto_schmear.webp" alt="Pesto Schmear" loading="lazy">
+                <img src="webpimages/Pesto Schmears.webp" alt="Pesto Schmear" loading="lazy">
                 <h3>PESTO GENOVESE</h3>
             </div>
             <div class="menu-item-w">
-                <img src="webpimages/h_schmear.webp" alt="Hazelnut Schmear" loading="lazy">
+                <img src="webpimages/Hazelnut Schmear.webp" alt="Hazelnut Schmear" loading="lazy">
                 <h3>HAZELNUT</h3>
             </div>
         </div>
@@ -166,27 +155,27 @@
             <div class="section-line"></div>
             <div class="menu-item-p-w">
                 <h3>PLAIN</h3>
-                <img src="webpimages/plain_schmear.webp" alt="Plain Schmear" loading="lazy">
+                <img src="webpimages/Plain Schmear.webp" alt="Plain Schmear" loading="lazy">
             </div>
             <div class="menu-item-p-w">
                 <h3>SALT, PEPPER & ZEST</h3>
-                <img src="webpimages/zest_schmear.webp" alt="Zest Schmear" loading="lazy">
+                <img src="webpimages/Zest Schmear.webp" alt="Zest Schmear" loading="lazy">
             </div>
             <div class="menu-item-p-w">
                 <h3>JALAPEÑO</h3>
-                <img src="webpimages/j_schmear.webp" alt="Jalapeño Schmear" loading="lazy">
+                <img src="webpimages/Jalapeno and Parm.webp" alt="Jalapeño Schmear" loading="lazy">
             </div>
             <div class="menu-item-p-w">
                 <h3>SUN-DRIED TOMATOES</h3>
-                <img src="webpimages/tom_schmear.webp" alt="Tomato Schmear" loading="lazy">
+                <img src="webpimages/Chilli Sundried Tomato.webp" alt="Tomato Schmear" loading="lazy">
             </div>
             <div class="menu-item-p-w">
                 <h3>PESTO GENOVESE</h3>
-                <img src="webpimages/pesto_schmear.webp" alt="Pesto Schmear" loading="lazy">
+                <img src="webpimages/Pesto Schmears.webp" alt="Pesto Schmear" loading="lazy">
             </div>
             <div class="menu-item-p-w">
                 <h3>HAZELNUT</h3>
-                <img src="webpimages/h_schmear.webp" alt="Hazelnut Schmear" loading="lazy">
+                <img src="webpimages/Hazelnut Schmear.webp" alt="Hazelnut Schmear" loading="lazy">
             </div>
         </div>
     </section>
@@ -201,10 +190,6 @@
                 <img src="webpimages/ch_mousse.webp" alt="Chocolate Mousse" loading="lazy">
                 <h3>CHOCOLATE MOUSSE</h3>
             </div>
-            <div class="menu-item-w">
-                <img src="webpimages/mango_ch.webp" alt="Mango Cheesecake" loading="lazy">
-                <h3>MANGO CHEESECAKE</h3>
-            </div>
         </div>
         <div class="menu-p mobile-only">
             <div class="section-line-w"></div>
@@ -215,10 +200,6 @@
             <div class="menu-item-p">
                 <h3>CHOCOLATE MOUSSE</h3>
                 <img src="webpimages/ch_mousse.webp" alt="Chocolate Mousse" style="border: none" loading="lazy">
-            </div>
-            <div class="menu-item-p">
-                <h3>MANGO CHEESECAKE</h3>
-                <img src="webpimages/mango_ch.webp" alt="Mango Cheesecake" style="border: none" loading="lazy">
             </div>
         </div>
     </section>
@@ -242,7 +223,7 @@
                 <span aria-hidden="true">•</span>
                 <a href="/contact">Contact</a>
             </div>
-            <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room</div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room LLP</div>
         </div>
     </footer>
     <!---
