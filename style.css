@@ -60,16 +60,17 @@ h3 {
 	font-family: 'Satoshi', sans-serif;
 	}
 
-	/* Schmear label auto-shrink for one line */
-	.menu-item-w h3, .menu-item-p-w h3 {
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		display: block;
-		font-size: clamp(0.7rem, 2vw, 1.15rem);
-		max-width: 100%;
+
+	@media (max-width: 900px) {
+		.menu-item-w h3,
+		.menu-item-p-w h3 {
+			/* Default mobile font size for all schmears */
+			font-size: 0.5rem;
+		}
+		   .shrink-label{
+			   font-size: 0.4rem;
+		   }
 	}
-}
 
 
 a {
@@ -1038,7 +1039,7 @@ footer {
 		text-align: center;
 	}
 	.section-s .menu-p .menu-item-p-w h3 {
-		font-size: 0.85rem;
+		font-size: 0.65rem;
 	}
 
 }
