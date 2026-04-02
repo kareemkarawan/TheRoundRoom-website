@@ -1909,6 +1909,13 @@ footer {
 	padding-top: 0.5rem;
 }
 
+.cart-delivery-note {
+	margin: 0 0 0.75rem;
+	font-size: 0.75rem;
+	line-height: 1.35;
+	color: rgba(109, 36, 48, 0.85);
+}
+
 .btn-proceed {
 	width: 100%;
 	background-color: var(--rr-bg);
@@ -3331,6 +3338,13 @@ footer {
         border-top: 1px solid rgba(245,240,235,0.2);
         margin-top: 0.5rem;
     }
+
+	.sheet-delivery-note {
+		margin: 0.25rem 0 0.75rem;
+		font-size: 0.72rem;
+		line-height: 1.35;
+		color: rgba(245,240,235,0.85);
+	}
     
     /* Sheet footer with checkout button */
     .sheet-footer {

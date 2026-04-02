@@ -1,28 +1,12 @@
 <!DOCTYPE html>
-<!--
-  FILE: order_page.html
-  PURPOSE: Order/menu page where customers browse products, select items, and manage their cart before checkout.
-  
-  NOTES:
-  - Menu items loaded dynamically via renderMenu.js from Netlify functions API
-  - Cart state persisted in localStorage and synced with bottom sheet on mobile
-  - Combo section (bagel + schmear) can be toggled via admin settings
-  - Store status modal appears when shop is closed
-  - Sticky cart sidebar on desktop, bottom sheet on mobile
-  - Tax breakdown shows SGST and CGST (2.5% each for India)
-  - Preloads menu-bg.webp for faster rendering
-  - Checkout button redirects to /checkout with cart data
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Round Room</title>
-    <!-- Preconnect for faster API and font loading -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://api.fontshare.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Preload critical API call for faster menu loading -->
     <link rel="preload" href="/.netlify/functions/menu-data" as="fetch" crossorigin>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="images/Icon.png">
@@ -133,6 +117,7 @@
                     <span id="total">₹0.00</span>
                 </div>
             </div>
+            <p class="cart-delivery-note">Complimentary delivery on orders above ₹1500. Delivery charges apply to orders below this amount.</p>
             <button class="checkout-btn" id="checkoutBtn" type="button">Checkout</button>
             <p class="cart-warning" id="cartWarning" role="status" aria-live="polite" style="display:none;">Your basket is empty.</p>
         </aside>
@@ -172,6 +157,7 @@
                     <span id="sheetTotalFull">₹0.00</span>
                 </div>
             </div>
+            <p class="sheet-delivery-note">Complimentary delivery on orders above ₹1500. Delivery charges apply to orders below this amount.</p>
         </div>
         <div class="sheet-footer">
             <button class="sheet-checkout-btn" id="sheetCheckoutBtn">Checkout</button>
