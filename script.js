@@ -166,8 +166,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (btnPrev) btnPrev.addEventListener('click', movePrev);
         if (btnNext) btnNext.addEventListener('click', moveNext);
 
-        // Keyboard support
-        document.addEventListener('keydown', function (e) {
+        // Keyboard support - only when carousel is focused
+        carousel.setAttribute('tabindex', '0');
+        carousel.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowLeft') movePrev();
             if (e.key === 'ArrowRight') moveNext();
         });
@@ -195,6 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (loaded === imgs.length) centerIndex(currentIndex, false);
         }
     }
+
 
     initCarousel('bagelCarousel');
 });
@@ -2135,3 +2137,63 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 })();
+
+const editorialData = [
+    {
+        title: "THE ART OF THE BAGEL",
+        description: "Discover the meticulous craft behind our New York-style bagels, where every step from dough preparation to boiling and baking is a labor of love, resulting in the perfect balance of a chewy interior and a crisp exterior."
+    },
+    {
+        title: "MEET THE FOUNDER",
+        description: "Get to know the visionary behind our brand, whose passion and dedication have shaped every aspect of our business, from product development to customer experience."
+    }
+]
+
+function createEditorialPanel(editorialItem) {
+    const panel = document.createElement('div');
+    panel.className = 'editorial-item';
+    panel.innerHTML = `
+        <h3>${editorialItem.title}</h3>
+        <p>${editorialItem.description}</p>
+    `;
+    return panel;
+}
+
+function showPanel(index) {
+    const container = document.getElementById('editorialContainer');
+    const editorialItem = editorialData[index];
+    const panel = createEditorialPanel(editorialItem);
+
+    panel.classList.add('woosh-in');
+    container.appendChild(panel);
+    setTimeout(() => {
+        panel.classList.remove('woosh-in');
+        panel.classList.add('active');
+    }, 700);
+}
+
+function removePanel() {
+    const container = document.getElementById('editorialContainer');
+    const currentPanel = container.querySelector('.editorial-item');
+    
+    if (currentPanel) {
+        currentPanel.classList.add('woosh-out');
+        setTimeout(() => {
+            currentPanel.remove();
+        }, 700);
+    }
+}
+
+let currentEditorialIndex = 0;
+function rotateEditorial() {
+    removePanel();
+    setTimeout(() => {
+        currentEditorialIndex = (currentEditorialIndex + 1) % editorialData.length;
+        showPanel(currentEditorialIndex);
+    }, 700);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    showPanel(0);
+    setInterval(rotateEditorial, 8000);
+});
