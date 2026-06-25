@@ -9,9 +9,9 @@
 [functions]
   node_bundler = "esbuild"
   
-# DISABLED: Scheduled function keeps failing without MongoDB
-# [functions."keep-warm"]
-#   schedule = "*/5 * * * *"
+# Scheduled function to keep the main functions warm (prevents cold starts)
+[functions."keep-warm"]
+  schedule = "*/5 * * * *"
 
 # Cache static assets aggressively
 [[headers]]
@@ -39,12 +39,12 @@
   [headers.values]
     Cache-Control = "public, max-age=86400"
 
-# DISABLED: Preload causes issues when functions are down
-# [[headers]]
-#   for = "/order_page.html"
-#   [headers.values]
-#     Link = '''
-#       </.netlify/functions/menu>; rel=preload; as=fetch; crossorigin,
-#       </style.css>; rel=preload; as=style,
-#       </script.js>; rel=preload; as=script
-#     '''
+# Preload hints for menu page
+[[headers]]
+  for = "/order_page.html"
+  [headers.values]
+    Link = '''
+      </.netlify/functions/menu>; rel=preload; as=fetch; crossorigin,
+      </style.css>; rel=preload; as=style,
+      </script.js>; rel=preload; as=script
+    '''

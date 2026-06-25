@@ -306,6 +306,11 @@
     })();
     </script>
 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
+    });
+    </script>
 
     <div id="logoutLoading" class="loading-overlay" style="display: none;">
         <div class="loading-card">Logging out...</div>

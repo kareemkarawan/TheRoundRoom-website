@@ -59,7 +59,8 @@ async function handleGet() {
       body: JSON.stringify(items),
     };
   } catch (err) {
-    console.error("GET error:", err);
+    console.error("GET menu error:", err.message);
+    console.error("Full error:", err);
     // Return empty menu as fallback when DB is unavailable
     return {
       statusCode: 200,

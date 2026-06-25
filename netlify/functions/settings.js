@@ -65,7 +65,8 @@ async function handleGet(isAdmin = false) {
       body: JSON.stringify(settings || { key: "store" }),
     };
   } catch (err) {
-    console.error("GET settings error:", err);
+    console.error("GET settings error:", err.message);
+    console.error("Full error:", err);
     // Return default settings as fallback when DB is unavailable
     if (!isAdmin) {
       return {
@@ -79,7 +80,10 @@ async function handleGet(isAdmin = false) {
     }
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ 
+        error: err.message,
+        hint: "Check MONGODB_URI in Netlify environment variables and MongoDB Atlas network access" 
+      }),
     };
   }
 }
