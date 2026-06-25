@@ -23,7 +23,8 @@ async function getDB() {
   }
 
   const client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 2000,
+    connectTimeoutMS: 2000,
   });
 
   await client.connect();

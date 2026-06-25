@@ -24,7 +24,10 @@ let cachedClient = null;
 
 async function getClient() {
   if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+  const client = new MongoClient(uri, { 
+    serverSelectionTimeoutMS: 2000,
+    connectTimeoutMS: 2000,
+  });
   await client.connect();
   cachedClient = client;
   return client;
@@ -63,6 +66,17 @@ async function handleGet(isAdmin = false) {
     };
   } catch (err) {
     console.error("GET settings error:", err);
+    // Return default settings as fallback when DB is unavailable
+    if (!isAdmin) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          storeOpen: false,
+          minOrder: 0,
+          collectionEnabled: true,
+        }),
+      };
+    }
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),

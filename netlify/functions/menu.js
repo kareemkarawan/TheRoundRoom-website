@@ -27,7 +27,8 @@ async function getClient() {
     return cachedClient;
   }
   const client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 2000,
+    connectTimeoutMS: 2000,
   });
   await client.connect();
   cachedClient = client;
@@ -59,9 +60,10 @@ async function handleGet() {
     };
   } catch (err) {
     console.error("GET error:", err);
+    // Return empty menu as fallback when DB is unavailable
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      statusCode: 200,
+      body: JSON.stringify([]),
     };
   }
 }
