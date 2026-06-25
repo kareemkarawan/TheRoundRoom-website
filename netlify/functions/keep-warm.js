@@ -1,12 +1,4 @@
-/**
- * FILE: keep-warm.js
- * PURPOSE: Scheduled function that runs every 5 minutes to prevent cold starts.
- *
- * NOTES:
- * - Pings menu, combo-settings, and bagel-boxes functions to keep them warm
- * - Runs on Netlify's scheduled functions (cron: */5 * * * *)
- * - Reduces cold start latency for customers visiting the menu page
- */
+
 
 const { getDB } = require("./db");
 
