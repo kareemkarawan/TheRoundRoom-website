@@ -113,6 +113,9 @@ async function handlePut(body) {
     storeOpen: typeof updates.storeOpen === "boolean" ? updates.storeOpen : true,
     minOrder: Number(updates.minOrder ?? 0),
     collectionEnabled: typeof updates.collectionEnabled === "boolean" ? updates.collectionEnabled : true,
+    nextAvailableDate: updates.nextAvailableDate || null,
+    leadTimeDays: Number(updates.leadTimeDays ?? 1),
+    maxAdvanceDays: Number(updates.maxAdvanceDays ?? 14),
     updatedAt: new Date(),
   };
 

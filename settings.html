@@ -80,6 +80,24 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label for="nextAvailableDate">Next Available Order Date</label>
+                    <input id="nextAvailableDate" name="nextAvailableDate" type="date" placeholder="Select date">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">The earliest date customers can select for delivery/pickup</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="leadTimeDays">Lead Time (Days)</label>
+                    <input id="leadTimeDays" name="leadTimeDays" type="number" min="0" step="1" placeholder="e.g., 1">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Minimum days in advance required for orders (0 = same day allowed)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="maxAdvanceDays">Max Advance Booking (Days)</label>
+                    <input id="maxAdvanceDays" name="maxAdvanceDays" type="number" min="1" max="90" step="1" value="14" placeholder="e.g., 14">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">How far in advance customers can place orders</small>
+                </div>
+
                 <button type="button" class="btn" id="saveSettingsBtn">Save Settings</button>
             </form>
         </div>
@@ -118,6 +136,13 @@
             document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
             document.getElementById('minOrder').value = data.minOrder ?? '';
             document.getElementById('collectionEnabled').value = data.collectionEnabled === false ? 'disabled' : 'enabled';
+            
+            // Pre-order settings
+            if (data.nextAvailableDate) {
+                document.getElementById('nextAvailableDate').value = data.nextAvailableDate;
+            }
+            document.getElementById('leadTimeDays').value = data.leadTimeDays ?? '1';
+            document.getElementById('maxAdvanceDays').value = data.maxAdvanceDays ?? '14';
         } catch (e) {
             console.error('[settings] Load failed:', e);
             alert(`Error loading settings: ${e.message}`);
@@ -134,7 +159,10 @@
             invoicePrefix: document.getElementById('invoicePrefix').value.trim() || 'ORD',
             storeOpen: document.getElementById('shopStatus').value === 'open',
             minOrder: Number(document.getElementById('minOrder').value || 0),
-            collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled'
+            collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled',
+            nextAvailableDate: document.getElementById('nextAvailableDate').value || null,
+            leadTimeDays: Number(document.getElementById('leadTimeDays').value || 1),
+            maxAdvanceDays: Number(document.getElementById('maxAdvanceDays').value || 14)
         };
 
         try {

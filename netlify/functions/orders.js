@@ -313,6 +313,7 @@ async function handlePost(body) {
       orderNumber,
       status: "PAYMENT_PENDING",
       orderType: order.orderType || "delivery",
+      orderDate: order.orderDate || null,
       items: lineItems,
       pricing: {
         subtotal,

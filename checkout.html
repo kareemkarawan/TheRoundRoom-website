@@ -85,6 +85,13 @@
             </div>
 
             <div class="form-section">
+                <label for="orderDate">Preferred Date *</label>
+                <input id="orderDate" name="orderDate" type="date" required aria-required="true">
+                <small id="orderDateHelp" style="display: block; margin-top: 0.25rem; color: #666;">Select your preferred delivery/collection date</small>
+                <div id="orderDateError" class="error-message" style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
+            </div>
+
+            <div class="form-section">
                 <label for="firstName">First name *</label>
                 <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name">
             </div>
@@ -166,6 +173,94 @@
             <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room LLP</div>
         </div>
     </footer>
+
+    <script>
+    // Initialize order date picker with settings from admin
+    (async function initOrderDatePicker() {
+        const orderDateInput = document.getElementById('orderDate');
+        if (!orderDateInput) return;
+
+        try {
+            // Fetch date settings from API
+            const response = await fetch('/.netlify/functions/settings');
+            if (!response.ok) {
+                console.warn('Could not load date settings, using defaults');
+                setDefaultDates();
+                return;
+            }
+
+            const settings = await response.json();
+            const leadTimeDays = settings.leadTimeDays || 1;
+            const maxAdvanceDays = settings.maxAdvanceDays || 14;
+            const nextAvailableDate = settings.nextAvailableDate;
+
+            // Calculate min date (today + lead time)
+            const today = new Date();
+            const minDate = new Date(today);
+            minDate.setDate(today.getDate() + leadTimeDays);
+
+            // If admin set a specific next available date, use the later of the two
+            let actualMinDate = minDate;
+            if (nextAvailableDate) {
+                const adminDate = new Date(nextAvailableDate);
+                if (adminDate > minDate) {
+                    actualMinDate = adminDate;
+                }
+            }
+
+            // Calculate max date (min date + max advance days)
+            const maxDate = new Date(actualMinDate);
+            maxDate.setDate(actualMinDate.getDate() + maxAdvanceDays);
+
+            // Format dates for input (YYYY-MM-DD)
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // Set min/max on date picker
+            orderDateInput.min = formatDate(actualMinDate);
+            orderDateInput.max = formatDate(maxDate);
+            orderDateInput.value = formatDate(actualMinDate); // Default to earliest available
+
+            // Update help text
+            const helpText = document.getElementById('orderDateHelp');
+            if (helpText) {
+                const minFormatted = actualMinDate.toLocaleDateString('en-IN', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+                helpText.textContent = `Earliest available: ${minFormatted}`;
+            }
+
+        } catch (err) {
+            console.error('Error initializing date picker:', err);
+            setDefaultDates();
+        }
+
+        function setDefaultDates() {
+            // Fallback: tomorrow as min date
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const twoWeeks = new Date(tomorrow);
+            twoWeeks.setDate(tomorrow.getDate() + 14);
+
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            orderDateInput.min = formatDate(tomorrow);
+            orderDateInput.max = formatDate(twoWeeks);
+            orderDateInput.value = formatDate(tomorrow);
+        }
+    })();
+    </script>
 
 </body>
 </html>

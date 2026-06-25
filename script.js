@@ -996,6 +996,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const pincode = data.get('pincode')?.trim() || '';
         const note = data.get('note').trim();
         const orderType = data.get('orderType') || 'delivery';
+        const orderDate = data.get('orderDate')?.trim() || '';
+
+        // Validate order date
+        if (!orderDate) {
+            if (paymentLoading) paymentLoading.style.display = 'none';
+            alert('Please select a preferred order date.');
+            return;
+        }
 
         // Validate pincode only for delivery orders
         if (orderType === 'delivery') {
@@ -1026,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 note: note
             },
             orderType: orderType,
+            orderDate: orderDate,
             items: (rawCart.items || []).map(i => {
                 if (i.isCombo) {
                     return {
