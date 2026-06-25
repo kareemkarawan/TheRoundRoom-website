@@ -2108,6 +2108,8 @@ document.addEventListener("DOMContentLoaded", function () {
 // ============================================
 // VISITOR COUNTER
 // ============================================
+// TEMPORARILY DISABLED: Fix MongoDB connection first
+/*
 (function initVisitorCounter() {
     document.addEventListener('DOMContentLoaded', async function() {
         const counterEl = document.getElementById('visitorCount');
@@ -2137,6 +2139,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 })();
+*/
 
 const editorialData = [
     {
