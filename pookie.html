@@ -81,6 +81,7 @@
                     <tr>
                         <th>Order ID</th>
                         <th>Customer</th>
+                        <th>Preferred Date</th>
                         <th>Placed</th>
                         <th>Status</th>
                         <th>View</th>
@@ -88,7 +89,7 @@
                     </tr>
                 </thead>
                 <tbody id="ordersTbody">
-                    <tr><td colspan="6" class="muted">Loading orders…</td></tr>
+                    <tr><td colspan="7" class="muted">Loading orders…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -253,7 +254,7 @@
         const visibleOrders = (orders || []).filter(o => !hidden.has(o.orderNumber));
         const tbody = document.getElementById('ordersTbody');
         if (!visibleOrders || visibleOrders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="muted">No orders yet.</td></tr>';
             return;
         }
 
@@ -261,10 +262,14 @@
             const customer = o.customer?.name || '—';
             const placed = o.createdAt ? fmtDate(o.createdAt) : '—';
             const status = o.status || 'CREATED';
+            const orderDate = o.orderDate 
+                ? new Date(o.orderDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+                : '—';
             return `
                 <tr>
                     <td>${o.orderNumber || '—'}</td>
                     <td>${customer}</td>
+                    <td style="font-weight: 600; color: var(--rr-text);">${orderDate}</td>
                     <td>${placed}</td>
                     <td>
                         <select data-order="${o.orderNumber}" class="order-status-select">
@@ -313,6 +318,8 @@
         body.innerHTML = `
             <h3>Order ${order.orderNumber}</h3>
             <p><strong>Status:</strong> ${order.status}</p>
+            <p><strong>Order Type:</strong> ${order.orderType === 'collection' ? 'Collection at Popup' : 'Delivery'}</p>
+            ${order.orderDate ? `<p style="background: rgba(109, 36, 48, 0.1); padding: 0.5rem; border-radius: 4px; font-weight: 600;"><strong>📅 Preferred Date:</strong> ${new Date(order.orderDate).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>` : ''}
             <p><strong>Customer:</strong> ${order.customer?.name || '—'}</p>
             <p><strong>Phone:</strong> ${order.customer?.phone || '—'}</p>
             <p><strong>Email:</strong> ${order.customer?.email || '—'}</p>

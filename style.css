@@ -1981,6 +1981,72 @@ footer {
 	min-height: 80px;
 }
 
+/* Date picker styling - make it stand out */
+.date-picker-section {
+	background: linear-gradient(135deg, rgba(109, 36, 48, 0.03), rgba(109, 36, 48, 0.05));
+	border: 2px solid rgba(109, 36, 48, 0.2) !important;
+	border-radius: 8px;
+	padding: 1.25rem !important;
+	margin-bottom: 2rem !important;
+}
+
+.date-picker-section label {
+	font-weight: 600;
+	font-size: 1.05rem;
+	color: var(--rr-text);
+	display: block;
+	margin-bottom: 0.75rem;
+}
+
+.date-input-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.date-input {
+	flex: 1;
+	padding: 1rem 1rem 1rem 3rem !important;
+	font-size: 1.1rem !important;
+	font-weight: 500;
+	background-color: white !important;
+	border: 2px solid rgba(109, 36, 48, 0.3) !important;
+	border-radius: 6px;
+	color: var(--rr-text) !important;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.date-input:hover {
+	border-color: rgba(109, 36, 48, 0.5) !important;
+	box-shadow: 0 2px 8px rgba(109, 36, 48, 0.1);
+}
+
+.date-input:focus {
+	outline: none;
+	border-color: var(--rr-text) !important;
+	box-shadow: 0 0 0 3px rgba(109, 36, 48, 0.1);
+}
+
+.date-icon {
+	position: absolute;
+	left: 1rem;
+	font-size: 1.3rem;
+	pointer-events: none;
+}
+
+/* Style the native date picker calendar icon */
+.date-input::-webkit-calendar-picker-indicator {
+	cursor: pointer;
+	font-size: 1.2rem;
+	opacity: 0.7;
+	transition: opacity 0.2s;
+}
+
+.date-input::-webkit-calendar-picker-indicator:hover {
+	opacity: 1;
+}
+
 /* Checkout summary styling */
 .checkout-summary {
 	background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.94));

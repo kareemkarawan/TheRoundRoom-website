@@ -84,9 +84,12 @@
                 </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section date-picker-section">
                 <label for="orderDate">Preferred Date *</label>
-                <input id="orderDate" name="orderDate" type="date" required aria-required="true">
+                <div class="date-input-wrapper">
+                    <input id="orderDate" name="orderDate" type="date" required aria-required="true" class="date-input">
+                    <span class="date-icon" aria-hidden="true">📅</span>
+                </div>
                 <small id="orderDateHelp" style="display: block; margin-top: 0.25rem; color: #666;">Select your preferred delivery/collection date</small>
                 <div id="orderDateError" class="error-message" style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
