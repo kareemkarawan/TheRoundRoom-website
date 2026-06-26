@@ -998,9 +998,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const orderType = data.get('orderType') || 'delivery';
         const orderDate = data.get('orderDate')?.trim() || '';
         const preorderEnabled = document.getElementById('preorderToggle')?.checked || false;
+        const orderDateInput = document.getElementById('orderDate');
+        const dateRequired = orderDateInput?.required || false;
 
-        // Validate order date only if preorder is enabled
-        if (preorderEnabled) {
+        // Validate order date if preorder is enabled OR if date field is required (preorder-only mode)
+        if (preorderEnabled || dateRequired) {
             if (!orderDate) {
                 if (paymentLoading) paymentLoading.style.display = 'none';
                 alert('Please select a preferred order date for your pre-order.');
@@ -1009,7 +1011,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate order date is not in the past or before minimum allowed date
             const selectedDate = new Date(orderDate);
-            const orderDateInput = document.getElementById('orderDate');
             const minDateStr = orderDateInput?.min;
             
             if (minDateStr) {

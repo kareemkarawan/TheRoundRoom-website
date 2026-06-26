@@ -84,7 +84,13 @@
                 </div>
             </div>
 
-            <div class="form-section preorder-toggle-section" id="preorderToggleSection" style="display: none;">
+            <div class="form-section preorder-only-notice" id="preorderOnlyNotice" style="display: none; background: rgba(109, 36, 48, 0.08); border-left: 4px solid var(--rr-text); padding: 1rem; margin-bottom: 1.5rem;">
+                <p style="margin: 0; font-weight: 500; color: var(--rr-text);">
+                    We are currently only accepting pre-orders for <span id="preorderOnlyDate" style="font-weight: 600;"></span> and after.
+                </p>
+            </div>
+
+            <div class="form-section preorder-toggle-section" id="preorderToggleSection">
                 <label class="preorder-toggle-option">
                     <input type="checkbox" id="preorderToggle" name="preorderToggle">
                     <span class="preorder-toggle-label">📅 Pre-order for a specific date</span>
@@ -203,23 +209,31 @@
             const leadTimeDays = settings.leadTimeDays || 1;
             const maxAdvanceDays = settings.maxAdvanceDays || 14;
             const nextAvailableDate = settings.nextAvailableDate;
-            const preorderEnabled = typeof settings.preorderEnabled === 'boolean' ? settings.preorderEnabled : true;
+            const preorderOnlyMode = typeof settings.preorderOnlyMode === 'boolean' ? settings.preorderOnlyMode : false;
 
-            console.log('📅 Date settings loaded:', { leadTimeDays, maxAdvanceDays, nextAvailableDate, preorderEnabled });
+            console.log('📅 Date settings loaded:', { leadTimeDays, maxAdvanceDays, nextAvailableDate, preorderOnlyMode });
 
-            // Hide/show preorder toggle section based on admin setting
+            // Handle preorder-only mode
             const preorderToggleSection = document.getElementById('preorderToggleSection');
-            if (preorderToggleSection) {
-                if (preorderEnabled) {
-                    preorderToggleSection.style.display = 'block';
-                } else {
-                    preorderToggleSection.style.display = 'none';
-                    // Also hide date picker section if preorder is disabled
-                    const datePickerSection = document.getElementById('datePickerSection');
-                    if (datePickerSection) {
-                        datePickerSection.style.display = 'none';
-                    }
+            const datePickerSection = document.getElementById('datePickerSection');
+            const preorderOnlyNotice = document.getElementById('preorderOnlyNotice');
+            
+            if (preorderOnlyMode) {
+                // Preorder-only mode: hide toggle, show date picker always, show notice
+                if (preorderToggleSection) preorderToggleSection.style.display = 'none';
+                if (datePickerSection) {
+                    datePickerSection.style.display = 'block';
+                    orderDateInput.required = true;
+                    orderDateInput.setAttribute('aria-required', 'true');
                 }
+                if (preorderOnlyNotice) {
+                    preorderOnlyNotice.style.display = 'block';
+                }
+            } else {
+                // Normal mode: show toggle, hide date picker until checked
+                if (preorderToggleSection) preorderToggleSection.style.display = 'block';
+                if (datePickerSection) datePickerSection.style.display = 'none';
+                if (preorderOnlyNotice) preorderOnlyNotice.style.display = 'none';
             }
 
             // Calculate min date (today + lead time)
@@ -267,6 +281,20 @@
                 max: formatDate(maxDate),
                 default: formatDate(actualMinDate)
             });
+
+            // Update preorder-only notice with formatted date
+            if (preorderOnlyMode && preorderOnlyNotice) {
+                const preorderOnlyDateSpan = document.getElementById('preorderOnlyDate');
+                if (preorderOnlyDateSpan) {
+                    const dateFormatted = actualMinDate.toLocaleDateString('en-IN', { 
+                        weekday: 'long',
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+                    preorderOnlyDateSpan.textContent = dateFormatted;
+                }
+            }
 
             // Update help text
             const helpText = document.getElementById('orderDateHelp');
