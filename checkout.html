@@ -84,10 +84,18 @@
                 </div>
             </div>
 
-            <div class="form-section date-picker-section">
+            <div class="form-section preorder-toggle-section">
+                <label class="preorder-toggle-option">
+                    <input type="checkbox" id="preorderToggle" name="preorderToggle">
+                    <span class="preorder-toggle-label">📅 Pre-order for a specific date</span>
+                </label>
+                <small style="display: block; margin-top: 0.5rem; color: #666;">Check this if you want to schedule your order for a future date</small>
+            </div>
+
+            <div class="form-section date-picker-section" id="datePickerSection" style="display: none;">
                 <label for="orderDate">Preferred Date *</label>
                 <div class="date-input-wrapper">
-                    <input id="orderDate" name="orderDate" type="date" required aria-required="true" class="date-input">
+                    <input id="orderDate" name="orderDate" type="date" class="date-input">
                     <span class="date-icon" aria-hidden="true">📅</span>
                 </div>
                 <small id="orderDateHelp" style="display: block; margin-top: 0.25rem; color: #666;">Select your preferred delivery/collection date</small>
@@ -256,6 +264,36 @@
                 helpText.textContent = `Earliest available: ${minFormatted}`;
             }
 
+            // Add validation on date change
+            const errorDiv = document.getElementById('orderDateError');
+            orderDateInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                const minDate = new Date(this.min);
+                const maxDate = new Date(this.max);
+                
+                if (selectedDate < minDate) {
+                    const minFormatted = minDate.toLocaleDateString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                    errorDiv.textContent = `Please select a date on or after ${minFormatted}.`;
+                    errorDiv.style.display = 'block';
+                    this.value = formatDate(minDate); // Reset to minimum date
+                } else if (selectedDate > maxDate) {
+                    const maxFormatted = maxDate.toLocaleDateString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                    errorDiv.textContent = `Please select a date on or before ${maxFormatted}.`;
+                    errorDiv.style.display = 'block';
+                    this.value = formatDate(maxDate); // Reset to maximum date
+                } else {
+                    errorDiv.style.display = 'none';
+                }
+            });
+
         } catch (err) {
             console.error('Error initializing date picker:', err);
             setDefaultDates();
@@ -280,6 +318,32 @@
             orderDateInput.value = formatDate(tomorrow);
         }
     })();
+
+    // Handle preorder toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const preorderToggle = document.getElementById('preorderToggle');
+        const datePickerSection = document.getElementById('datePickerSection');
+        const orderDateInput = document.getElementById('orderDate');
+
+        if (preorderToggle && datePickerSection && orderDateInput) {
+            preorderToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    datePickerSection.style.display = 'block';
+                    orderDateInput.required = true;
+                    orderDateInput.setAttribute('aria-required', 'true');
+                    // Smooth scroll to date picker
+                    setTimeout(() => {
+                        datePickerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+                } else {
+                    datePickerSection.style.display = 'none';
+                    orderDateInput.required = false;
+                    orderDateInput.removeAttribute('aria-required');
+                    orderDateInput.value = ''; // Clear the date
+                }
+            });
+        }
+    });
     </script>
 
 </body>

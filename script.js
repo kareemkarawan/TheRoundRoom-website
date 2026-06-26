@@ -997,12 +997,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const note = data.get('note').trim();
         const orderType = data.get('orderType') || 'delivery';
         const orderDate = data.get('orderDate')?.trim() || '';
+        const preorderEnabled = document.getElementById('preorderToggle')?.checked || false;
 
-        // Validate order date
-        if (!orderDate) {
-            if (paymentLoading) paymentLoading.style.display = 'none';
-            alert('Please select a preferred order date.');
-            return;
+        // Validate order date only if preorder is enabled
+        if (preorderEnabled) {
+            if (!orderDate) {
+                if (paymentLoading) paymentLoading.style.display = 'none';
+                alert('Please select a preferred order date for your pre-order.');
+                return;
+            }
+
+            // Validate order date is not in the past or before minimum allowed date
+            const selectedDate = new Date(orderDate);
+            const orderDateInput = document.getElementById('orderDate');
+            const minDateStr = orderDateInput?.min;
+            
+            if (minDateStr) {
+                const minDate = new Date(minDateStr);
+                if (selectedDate < minDate) {
+                    if (paymentLoading) paymentLoading.style.display = 'none';
+                    const minFormatted = minDate.toLocaleDateString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                    alert(`Please select a date on or after ${minFormatted}.`);
+                    return;
+                }
+            }
         }
 
         // Validate pincode only for delivery orders
