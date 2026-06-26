@@ -2048,14 +2048,6 @@ footer {
 }
 
 /* Preorder toggle styling */
-.preorder-only-notice {
-	background: var(--rr-bg);
-	border-left: 4px solid var(--rr-text);
-	border-radius: 6px;
-	padding: 1rem;
-	margin-bottom: 1.5rem;
-}
-
 .preorder-only-notice p {
 	line-height: 1.5;
 }
@@ -2117,14 +2109,6 @@ footer {
 	}
 
 	.preorder-toggle-label {
-		font-size: 0.95rem;
-	}
-
-	.preorder-only-notice {
-		padding: 0.875rem !important;
-	}
-
-	.preorder-only-notice p {
 		font-size: 0.95rem;
 	}
 }
