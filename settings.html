@@ -81,6 +81,15 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="preorderEnabled">Pre-order Feature</label>
+                    <select id="preorderEnabled" name="preorderEnabled">
+                        <option value="enabled">Enabled</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Allow customers to schedule orders for future dates</small>
+                </div>
+
+                <div class="form-group">
                     <label for="nextAvailableDate">Next Available Order Date</label>
                     <input id="nextAvailableDate" name="nextAvailableDate" type="date" placeholder="Select date">
                     <small style="display: block; margin-top: 0.25rem; color: #666;">The earliest date customers can select for delivery/pickup</small>
@@ -136,6 +145,7 @@
             document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
             document.getElementById('minOrder').value = data.minOrder ?? '';
             document.getElementById('collectionEnabled').value = data.collectionEnabled === false ? 'disabled' : 'enabled';
+            document.getElementById('preorderEnabled').value = data.preorderEnabled === false ? 'disabled' : 'enabled';
             
             // Pre-order settings
             if (data.nextAvailableDate) {
@@ -160,6 +170,7 @@
             storeOpen: document.getElementById('shopStatus').value === 'open',
             minOrder: Number(document.getElementById('minOrder').value || 0),
             collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled',
+            preorderEnabled: document.getElementById('preorderEnabled').value === 'enabled',
             nextAvailableDate: document.getElementById('nextAvailableDate').value || null,
             leadTimeDays: Number(document.getElementById('leadTimeDays').value || 1),
             maxAdvanceDays: Number(document.getElementById('maxAdvanceDays').value || 14)

@@ -84,7 +84,7 @@
                 </div>
             </div>
 
-            <div class="form-section preorder-toggle-section">
+            <div class="form-section preorder-toggle-section" id="preorderToggleSection" style="display: none;">
                 <label class="preorder-toggle-option">
                     <input type="checkbox" id="preorderToggle" name="preorderToggle">
                     <span class="preorder-toggle-label">📅 Pre-order for a specific date</span>
@@ -94,9 +94,8 @@
 
             <div class="form-section date-picker-section" id="datePickerSection" style="display: none;">
                 <label for="orderDate">Preferred Date *</label>
-                <div class="date-input-wrapper">
+                <div class="form-section">
                     <input id="orderDate" name="orderDate" type="date" class="date-input">
-                    <span class="date-icon" aria-hidden="true">📅</span>
                 </div>
                 <small id="orderDateHelp" style="display: block; margin-top: 0.25rem; color: #666;">Select your preferred delivery/collection date</small>
                 <div id="orderDateError" class="error-message" style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
@@ -204,8 +203,24 @@
             const leadTimeDays = settings.leadTimeDays || 1;
             const maxAdvanceDays = settings.maxAdvanceDays || 14;
             const nextAvailableDate = settings.nextAvailableDate;
+            const preorderEnabled = typeof settings.preorderEnabled === 'boolean' ? settings.preorderEnabled : true;
 
-            console.log('📅 Date settings loaded:', { leadTimeDays, maxAdvanceDays, nextAvailableDate });
+            console.log('📅 Date settings loaded:', { leadTimeDays, maxAdvanceDays, nextAvailableDate, preorderEnabled });
+
+            // Hide/show preorder toggle section based on admin setting
+            const preorderToggleSection = document.getElementById('preorderToggleSection');
+            if (preorderToggleSection) {
+                if (preorderEnabled) {
+                    preorderToggleSection.style.display = 'block';
+                } else {
+                    preorderToggleSection.style.display = 'none';
+                    // Also hide date picker section if preorder is disabled
+                    const datePickerSection = document.getElementById('datePickerSection');
+                    if (datePickerSection) {
+                        datePickerSection.style.display = 'none';
+                    }
+                }
+            }
 
             // Calculate min date (today + lead time)
             const today = new Date();
