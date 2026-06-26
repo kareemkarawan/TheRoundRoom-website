@@ -197,8 +197,11 @@
             const maxAdvanceDays = settings.maxAdvanceDays || 14;
             const nextAvailableDate = settings.nextAvailableDate;
 
+            console.log('📅 Date settings loaded:', { leadTimeDays, maxAdvanceDays, nextAvailableDate });
+
             // Calculate min date (today + lead time)
             const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
             const minDate = new Date(today);
             minDate.setDate(today.getDate() + leadTimeDays);
 
@@ -206,8 +209,16 @@
             let actualMinDate = minDate;
             if (nextAvailableDate) {
                 const adminDate = new Date(nextAvailableDate);
+                adminDate.setHours(0, 0, 0, 0); // Reset to start of day
+                console.log('📅 Comparing dates:', { 
+                    calculatedMin: minDate.toISOString().split('T')[0],
+                    adminDate: adminDate.toISOString().split('T')[0]
+                });
                 if (adminDate > minDate) {
                     actualMinDate = adminDate;
+                    console.log('📅 Using admin date as minimum');
+                } else {
+                    console.log('📅 Using calculated date as minimum');
                 }
             }
 
@@ -227,6 +238,12 @@
             orderDateInput.min = formatDate(actualMinDate);
             orderDateInput.max = formatDate(maxDate);
             orderDateInput.value = formatDate(actualMinDate); // Default to earliest available
+
+            console.log('📅 Date picker configured:', {
+                min: formatDate(actualMinDate),
+                max: formatDate(maxDate),
+                default: formatDate(actualMinDate)
+            });
 
             // Update help text
             const helpText = document.getElementById('orderDateHelp');

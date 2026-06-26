@@ -57,6 +57,9 @@ async function handleGet(isAdmin = false) {
           storeOpen: typeof settings?.storeOpen === "boolean" ? settings.storeOpen : true,
           minOrder: Number(settings?.minOrder ?? 0),
           collectionEnabled: typeof settings?.collectionEnabled === "boolean" ? settings.collectionEnabled : true,
+          nextAvailableDate: settings?.nextAvailableDate || null,
+          leadTimeDays: Number(settings?.leadTimeDays ?? 1),
+          maxAdvanceDays: Number(settings?.maxAdvanceDays ?? 14),
         }),
       };
     }
@@ -75,6 +78,9 @@ async function handleGet(isAdmin = false) {
           storeOpen: false,
           minOrder: 0,
           collectionEnabled: true,
+          nextAvailableDate: null,
+          leadTimeDays: 1,
+          maxAdvanceDays: 14,
         }),
       };
     }
