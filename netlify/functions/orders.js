@@ -457,8 +457,16 @@ async function handleGet(event) {
           
           // Handle combo items - count bagels and schmears separately
           if (item.isCombo) {
-            const bagelName = item.bagelName || 'Bagel';
-            const schmearName = item.schmearName || 'Schmear';
+            // Ensure names include "Bagel" and "Schmear" for proper categorization
+            let bagelName = item.bagelName || 'Bagel';
+            if (!bagelName.toLowerCase().includes('bagel')) {
+              bagelName = `${bagelName} Bagel`;
+            }
+            
+            let schmearName = item.schmearName || 'Schmear';
+            if (!schmearName.toLowerCase().includes('schmear') && !schmearName.toLowerCase().includes('cream cheese')) {
+              schmearName = `${schmearName} Schmear`;
+            }
             
             itemTotals[bagelName] = (itemTotals[bagelName] || 0) + item.qty;
             itemTotals[schmearName] = (itemTotals[schmearName] || 0) + item.qty;
@@ -467,13 +475,19 @@ async function handleGet(event) {
           else if (item.isBox) {
             if (item.selectedBagels) {
               for (const bagel of item.selectedBagels) {
-                const name = bagel.name || 'Bagel';
+                let name = bagel.name || 'Bagel';
+                if (!name.toLowerCase().includes('bagel')) {
+                  name = `${name} Bagel`;
+                }
                 itemTotals[name] = (itemTotals[name] || 0) + (bagel.qty * item.qty);
               }
             }
             if (item.selectedSchmears) {
               for (const schmear of item.selectedSchmears) {
-                const name = schmear.name || 'Schmear';
+                let name = schmear.name || 'Schmear';
+                if (!name.toLowerCase().includes('schmear') && !name.toLowerCase().includes('cream cheese')) {
+                  name = `${name} Schmear`;
+                }
                 itemTotals[name] = (itemTotals[name] || 0) + (schmear.qty * item.qty);
               }
             }
