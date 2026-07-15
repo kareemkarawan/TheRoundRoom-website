@@ -125,6 +125,31 @@
                 <button type="button" class="btn" id="saveSettingsBtn">Save Settings</button>
             </form>
         </div>
+
+        <div class="settings-card" id="weeklyCapCard" style="margin-top: 1.5rem; display: none;">
+            <div class="settings-header">
+                <h2>Weekly Order Capacity</h2>
+                <p class="muted">Overview of order slots for the next 7 days.</p>
+            </div>
+            <div id="weeklyCapLoader" style="text-align: center; padding: 2rem; color: #666;">
+                Loading...
+            </div>
+            <div id="weeklyCapTable" style="display: none;">
+                <table style="width: 100%; border-collapse: collapse; font-family: 'Satoshi', sans-serif;">
+                    <thead>
+                        <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                            <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Date</th>
+                            <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Day</th>
+                            <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Orders Placed</th>
+                            <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Slots Remaining</th>
+                            <th style="padding: 0.75rem; text-align: right; font-weight: 600;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weeklyCapBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
     <script src="js/admin-gate.js"></script>
@@ -172,6 +197,11 @@
             // Daily cap settings
             document.getElementById('dailyCapEnabled').value = data.dailyCapEnabled === true ? 'enabled' : 'disabled';
             document.getElementById('dailyCapLimit').value = data.dailyCapLimit ?? '50';
+            
+            // Load weekly capacity table if daily cap is enabled
+            if (data.dailyCapEnabled === true) {
+                loadWeeklyCapacity();
+            }
         } catch (e) {
             console.error('[settings] Load failed:', e);
             alert(`Error loading settings: ${e.message}`);
@@ -210,9 +240,84 @@
             if (!response.ok) throw new Error('Failed to save settings');
             console.debug('[settings] Save success');
             alert('Settings saved');
+            
+            // Reload weekly capacity if daily cap is enabled
+            if (payload.dailyCapEnabled) {
+                loadWeeklyCapacity();
+            }
         } catch (e) {
             console.error('[settings] Save failed:', e);
             alert(`Error saving settings: ${e.message}`);
+        }
+    }
+
+    async function loadWeeklyCapacity() {
+        const token = getAdminToken();
+        if (!token) return;
+        
+        const card = document.getElementById('weeklyCapCard');
+        const loader = document.getElementById('weeklyCapLoader');
+        const table = document.getElementById('weeklyCapTable');
+        const tbody = document.getElementById('weeklyCapBody');
+        
+        card.style.display = 'block';
+        loader.style.display = 'block';
+        table.style.display = 'none';
+        
+        try {
+            const response = await fetch('/.netlify/functions/settings?admin=1&weekly=1', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
+            });
+            
+            if (!response.ok) throw new Error('Failed to load weekly capacity');
+            const data = await response.json();
+            
+            if (!data.weeklyCapacity) {
+                throw new Error('No weekly data available');
+            }
+            
+            tbody.innerHTML = '';
+            
+            data.weeklyCapacity.forEach(day => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #eee';
+                
+                const remaining = day.limit - day.count;
+                const percentage = day.limit > 0 ? (remaining / day.limit) * 100 : 100;
+                
+                let statusColor = '#28a745'; // green
+                let statusText = 'Available';
+                if (percentage <= 0) {
+                    statusColor = '#dc3545'; // red
+                    statusText = 'Full';
+                } else if (percentage <= 25) {
+                    statusColor = '#fd7e14'; // orange
+                    statusText = 'Low';
+                } else if (percentage <= 50) {
+                    statusColor = '#ffc107'; // yellow
+                    statusText = 'Medium';
+                }
+                
+                row.innerHTML = `
+                    <td style="padding: 0.75rem;">${day.dateFormatted}</td>
+                    <td style="padding: 0.75rem;">${day.dayName}</td>
+                    <td style="padding: 0.75rem; text-align: right; font-weight: 500;">${day.count}</td>
+                    <td style="padding: 0.75rem; text-align: right; font-weight: 600; color: ${statusColor};">${Math.max(0, remaining)} / ${day.limit}</td>
+                    <td style="padding: 0.75rem; text-align: right;">
+                        <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; background: ${statusColor}22; color: ${statusColor};">
+                            ${statusText}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            loader.style.display = 'none';
+            table.style.display = 'block';
+        } catch (e) {
+            console.error('[settings] Failed to load weekly capacity:', e);
+            loader.textContent = 'Failed to load weekly capacity data';
         }
     }
 

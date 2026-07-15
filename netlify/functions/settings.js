@@ -29,7 +29,44 @@ function buildHeaders(isPublic = false) {
   };
 }
 
-async function handleGet(isAdmin = false) {
+async function getWeeklyCapacity(db, dailyLimit) {
+  const ordersCollection = db.collection("orders");
+  const weeklyData = [];
+  
+  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+    
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + 1);
+    
+    const count = await ordersCollection.countDocuments({
+      createdAt: {
+        $gte: date,
+        $lt: nextDate
+      }
+    });
+    
+    const dayName = daysOfWeek[date.getDay()];
+    const dateFormatted = `${monthNames[date.getMonth()]} ${date.getDate()}`;
+    
+    weeklyData.push({
+      date: date.toISOString().split('T')[0],
+      dateFormatted,
+      dayName: i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : dayName),
+      count,
+      limit: dailyLimit
+    });
+  }
+  
+  return weeklyData;
+}
+
+async function handleGet(isAdmin = false, includeWeekly = false) {
   try {
     const db = await getDB();
     const collection = db.collection(collectionName);
@@ -72,9 +109,17 @@ async function handleGet(isAdmin = false) {
         }),
       };
     }
+    
+    const result = settings || { key: "store" };
+    
+    // Add weekly capacity if requested and daily cap is enabled
+    if (isAdmin && includeWeekly && settings?.dailyCapEnabled && settings?.dailyCapLimit) {
+      result.weeklyCapacity = await getWeeklyCapacity(db, settings.dailyCapLimit);
+    }
+    
     return {
       statusCode: 200,
-      body: JSON.stringify(settings || { key: "store" }),
+      body: JSON.stringify(result),
     };
   } catch (err) {
     console.error("GET settings error:", err.message);
@@ -182,7 +227,9 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: "Unauthorized" }),
       };
     }
-    return { ...(await handleGet(isAdmin && isAdminRequest)), headers };
+    
+    const includeWeekly = event.queryStringParameters?.weekly === "1";
+    return { ...(await handleGet(isAdmin && isAdminRequest, includeWeekly)), headers };
   }
 
   if (!isAdmin) {

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<!--
+  FILE: production.html
+  PURPOSE: Admin page showing tomorrow's orders with production totals for each menu item.
+  
+  NOTES:
+  - Requires admin token via AdminGate authentication
+  - Displays all orders scheduled for tomorrow
+  - Shows aggregated item counts at bottom for production planning
+  - Helps staff know what quantities to prepare
+  - Back button returns to staff orders page (/pookie)
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production - Tomorrow's Orders - The Round Room</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="images/Icon.png">
+    <script src="script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body class="staff-page">
+    <nav class="top-nav">
+        <div class="container">
+            <button class="arrow" onclick="window.location.href='/pookie'">
+                <div class="bar4"></div>
+                <div class="bar5"></div>
+            </button>
+            <div class="logo">
+                <h1>THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
+        </div>
+    </nav>
+
+    <main class="settings-page">
+        <div class="settings-card">
+            <div class="settings-header">
+                <h2>Tomorrow's Production</h2>
+                <p class="muted" id="productionDate">Loading...</p>
+            </div>
+
+            <div id="productionLoader" style="text-align: center; padding: 2rem; color: #666;">
+                Loading tomorrow's orders...
+            </div>
+
+            <div id="productionContent" style="display: none;">
+                <!-- Orders Section -->
+                <section style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">Orders</h3>
+                    <div id="ordersContainer"></div>
+                </section>
+
+                <!-- Production Totals Section -->
+                <section style="border-top: 3px solid var(--rr-bg); padding-top: 2rem;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--rr-bg);">Production Totals</h3>
+                    <p class="muted" style="margin-bottom: 1.5rem;">Total quantities needed for tomorrow's orders</p>
+                    
+                    <div id="totalsContainer"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin-gate.js"></script>
+    <script>
+        function getAdminToken() {
+            const token = window.AdminGate ? window.AdminGate.getToken() : '';
+            return token;
+        }
+
+        async function loadProductionData() {
+            const token = getAdminToken();
+            if (!token) return;
+
+            const loader = document.getElementById('productionLoader');
+            const content = document.getElementById('productionContent');
+            const dateEl = document.getElementById('productionDate');
+
+            try {
+                const response = await fetch('/.netlify/functions/orders?production=1', {
+                    method: 'GET',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'x-admin-token': token 
+                    }
+                });
+
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    throw new Error('Unauthorized');
+                }
+
+                if (!response.ok) throw new Error('Failed to load production data');
+
+                const data = await response.json();
+                
+                // Update date header
+                if (data.date) {
+                    const date = new Date(data.date);
+                    const formatted = date.toLocaleDateString('en-IN', { 
+                        weekday: 'long',
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    dateEl.textContent = `Orders for ${formatted}`;
+                }
+
+                // Render orders
+                renderOrders(data.orders || []);
+
+                // Render production totals
+                renderTotals(data.itemTotals || {});
+
+                loader.style.display = 'none';
+                content.style.display = 'block';
+            } catch (e) {
+                console.error('[production] Load failed:', e);
+                loader.textContent = `Error: ${e.message}`;
+            }
+        }
+
+        function renderOrders(orders) {
+            const container = document.getElementById('ordersContainer');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<p class="muted">No orders scheduled for tomorrow.</p>';
+                return;
+            }
+
+            container.innerHTML = orders.map(order => {
+                const items = order.items.map(item => {
+                    let itemName = item.name || 'Unknown Item';
+                    
+                    // Handle combo items
+                    if (item.isCombo) {
+                        itemName = `${item.bagelName || 'Bagel'} + ${item.schmearName || 'Schmear'} Combo`;
+                    }
+                    // Handle box items
+                    else if (item.isBox) {
+                        const bagelList = (item.selectedBagels || []).map(b => `${b.name} (${b.qty})`).join(', ');
+                        const schmearList = (item.selectedSchmears || []).map(s => `${s.name} (${s.qty})`).join(', ');
+                        itemName = `${item.boxName || 'Box'}<br><small style="color: #666;">Bagels: ${bagelList}<br>Schmears: ${schmearList}</small>`;
+                    }
+                    
+                    return `<li>${item.qty}× ${itemName}</li>`;
+                }).join('');
+
+                return `
+                    <div style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                            <div>
+                                <strong style="font-size: 1.1rem; color: var(--rr-bg);">${order.orderNumber || 'N/A'}</strong>
+                                <p style="margin: 0.25rem 0 0 0; color: #666; font-size: 0.9rem;">
+                                    ${order.customer?.name || 'Unknown'} • ${order.customer?.phone || 'No phone'}
+                                </p>
+                            </div>
+                            <span style="background: ${getStatusColor(order.status)}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
+                                ${order.status || 'CREATED'}
+                            </span>
+                        </div>
+                        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; line-height: 1.8;">
+                            ${items}
+                        </ul>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTotals(itemTotals) {
+            const container = document.getElementById('totalsContainer');
+            
+            if (Object.keys(itemTotals).length === 0) {
+                container.innerHTML = '<p class="muted">No items to produce.</p>';
+                return;
+            }
+
+            // Group by category
+            const categories = {
+                'Bagels': [],
+                'Schmears': [],
+                'Desserts': [],
+                'Other': []
+            };
+
+            for (const [itemName, qty] of Object.entries(itemTotals)) {
+                const lowerName = itemName.toLowerCase();
+                if (lowerName.includes('bagel') && !lowerName.includes('schmear')) {
+                    categories['Bagels'].push({ name: itemName, qty });
+                } else if (lowerName.includes('schmear') || lowerName.includes('cream cheese')) {
+                    categories['Schmears'].push({ name: itemName, qty });
+                } else if (lowerName.includes('cookie') || lowerName.includes('brownie') || lowerName.includes('dessert')) {
+                    categories['Desserts'].push({ name: itemName, qty });
+                } else {
+                    categories['Other'].push({ name: itemName, qty });
+                }
+            }
+
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">';
+
+            for (const [category, items] of Object.entries(categories)) {
+                if (items.length === 0) continue;
+
+                items.sort((a, b) => b.qty - a.qty); // Sort by quantity descending
+
+                html += `
+                    <div style="background: white; border: 2px solid var(--rr-bg); border-radius: 12px; padding: 1.5rem;">
+                        <h4 style="margin: 0 0 1rem 0; color: var(--rr-bg); font-size: 1.1rem; border-bottom: 2px solid var(--rr-bg); padding-bottom: 0.5rem;">
+                            ${category}
+                        </h4>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            ${items.map(item => `
+                                <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #eee;">
+                                    <span style="font-weight: 500; color: #333;">${item.name}</span>
+                                    <span style="background: var(--rr-bg); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">
+                                        ${item.qty}
+                                    </span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'CREATED': '#6c757d',
+                'PAYMENT_PENDING': '#ffc107',
+                'PAID': '#28a745',
+                'PREPARING': '#17a2b8',
+                'COMPLETED': '#007bff',
+                'CANCELLED': '#dc3545'
+            };
+            return colors[status] || '#6c757d';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.AdminGate) {
+                window.AdminGate.onUnlock = loadProductionData;
+                if (window.AdminGate.isUnlocked()) {
+                    loadProductionData();
+                }
+            } else {
+                loadProductionData();
+            }
+        });
+    </script>
+</body>
+</html>

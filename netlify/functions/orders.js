@@ -426,6 +426,87 @@ async function handleGet(event) {
 
     // Build filter from query params
     const params = event.queryStringParameters || {};
+    
+    // Handle production view (tomorrow's orders with totals)
+    if (params.production === "1") {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const dayAfter = new Date(tomorrow);
+      dayAfter.setDate(dayAfter.getDate() + 1);
+      
+      const filter = {
+        $or: [
+          { preferredDate: tomorrow.toISOString().split('T')[0] },
+          { 
+            preferredDate: { $exists: false },
+            createdAt: { $gte: tomorrow, $lt: dayAfter }
+          }
+        ]
+      };
+      
+      const orders = await collection
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      // Aggregate item totals
+      const itemTotals = {};
+      
+      for (const order of orders) {
+        if (!order.items) continue;
+        
+        for (const item of order.items) {
+          let itemName = item.name || 'Unknown Item';
+          
+          // Handle combo items - count bagels and schmears separately
+          if (item.isCombo) {
+            const bagelName = item.bagelName || 'Bagel';
+            const schmearName = item.schmearName || 'Schmear';
+            
+            itemTotals[bagelName] = (itemTotals[bagelName] || 0) + item.qty;
+            itemTotals[schmearName] = (itemTotals[schmearName] || 0) + item.qty;
+          }
+          // Handle box items - count each selected item
+          else if (item.isBox) {
+            if (item.selectedBagels) {
+              for (const bagel of item.selectedBagels) {
+                const name = bagel.name || 'Bagel';
+                itemTotals[name] = (itemTotals[name] || 0) + (bagel.qty * item.qty);
+              }
+            }
+            if (item.selectedSchmears) {
+              for (const schmear of item.selectedSchmears) {
+                const name = schmear.name || 'Schmear';
+                itemTotals[name] = (itemTotals[name] || 0) + (schmear.qty * item.qty);
+              }
+            }
+          }
+          // Regular items
+          else {
+            itemTotals[itemName] = (itemTotals[itemName] || 0) + item.qty;
+          }
+        }
+      }
+      
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          date: tomorrow.toISOString().split('T')[0],
+          orders: orders.map(order => ({
+            orderNumber: order.orderNumber,
+            customer: order.customer,
+            status: order.status,
+            items: order.items,
+            preferredDate: order.preferredDate,
+            createdAt: order.createdAt
+          })),
+          itemTotals
+        }),
+      };
+    }
+    
     const filter = {};
     
     if (params.orderType) {
