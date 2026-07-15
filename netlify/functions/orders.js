@@ -433,17 +433,12 @@ async function handleGet(event) {
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(0, 0, 0, 0);
       
-      const dayAfter = new Date(tomorrow);
-      dayAfter.setDate(dayAfter.getDate() + 1);
+      const tomorrowDateString = tomorrow.toISOString().split('T')[0];
       
+      // Find orders scheduled for tomorrow
+      // Orders without an orderDate are for immediate delivery (not included)
       const filter = {
-        $or: [
-          { preferredDate: tomorrow.toISOString().split('T')[0] },
-          { 
-            preferredDate: { $exists: false },
-            createdAt: { $gte: tomorrow, $lt: dayAfter }
-          }
-        ]
+        orderDate: tomorrowDateString
       };
       
       const orders = await collection
@@ -499,7 +494,7 @@ async function handleGet(event) {
             customer: order.customer,
             status: order.status,
             items: order.items,
-            preferredDate: order.preferredDate,
+            orderDate: order.orderDate,
             createdAt: order.createdAt
           })),
           itemTotals
