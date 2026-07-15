@@ -2213,6 +2213,8 @@ function createEditorialPanel(editorialItem) {
 
 function showPanel(index) {
     const container = document.getElementById('editorialContainer');
+    if (!container) return; // Element doesn't exist on this page
+    
     const editorialItem = editorialData[index];
     const panel = createEditorialPanel(editorialItem);
 
@@ -2226,6 +2228,8 @@ function showPanel(index) {
 
 function removePanel() {
     const container = document.getElementById('editorialContainer');
+    if (!container) return; // Element doesn't exist on this page
+    
     const currentPanel = container.querySelector('.editorial-item');
     
     if (currentPanel) {
@@ -2246,6 +2250,9 @@ function rotateEditorial() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    showPanel(0);
-    setInterval(rotateEditorial, 8000);
+    // Only initialize editorial rotation if the container exists (home page)
+    if (document.getElementById('editorialContainer')) {
+        showPanel(0);
+        setInterval(rotateEditorial, 8000);
+    }
 });

@@ -243,10 +243,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             if (window.AdminGate) {
-                window.AdminGate.onUnlock = loadProductionData;
-                if (window.AdminGate.isUnlocked()) {
-                    loadProductionData();
-                }
+                window.AdminGate.requireAdminAccess(loadProductionData);
             } else {
                 loadProductionData();
             }
