@@ -137,13 +137,27 @@
                     
                     // Handle combo items
                     if (item.isCombo) {
-                        itemName = `${item.bagelName || 'Bagel'} + ${item.schmearName || 'Schmear'} Combo`;
+                        // For old orders, bagelName/schmearName might be missing, show combo name
+                        if (item.bagelName && item.schmearName) {
+                            itemName = `${item.bagelName} + ${item.schmearName} Combo`;
+                        } else {
+                            itemName = item.name; // Show stored combo name like "Combo: Plain Bagel + Chive Schmear"
+                        }
                     }
-                    // Handle box items
+                    // Handle box items - selectedBagels/selectedSchmears are arrays of strings
                     else if (item.isBox) {
-                        const bagelList = (item.selectedBagels || []).map(b => `${b.name} (${b.qty})`).join(', ');
-                        const schmearList = (item.selectedSchmears || []).map(s => `${s.name} (${s.qty})`).join(', ');
-                        itemName = `${item.boxName || 'Box'}<br><small style="color: #666;">Bagels: ${bagelList}<br>Schmears: ${schmearList}</small>`;
+                        const formatSelections = (items) => {
+                            if (!items || items.length === 0) return 'None';
+                            const counts = {};
+                            items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+                            return Object.entries(counts)
+                                .map(([name, count]) => count > 1 ? `${count}× ${name}` : name)
+                                .join(', ');
+                        };
+                        
+                        const bagelList = formatSelections(item.selectedBagels || []);
+                        const schmearList = formatSelections(item.selectedSchmears || []);
+                        itemName = `${item.boxName || item.name || 'Box'}<br><small style="color: #666;">Bagels: ${bagelList}<br>Schmears: ${schmearList}</small>`;
                     }
                     
                     return `<li>${item.qty}× ${itemName}</li>`;

@@ -436,7 +436,6 @@ async function handleGet(event) {
       const tomorrowDateString = tomorrow.toISOString().split('T')[0];
       
       // Find orders scheduled for tomorrow
-      // Orders without an orderDate are for immediate delivery (not included)
       const filter = {
         orderDate: tomorrowDateString
       };
@@ -445,6 +444,11 @@ async function handleGet(event) {
         .find(filter)
         .sort({ createdAt: -1 })
         .toArray();
+      
+      // Load menu items to look up names for combo items without names
+      const menuCollection = db.collection(menuCollectionName);
+      const allMenuItems = await menuCollection.find({}).toArray();
+      const menuMap = new Map(allMenuItems.map(m => [m.id, m]));
       
       // Aggregate item totals
       const itemTotals = {};
@@ -457,13 +461,28 @@ async function handleGet(event) {
           
           // Handle combo items - count bagels and schmears separately
           if (item.isCombo) {
-            // Ensure names include "Bagel" and "Schmear" for proper categorization
-            let bagelName = item.bagelName || 'Bagel';
+            // Get bagel name - look up from menu if not stored
+            let bagelName = item.bagelName;
+            if (!bagelName && item.bagelId) {
+              const bagelItem = menuMap.get(item.bagelId);
+              bagelName = bagelItem ? bagelItem.name : 'Bagel';
+            }
+            if (!bagelName) bagelName = 'Bagel';
+            
+            // Ensure name includes "Bagel" for proper categorization
             if (!bagelName.toLowerCase().includes('bagel')) {
               bagelName = `${bagelName} Bagel`;
             }
             
-            let schmearName = item.schmearName || 'Schmear';
+            // Get schmear name - look up from menu if not stored
+            let schmearName = item.schmearName;
+            if (!schmearName && item.schmearId) {
+              const schmearItem = menuMap.get(item.schmearId);
+              schmearName = schmearItem ? schmearItem.name : 'Schmear';
+            }
+            if (!schmearName) schmearName = 'Schmear';
+            
+            // Ensure name includes "Schmear" or "Cream Cheese" for proper categorization
             if (!schmearName.toLowerCase().includes('schmear') && !schmearName.toLowerCase().includes('cream cheese')) {
               schmearName = `${schmearName} Schmear`;
             }
@@ -471,24 +490,28 @@ async function handleGet(event) {
             itemTotals[bagelName] = (itemTotals[bagelName] || 0) + item.qty;
             itemTotals[schmearName] = (itemTotals[schmearName] || 0) + item.qty;
           }
-          // Handle box items - count each selected item
+          // Handle box items - selectedBagels/selectedSchmears are arrays of strings
           else if (item.isBox) {
-            if (item.selectedBagels) {
-              for (const bagel of item.selectedBagels) {
-                let name = bagel.name || 'Bagel';
+            if (item.selectedBagels && Array.isArray(item.selectedBagels)) {
+              for (const bagelName of item.selectedBagels) {
+                let name = bagelName || 'Bagel';
+                // Ensure name includes "Bagel"
                 if (!name.toLowerCase().includes('bagel')) {
                   name = `${name} Bagel`;
                 }
-                itemTotals[name] = (itemTotals[name] || 0) + (bagel.qty * item.qty);
+                // Each string in array represents one item, multiply by order qty
+                itemTotals[name] = (itemTotals[name] || 0) + item.qty;
               }
             }
-            if (item.selectedSchmears) {
-              for (const schmear of item.selectedSchmears) {
-                let name = schmear.name || 'Schmear';
+            if (item.selectedSchmears && Array.isArray(item.selectedSchmears)) {
+              for (const schmearName of item.selectedSchmears) {
+                let name = schmearName || 'Schmear';
+                // Ensure name includes identifier
                 if (!name.toLowerCase().includes('schmear') && !name.toLowerCase().includes('cream cheese')) {
                   name = `${name} Schmear`;
                 }
-                itemTotals[name] = (itemTotals[name] || 0) + (schmear.qty * item.qty);
+                // Each string in array represents one item, multiply by order qty
+                itemTotals[name] = (itemTotals[name] || 0) + item.qty;
               }
             }
           }
