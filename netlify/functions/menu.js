@@ -11,29 +11,13 @@
  * - Stored in MongoDB round_room.menu collection
  */
 
-const { MongoClient } = require("mongodb");
+const { getDB } = require("./db");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "menu";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
-
-let cachedClient = null;
-
-async function getClient() {
-  if (cachedClient) {
-    return cachedClient;
-  }
-  const client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 2000,
-    connectTimeoutMS: 2000,
-  });
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
@@ -48,8 +32,7 @@ function buildHeaders(isAdminRoute = false) {
 // GET: fetch all menu items
 async function handleGet() {
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const items = await collection.find({}).toArray();
@@ -102,8 +85,7 @@ async function handlePost(body) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const now = new Date();
@@ -155,8 +137,7 @@ async function handlePut(body, itemId) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const result = await collection.updateOne(
@@ -197,8 +178,7 @@ async function handleDelete(itemId) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const result = await collection.deleteOne({ id: itemId });

@@ -1095,7 +1095,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const created = await saveOrder(orderPayload);
         if (!created || !created.orderNumber) {
             if (paymentLoading) paymentLoading.style.display = 'none';
-            const errMsg = created?.error || 'Failed to create order. Please try again.';
+            let errMsg = created?.error || 'Failed to create order. Please try again.';
+            
+            // Check if it's a daily cap error and show a friendly message
+            if (created?.dailyCapReached === true || errMsg.toLowerCase().includes('daily order limit')) {
+                errMsg = 'We\'ve reached our maximum capacity for today. Please check back tomorrow or select a future date for pre-ordering. Thank you for your understanding!';
+            }
+            
             alert(errMsg);
             return;
         }
@@ -1245,13 +1251,26 @@ async function initStoreStatus() {
         if (!response.ok) return;
         const data = await response.json();
         const isOpen = data.storeOpen !== false;
-        window._rr_storeOpen = isOpen;
+        const dailyCapEnabled = data.dailyCapEnabled === true;
+        const dailyCapReached = dailyCapEnabled && data.dailyCapReached === true;
+        window._rr_storeOpen = isOpen && !dailyCapReached;
 
         const modal = document.getElementById('storeStatusModal');
         const modalMessage = document.getElementById('storeStatusMessage');
+        const modalTitle = document.getElementById('storeStatusTitle');
         const modalClose = modal ? modal.querySelector('.store-status-close') : null;
         const dismissed = sessionStorage.getItem('rr_store_closed_dismissed') === '1';
-        const messageText = 'Store is currently closed. We are not accepting orders right now.';
+        
+        let messageText = 'Store is currently closed. We are not accepting orders right now.';
+        let titleText = 'Store closed';
+        
+        if (dailyCapReached) {
+            titleText = 'Daily order limit reached';
+            messageText = 'We\'ve reached our maximum capacity for today. Please check back tomorrow or select a future date for pre-ordering. Thank you for your understanding!';
+        } else if (!isOpen) {
+            titleText = 'Store closed';
+            messageText = 'Store is currently closed. We are not accepting orders right now.';
+        }
 
         function closeModal() {
             if (!modal) return;
@@ -1272,7 +1291,8 @@ async function initStoreStatus() {
         }
 
         if (modal) {
-            if (!isOpen && !dismissed) {
+            if ((!isOpen || dailyCapReached) && !dismissed) {
+                if (modalTitle) modalTitle.textContent = titleText;
                 if (modalMessage) modalMessage.textContent = messageText;
                 modal.style.display = 'flex';
                 modal.setAttribute('aria-hidden', 'false');
@@ -1284,9 +1304,9 @@ async function initStoreStatus() {
 
         const checkoutBtn = document.querySelector('.checkout-btn');
         if (checkoutBtn) {
-            if (!isOpen) {
+            if (!isOpen || dailyCapReached) {
                 checkoutBtn.dataset.originalText = checkoutBtn.textContent;
-                checkoutBtn.textContent = 'Orders closed';
+                checkoutBtn.textContent = dailyCapReached ? 'Daily limit reached' : 'Orders closed';
                 checkoutBtn.disabled = true;
                 checkoutBtn.setAttribute('aria-disabled', 'true');
             } else if (checkoutBtn.dataset.originalText) {
@@ -1298,9 +1318,9 @@ async function initStoreStatus() {
 
         const submitBtn = document.querySelector('.btn-submit');
         if (submitBtn) {
-            if (!isOpen) {
+            if (!isOpen || dailyCapReached) {
                 submitBtn.dataset.originalText = submitBtn.textContent;
-                submitBtn.textContent = 'Store closed';
+                submitBtn.textContent = dailyCapReached ? 'Daily limit reached' : 'Store closed';
                 submitBtn.disabled = true;
                 submitBtn.setAttribute('aria-disabled', 'true');
             } else if (submitBtn.dataset.originalText) {

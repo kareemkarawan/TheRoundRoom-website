@@ -11,27 +11,13 @@
  * - CORS headers allow cross-origin requests
  */
 
-const { MongoClient } = require("mongodb");
+const { getDB } = require("./db");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "settings";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
-
-let cachedClient = null;
-
-async function getClient() {
-  if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri, { 
-    serverSelectionTimeoutMS: 2000,
-    connectTimeoutMS: 2000,
-  });
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 function buildHeaders(isPublic = false) {
   const origin = isPublic ? "*" : (ADMIN_ORIGIN || "*");
@@ -45,11 +31,30 @@ function buildHeaders(isPublic = false) {
 
 async function handleGet(isAdmin = false) {
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const settings = await collection.findOne({ key: "store" });
+    
+    // Check if daily cap is reached
+    let dailyCapReached = false;
+    if (!isAdmin && settings?.dailyCapEnabled) {
+      const ordersCollection = db.collection("orders");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const todayOrderCount = await ordersCollection.countDocuments({
+        createdAt: {
+          $gte: today,
+          $lt: tomorrow
+        }
+      });
+
+      dailyCapReached = todayOrderCount >= Number(settings.dailyCapLimit ?? 50);
+    }
+    
     if (!isAdmin) {
       return {
         statusCode: 200,
@@ -61,6 +66,9 @@ async function handleGet(isAdmin = false) {
           nextAvailableDate: settings?.nextAvailableDate || null,
           leadTimeDays: Number(settings?.leadTimeDays ?? 1),
           maxAdvanceDays: Number(settings?.maxAdvanceDays ?? 14),
+          dailyCapEnabled: typeof settings?.dailyCapEnabled === "boolean" ? settings.dailyCapEnabled : false,
+          dailyCapLimit: Number(settings?.dailyCapLimit ?? 50),
+          dailyCapReached: dailyCapReached,
         }),
       };
     }
@@ -83,6 +91,9 @@ async function handleGet(isAdmin = false) {
           nextAvailableDate: null,
           leadTimeDays: 1,
           maxAdvanceDays: 14,
+          dailyCapEnabled: false,
+          dailyCapLimit: 50,
+          dailyCapReached: false,
         }),
       };
     }
@@ -123,14 +134,15 @@ async function handlePut(body) {
     collectionEnabled: typeof updates.collectionEnabled === "boolean" ? updates.collectionEnabled : true,
     preorderOnlyMode: typeof updates.preorderOnlyMode === "boolean" ? updates.preorderOnlyMode : false,
     nextAvailableDate: updates.nextAvailableDate || null,
+    dailyCapEnabled: typeof updates.dailyCapEnabled === "boolean" ? updates.dailyCapEnabled : false,
+    dailyCapLimit: Number(updates.dailyCapLimit ?? 50),
     leadTimeDays: Number(updates.leadTimeDays ?? 1),
     maxAdvanceDays: Number(updates.maxAdvanceDays ?? 14),
     updatedAt: new Date(),
   };
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     await collection.updateOne(

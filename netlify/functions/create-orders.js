@@ -11,25 +11,14 @@
  * - Amount converted to paise (INR smallest unit)
  */
 
-const { MongoClient } = require("mongodb");
+const { getDB } = require("./db");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const menuCollection = "menu";
 const settingsCollection = "settings";
 
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
-
-let cachedClient = null;
-
-async function getClient() {
-  if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 async function getSettings(db) {
   const collection = db.collection(settingsCollection);
@@ -89,8 +78,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(menuCollection);
     const settings = await getSettings(db);
 

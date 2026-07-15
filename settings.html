@@ -107,6 +107,21 @@
                     <small style="display: block; margin-top: 0.25rem; color: #666;">How far in advance customers can place orders</small>
                 </div>
 
+                <div class="form-group">
+                    <label for="dailyCapEnabled">Daily Order Cap</label>
+                    <select id="dailyCapEnabled" name="dailyCapEnabled">
+                        <option value="disabled">Disabled</option>
+                        <option value="enabled">Enabled</option>
+                    </select>
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Enable to limit the number of orders per day</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="dailyCapLimit">Daily Order Limit</label>
+                    <input id="dailyCapLimit" name="dailyCapLimit" type="number" min="1" step="1" placeholder="e.g., 50">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Maximum number of orders allowed per day (when enabled)</small>
+                </div>
+
                 <button type="button" class="btn" id="saveSettingsBtn">Save Settings</button>
             </form>
         </div>
@@ -153,6 +168,10 @@
             }
             document.getElementById('leadTimeDays').value = data.leadTimeDays ?? '1';
             document.getElementById('maxAdvanceDays').value = data.maxAdvanceDays ?? '14';
+            
+            // Daily cap settings
+            document.getElementById('dailyCapEnabled').value = data.dailyCapEnabled === true ? 'enabled' : 'disabled';
+            document.getElementById('dailyCapLimit').value = data.dailyCapLimit ?? '50';
         } catch (e) {
             console.error('[settings] Load failed:', e);
             alert(`Error loading settings: ${e.message}`);
@@ -173,7 +192,9 @@
             preorderOnlyMode: document.getElementById('preorderOnlyMode').value === 'enabled',
             nextAvailableDate: document.getElementById('nextAvailableDate').value || null,
             leadTimeDays: Number(document.getElementById('leadTimeDays').value || 1),
-            maxAdvanceDays: Number(document.getElementById('maxAdvanceDays').value || 14)
+            maxAdvanceDays: Number(document.getElementById('maxAdvanceDays').value || 14),
+            dailyCapEnabled: document.getElementById('dailyCapEnabled').value === 'enabled',
+            dailyCapLimit: Number(document.getElementById('dailyCapLimit').value || 50)
         };
 
         try {

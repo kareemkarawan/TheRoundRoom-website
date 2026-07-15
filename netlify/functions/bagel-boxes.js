@@ -11,28 +11,13 @@
  * - Stored in MongoDB round_room.bagel_boxes collection
  */
 
-const { MongoClient } = require("mongodb");
+const { getDB } = require("./db");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "bagel_boxes";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
-
-let cachedClient = null;
-
-async function getClient() {
-  if (cachedClient) {
-    return cachedClient;
-  }
-  const client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 5000,
-  });
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
@@ -51,8 +36,7 @@ function buildHeaders(isAdminRoute = false) {
 // GET: fetch all bagel boxes
 async function handleGet(event) {
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const params = event.queryStringParameters || {};
@@ -114,8 +98,7 @@ async function handlePost(body) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     // Check if box ID already exists
@@ -213,8 +196,7 @@ async function handlePut(body, boxId) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     // Remove fields that shouldn't be updated directly
@@ -256,8 +238,7 @@ async function handleDelete(boxId) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const result = await collection.deleteOne({ id: boxId });

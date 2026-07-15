@@ -571,7 +571,7 @@ async function renderMenu() {
   // Fetch fresh data in background using COMBINED endpoint (1 call instead of 3)
   try {
     const controller = new AbortController();
-    const timeoutMs = 8000;
+    const timeoutMs = 20000; // Increased to handle slow connections
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     
     // Single combined endpoint for all menu data

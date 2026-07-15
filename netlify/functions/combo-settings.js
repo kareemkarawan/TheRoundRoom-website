@@ -11,28 +11,13 @@
  * - Default returns unavailable combo if no settings exist
  */
 
-const { MongoClient } = require("mongodb");
+const { getDB } = require("./db");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "combo_settings";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
-
-let cachedClient = null;
-
-async function getClient() {
-  if (cachedClient) {
-    return cachedClient;
-  }
-  const client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 5000,
-  });
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
@@ -47,8 +32,7 @@ function buildHeaders(isAdminRoute = false) {
 // GET: fetch combo settings
 async function handleGet() {
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     // There's only one combo settings document with id "combo"
@@ -106,8 +90,7 @@ async function handlePut(body) {
   }
 
   try {
-    const client = await getClient();
-    const db = client.db(dbName);
+    const db = await getDB();
     const collection = db.collection(collectionName);
 
     const now = new Date();

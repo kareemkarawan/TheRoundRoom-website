@@ -61,6 +61,8 @@ async function getSettings(db) {
     invoicePrefix: settings?.invoicePrefix || "ORD",
     storeOpen: typeof settings?.storeOpen === "boolean" ? settings.storeOpen : true,
     minOrder: Number(settings?.minOrder ?? 0),
+    dailyCapEnabled: typeof settings?.dailyCapEnabled === "boolean" ? settings.dailyCapEnabled : false,
+    dailyCapLimit: Number(settings?.dailyCapLimit ?? 50),
   };
 }
 
@@ -105,6 +107,31 @@ async function handlePost(body) {
         statusCode: 403,
         body: JSON.stringify({ error: "Store is currently closed" }),
       };
+    }
+
+    // Check daily order cap
+    if (settings.dailyCapEnabled) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const todayOrderCount = await collection.countDocuments({
+        createdAt: {
+          $gte: today,
+          $lt: tomorrow
+        }
+      });
+
+      if (todayOrderCount >= settings.dailyCapLimit) {
+        return {
+          statusCode: 403,
+          body: JSON.stringify({ 
+            error: "Daily order limit reached",
+            dailyCapReached: true
+          }),
+        };
+      }
     }
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
