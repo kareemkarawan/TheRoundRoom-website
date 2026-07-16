@@ -109,26 +109,23 @@ async function handlePost(body) {
       };
     }
 
-    // Check daily order cap
+    // Check daily order cap for the requested delivery date
     if (settings.dailyCapEnabled) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const todayOrderCount = await collection.countDocuments({
-        createdAt: {
-          $gte: today,
-          $lt: tomorrow
-        }
+      // Get the delivery date from the order, default to today
+      const deliveryDateString = order.orderDate || new Date().toISOString().split('T')[0];
+      
+      // Count orders scheduled for this delivery date
+      const dateOrderCount = await collection.countDocuments({
+        orderDate: deliveryDateString
       });
 
-      if (todayOrderCount >= settings.dailyCapLimit) {
+      if (dateOrderCount >= settings.dailyCapLimit) {
         return {
           statusCode: 403,
           body: JSON.stringify({ 
-            error: "Daily order limit reached",
-            dailyCapReached: true
+            error: "Daily order limit reached for selected date",
+            dailyCapReached: true,
+            requestedDate: deliveryDateString
           }),
         };
       }

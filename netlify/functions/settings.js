@@ -41,14 +41,11 @@ async function getWeeklyCapacity(db, dailyLimit) {
     date.setDate(date.getDate() + i);
     date.setHours(0, 0, 0, 0);
     
-    const nextDate = new Date(date);
-    nextDate.setDate(nextDate.getDate() + 1);
+    const dateString = date.toISOString().split('T')[0];
     
+    // Count orders scheduled for this date (by orderDate)
     const count = await ordersCollection.countDocuments({
-      createdAt: {
-        $gte: date,
-        $lt: nextDate
-      }
+      orderDate: dateString
     });
     
     const dayName = daysOfWeek[date.getDay()];
@@ -73,20 +70,17 @@ async function handleGet(isAdmin = false, includeWeekly = false) {
 
     const settings = await collection.findOne({ key: "store" });
     
-    // Check if daily cap is reached
+    // Check if daily cap is reached for today
     let dailyCapReached = false;
     if (!isAdmin && settings?.dailyCapEnabled) {
       const ordersCollection = db.collection("orders");
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const todayString = today.toISOString().split('T')[0];
 
+      // Count orders scheduled for today (by orderDate)
       const todayOrderCount = await ordersCollection.countDocuments({
-        createdAt: {
-          $gte: today,
-          $lt: tomorrow
-        }
+        orderDate: todayString
       });
 
       dailyCapReached = todayOrderCount >= Number(settings.dailyCapLimit ?? 50);

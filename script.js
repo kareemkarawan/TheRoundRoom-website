@@ -1099,7 +1099,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Check if it's a daily cap error and show a friendly message
             if (created?.dailyCapReached === true || errMsg.toLowerCase().includes('daily order limit')) {
-                errMsg = 'We\'ve reached our maximum capacity for today. Please check back tomorrow or select a future date for pre-ordering. Thank you for your understanding!';
+                if (created?.requestedDate) {
+                    // Format the date nicely
+                    const date = new Date(created.requestedDate);
+                    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    errMsg = `We've reached our maximum capacity for ${dateStr}. Please select a different date for pre-ordering. Thank you for your understanding!`;
+                } else {
+                    errMsg = 'We\'ve reached our maximum capacity for today. Please check back tomorrow or select a future date for pre-ordering. Thank you for your understanding!';
+                }
             }
             
             alert(errMsg);
