@@ -4,6 +4,7 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+  command = "npm run update-version"
 
 # Enable modern bundling for functions (faster cold starts)
 [functions]
@@ -12,6 +13,12 @@
 # Scheduled function to keep the main functions warm (prevents cold starts)
 [functions."keep-warm"]
   schedule = "*/5 * * * *"
+
+# Prevent HTML caching to ensure users get latest version immediately
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 # Cache static assets aggressively
 [[headers]]
@@ -29,15 +36,16 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Cache CSS/JS but use cache busting via version parameters in HTML
 [[headers]]
   for = "/*.css"
   [headers.values]
-    Cache-Control = "public, max-age=86400"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/*.js"
   [headers.values]
-    Cache-Control = "public, max-age=86400"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Preload hints for menu page
 [[headers]]
