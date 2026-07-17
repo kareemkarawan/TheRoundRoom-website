@@ -227,13 +227,10 @@
             const preorderOnlyMode = typeof settings.preorderOnlyMode === 'boolean' ? settings.preorderOnlyMode : false;
             const dailyCapEnabled = typeof settings.dailyCapEnabled === 'boolean' ? settings.dailyCapEnabled : false;
 
-            console.log('📅 Date settings loaded:', { leadTimeDays, maxAdvanceDays, nextAvailableDate, preorderOnlyMode, dailyCapEnabled });
-
             // Parse availability data
             let availabilityData = null;
             if (availabilityResponse.ok) {
                 availabilityData = await availabilityResponse.json();
-                console.log('📅 Availability data loaded:', availabilityData);
             }
 
             // Handle preorder-only mode or daily cap situations
@@ -367,15 +364,8 @@
             if (nextAvailableDate) {
                 const adminDate = new Date(nextAvailableDate);
                 adminDate.setHours(0, 0, 0, 0); // Reset to start of day
-                console.log('📅 Comparing dates:', { 
-                    calculatedMin: minDate.toISOString().split('T')[0],
-                    adminDate: adminDate.toISOString().split('T')[0]
-                });
                 if (adminDate > minDate) {
                     actualMinDate = adminDate;
-                    console.log('📅 Using admin date as minimum');
-                } else {
-                    console.log('📅 Using calculated date as minimum');
                 }
             }
 
@@ -404,12 +394,6 @@
                 }
             }
             orderDateInput.value = formatDate(defaultDate);
-
-            console.log('📅 Date picker configured:', {
-                min: formatDate(actualMinDate),
-                max: formatDate(maxDate),
-                default: formatDate(defaultDate)
-            });
 
             // Update preorder-only notice with formatted date
             if (forceShowDatePicker && preorderOnlyNotice) {

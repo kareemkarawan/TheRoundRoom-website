@@ -712,6 +712,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // ...existing code...
         
+        // Only fetch profile if user has a token
+        if (!token) {
+            // User not logged in - show login prompt if discount selector exists
+            if (discountLoginPrompt) discountLoginPrompt.style.display = 'block';
+            if (discountSelector) discountSelector.style.display = 'none';
+            return;
+        }
+        
         try {
             // Fetch user's personal discounts from profile
             const response = await fetch('/.netlify/functions/profile', {
@@ -746,8 +754,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     usesRemaining: d.count
                 }));
                 populateDiscountDropdown();
+            } else if (response.status === 401) {
+                // Token expired or invalid - clear it and show login prompt
+                localStorage.removeItem('rr_token');
+                if (discountLoginPrompt) discountLoginPrompt.style.display = 'block';
+                if (discountSelector) discountSelector.style.display = 'none';
             }
-        } catch (e) { console.error('Could not load discounts', e); }
+        } catch (e) {
+            // Only log actual network/server errors, not authentication issues
+            console.warn('Could not load discounts:', e.message);
+        }
+    }
     }
 
     function populateDiscountDropdown() {
@@ -1259,7 +1276,9 @@ async function initStoreStatus() {
         const isOpen = data.storeOpen !== false;
         const dailyCapEnabled = data.dailyCapEnabled === true;
         const dailyCapReached = dailyCapEnabled && data.dailyCapReached === true;
-        window._rr_storeOpen = isOpen && !dailyCapReached;
+        // Only block if store is actually closed, not if daily cap is reached
+        // Users can still order for future dates when daily cap is reached
+        window._rr_storeOpen = isOpen;
 
         const modal = document.getElementById('storeStatusModal');
         const modalMessage = document.getElementById('storeStatusMessage');
