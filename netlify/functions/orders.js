@@ -114,9 +114,10 @@ async function handlePost(body) {
       // Get the delivery date from the order, default to today
       const deliveryDateString = order.orderDate || new Date().toISOString().split('T')[0];
       
-      // Count orders scheduled for this delivery date
+      // Count orders scheduled for this delivery date (excluding cancelled)
       const dateOrderCount = await collection.countDocuments({
-        orderDate: deliveryDateString
+        orderDate: deliveryDateString,
+        status: { $ne: "CANCELLED" }
       });
 
       if (dateOrderCount >= settings.dailyCapLimit) {

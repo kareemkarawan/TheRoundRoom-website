@@ -68,11 +68,12 @@ async function getAvailableDates() {
       
       const dateString = date.toISOString().split('T')[0];
       
-      // Count orders for this date
+      // Count orders for this date (excluding cancelled)
       let orderCount = 0;
       if (dailyCapEnabled) {
         orderCount = await ordersCollection.countDocuments({
-          orderDate: dateString
+          orderDate: dateString,
+          status: { $ne: "CANCELLED" }
         });
       }
 

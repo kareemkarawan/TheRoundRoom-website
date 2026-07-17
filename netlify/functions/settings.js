@@ -43,9 +43,10 @@ async function getWeeklyCapacity(db, dailyLimit) {
     
     const dateString = date.toISOString().split('T')[0];
     
-    // Count orders scheduled for this date (by orderDate)
+    // Count orders scheduled for this date (by orderDate, excluding cancelled)
     const count = await ordersCollection.countDocuments({
-      orderDate: dateString
+      orderDate: dateString,
+      status: { $ne: "CANCELLED" }
     });
     
     const dayName = daysOfWeek[date.getDay()];
@@ -78,9 +79,10 @@ async function handleGet(isAdmin = false, includeWeekly = false) {
       today.setHours(0, 0, 0, 0);
       const todayString = today.toISOString().split('T')[0];
 
-      // Count orders scheduled for today (by orderDate)
+      // Count orders scheduled for today (by orderDate, excluding cancelled)
       const todayOrderCount = await ordersCollection.countDocuments({
-        orderDate: todayString
+        orderDate: todayString,
+        status: { $ne: "CANCELLED" }
       });
 
       dailyCapReached = todayOrderCount >= Number(settings.dailyCapLimit ?? 50);
