@@ -1320,8 +1320,12 @@ async function initStoreStatus() {
                 checkoutBtn.textContent = 'Orders closed';
                 checkoutBtn.disabled = true;
                 checkoutBtn.setAttribute('aria-disabled', 'true');
-            } else if (checkoutBtn.dataset.originalText) {
-                checkoutBtn.textContent = checkoutBtn.dataset.originalText;
+            } else {
+                // Store is open - ensure button is enabled
+                if (checkoutBtn.dataset.originalText) {
+                    checkoutBtn.textContent = checkoutBtn.dataset.originalText;
+                    delete checkoutBtn.dataset.originalText;
+                }
                 checkoutBtn.disabled = false;
                 checkoutBtn.setAttribute('aria-disabled', 'false');
             }
@@ -1336,8 +1340,12 @@ async function initStoreStatus() {
                 submitBtn.textContent = 'Store closed';
                 submitBtn.disabled = true;
                 submitBtn.setAttribute('aria-disabled', 'true');
-            } else if (submitBtn.dataset.originalText) {
-                submitBtn.textContent = submitBtn.dataset.originalText;
+            } else {
+                // Store is open - ensure button is enabled
+                if (submitBtn.dataset.originalText) {
+                    submitBtn.textContent = submitBtn.dataset.originalText;
+                    delete submitBtn.dataset.originalText;
+                }
                 submitBtn.disabled = false;
                 submitBtn.setAttribute('aria-disabled', 'false');
             }
