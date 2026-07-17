@@ -936,7 +936,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const pincodes = await response.json();
                 validPincodes = pincodes.map(p => p.code.toString());
-                console.log('Valid pincodes loaded:', validPincodes);
             }
         } catch (e) { console.error('Could not load pincodes', e); }
     }
@@ -1270,13 +1269,16 @@ async function initStoreStatus() {
         
         let messageText = 'Store is currently closed. We are not accepting orders right now.';
         let titleText = 'Store closed';
+        let showModal = false;
         
         if (dailyCapReached) {
-            titleText = 'Daily order limit reached';
-            messageText = 'We\'ve reached our maximum capacity for today. Please check back tomorrow or select a future date for pre-ordering. Thank you for your understanding!';
+            titleText = 'Today\'s capacity reached';
+            messageText = 'We\'ve reached our maximum capacity for today. You can still place orders for future dates at checkout!';
+            showModal = true;
         } else if (!isOpen) {
             titleText = 'Store closed';
             messageText = 'Store is currently closed. We are not accepting orders right now.';
+            showModal = true;
         }
 
         function closeModal() {
@@ -1311,9 +1313,11 @@ async function initStoreStatus() {
 
         const checkoutBtn = document.querySelector('.checkout-btn');
         if (checkoutBtn) {
-            if (!isOpen || dailyCapReached) {
+            // Only block if store is completely closed, not if daily cap is reached
+            // Users should still be able to checkout for future dates
+            if (!isOpen) {
                 checkoutBtn.dataset.originalText = checkoutBtn.textContent;
-                checkoutBtn.textContent = dailyCapReached ? 'Daily limit reached' : 'Orders closed';
+                checkoutBtn.textContent = 'Orders closed';
                 checkoutBtn.disabled = true;
                 checkoutBtn.setAttribute('aria-disabled', 'true');
             } else if (checkoutBtn.dataset.originalText) {
@@ -1323,11 +1327,13 @@ async function initStoreStatus() {
             }
         }
 
-        const submitBtn = document.querySelector('.btn-submit');
+        const submitBtn = document.querySelector('.btn-submit, [type="submit"]');
         if (submitBtn) {
-            if (!isOpen || dailyCapReached) {
+            // Only block submit if store is completely closed
+            // Daily cap check will be handled by date picker availability
+            if (!isOpen) {
                 submitBtn.dataset.originalText = submitBtn.textContent;
-                submitBtn.textContent = dailyCapReached ? 'Daily limit reached' : 'Store closed';
+                submitBtn.textContent = 'Store closed';
                 submitBtn.disabled = true;
                 submitBtn.setAttribute('aria-disabled', 'true');
             } else if (submitBtn.dataset.originalText) {
@@ -1464,16 +1470,13 @@ async function getOrders() {
 
 async function saveOrder(orderPayload) {
     try {
-        console.log('Saving order to database:', orderPayload);
         const response = await fetch('/.netlify/functions/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(orderPayload)
         });
         const result = await response.json();
-        console.log('Server response:', result);
         if (response.ok) {
-            console.log('Order saved successfully!');
             window.dispatchEvent(new Event('ordersUpdated'));
             return result;
         } else {
@@ -1720,14 +1723,12 @@ async function updateOrderStatus(orderNumber, status) {
 async function deleteOrder(orderNumber) {
     try {
         const token = localStorage.getItem('rr_admin_token');
-        console.log('Deleting order:', orderNumber);
         console.debug('[admin] Delete order', orderNumber);
         const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
             method: 'DELETE',
             headers: { 'x-admin-token': token || '' }
         });
         if (response.ok) {
-            console.log('Order deleted successfully');
             console.debug('[admin] Delete success', orderNumber);
             window.dispatchEvent(new Event('ordersUpdated'));
             return true;
@@ -2112,7 +2113,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (lastActivity && (now - lastActivity) > INACTIVITY_TIMEOUT) {
             // Auto logout due to inactivity - revoke session server-side
-            console.log("Auto logout due to inactivity");
             
             // Call logout API to revoke session (fire and forget)
             fetch("/.netlify/functions/logout", {
