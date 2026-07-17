@@ -765,7 +765,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Could not load discounts:', e.message);
         }
     }
-    }
 
     function populateDiscountDropdown() {
         const select = document.getElementById('discountSelect');
