@@ -505,12 +505,19 @@
         const grid = document.getElementById('boxGridAdmin');
         grid.innerHTML = '';
         
-        if (!allBoxes || allBoxes.length === 0) {
+        // Filter out bagel bites from regular boxes
+        const regularBoxes = allBoxes.filter(box => {
+            if (box.isBagelBites === true) return false;
+            const key = `${box.id || ''} ${box.name || ''}`.toLowerCase();
+            return !(key.includes('bagel_bites') || key.includes('bagel bites'));
+        });
+        
+        if (!regularBoxes || regularBoxes.length === 0) {
             grid.innerHTML = '<p class="muted">No bagel boxes defined yet.</p>';
             return;
         }
 
-        allBoxes.forEach(box => {
+        regularBoxes.forEach(box => {
             const card = document.createElement('div');
             card.className = 'menu-card';
             card.innerHTML = `

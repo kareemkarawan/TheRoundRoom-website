@@ -221,6 +221,7 @@ function getBoxContentsText(box) {
     const schmearCount = Number(box.schmearCount);
     const safeBiteCount = Number.isFinite(biteCount) && biteCount > 0 ? biteCount : 18;
     const safeSchmearCount = Number.isFinite(schmearCount) && schmearCount >= 0 ? schmearCount : 2;
+    console.debug(`[getBoxContentsText] Bagel Bites "${box.name}": biteCount=${box.biteCount} (using ${safeBiteCount}), schmearCount=${box.schmearCount} (using ${safeSchmearCount})`);
     return `${safeBiteCount} bagel bite${safeBiteCount > 1 ? 's' : ''} + ${safeSchmearCount} schmear${safeSchmearCount !== 1 ? 's' : ''}`;
   }
 
@@ -487,10 +488,22 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
   const bagelBitesBoxes = boxes.filter(isBagelBitesBox);
   const regularBoxes = boxes.filter(box => !isBagelBitesBox(box));
 
+  console.debug('[renderMenu] Total boxes:', boxes.length, 'Bagel Bites:', bagelBitesBoxes.length, 'Regular:', regularBoxes.length);
+  if (bagelBitesBoxes.length > 0) {
+    console.debug('[renderMenu] Bagel Bites boxes:', bagelBitesBoxes.map(b => ({ id: b.id, name: b.name, isBagelBites: b.isBagelBites, biteCount: b.biteCount })));
+  }
+
   const renderBoxCards = (target, targetBoxes) => {
     if (!target) return;
-    target.innerHTML = targetBoxes.map(box => `
-    <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${box.bagelCount}" data-schmears="${box.schmearCount}" data-is-box="true">
+    target.innerHTML = targetBoxes.map(box => {
+      const isBites = isBagelBitesBox(box);
+      const biteCount = isBites ? (Number(box.biteCount) || 18) : 0;
+      const bagelCount = isBites ? 0 : (Number(box.bagelCount) || 0);
+      const schmearCount = Number(box.schmearCount) || 0;
+      
+      return `
+    <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
+      ${box.imageUrl ? `<img src="${box.imageUrl}" alt="${box.name}" loading="lazy">` : ''}
       <div class="menu-item-info">
         <h3>${box.name}</h3>
         <p class="box-contents">${getBoxContentsText(box)}</p>
@@ -499,7 +512,8 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
         <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
       </div>
     </div>
-  `).join('');
+  `;
+    }).join('');
 
     target.querySelectorAll('.box-add-btn').forEach(btn => {
       btn.addEventListener('click', () => {
