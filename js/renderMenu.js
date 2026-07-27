@@ -193,31 +193,78 @@ let availableSchmears = [];
 let bagelQuantities = {};
 let schmearQuantities = {};
 
+function isBagelBitesBox(box) {
+  if (!box) return false;
+  if (box.isBagelBites === true) return true;
+  const key = `${box.id || ''} ${box.name || ''}`.toLowerCase();
+  return key.includes('bagel_bites') || key.includes('bagel bites');
+}
+
+function normalizeBoxForPopup(box) {
+  if (!isBagelBitesBox(box)) return box;
+
+  const biteCount = Number(box.biteCount);
+  const schmearCount = Number(box.schmearCount);
+
+  return {
+    ...box,
+    isBagelBites: true,
+    biteCount: Number.isFinite(biteCount) && biteCount > 0 ? biteCount : 18,
+    bagelCount: 0,
+    schmearCount: Number.isFinite(schmearCount) && schmearCount >= 0 ? schmearCount : 2
+  };
+}
+
+function getBoxContentsText(box) {
+  if (isBagelBitesBox(box)) {
+    const biteCount = Number(box.biteCount);
+    const schmearCount = Number(box.schmearCount);
+    const safeBiteCount = Number.isFinite(biteCount) && biteCount > 0 ? biteCount : 18;
+    const safeSchmearCount = Number.isFinite(schmearCount) && schmearCount >= 0 ? schmearCount : 2;
+    return `${safeBiteCount} bagel bite${safeBiteCount > 1 ? 's' : ''} + ${safeSchmearCount} schmear${safeSchmearCount !== 1 ? 's' : ''}`;
+  }
+
+  return `${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}`;
+}
+
 function openBoxPopup(box) {
-  currentBoxData = box;
+  currentBoxData = normalizeBoxForPopup(box);
   bagelQuantities = {};
   schmearQuantities = {};
 
   const popup = document.getElementById('boxPopup');
+  const bagelGroup = document.getElementById('bagelSelectionGroup');
+  const schmearGroup = document.getElementById('schmearSelectionGroup');
   const bagelGrid = document.getElementById('bagelSelections');
   const schmearGrid = document.getElementById('schmearSelections');
   const titleEl = document.getElementById('boxPopupTitle');
 
   if (!popup) return;
 
-  titleEl.textContent = box.name;
+  titleEl.textContent = currentBoxData.name;
 
-  // Render bagel options with qty controls
-  bagelGrid.innerHTML = availableBagels.map(b => `
-    <div class="box-selection-item" data-type="bagel" data-name="${b.name}">
-      <span class="box-selection-name">${b.name}</span>
-      <div class="box-qty-controls">
-        <button type="button" class="box-qty-btn minus" data-type="bagel" data-name="${b.name}">−</button>
-        <span class="box-qty-value" data-type="bagel" data-name="${b.name}">0</span>
-        <button type="button" class="box-qty-btn plus" data-type="bagel" data-name="${b.name}">+</button>
+  const needsBagelSelection = Number(currentBoxData.bagelCount) > 0;
+
+  if (bagelGroup) {
+    bagelGroup.style.display = needsBagelSelection ? '' : 'none';
+  }
+  if (schmearGroup) {
+    schmearGroup.style.display = '';
+  }
+
+  // Render bagel options only for boxes that require bagel selection.
+  bagelGrid.innerHTML = needsBagelSelection
+    ? availableBagels.map(b => `
+      <div class="box-selection-item" data-type="bagel" data-name="${b.name}">
+        <span class="box-selection-name">${b.name}</span>
+        <div class="box-qty-controls">
+          <button type="button" class="box-qty-btn minus" data-type="bagel" data-name="${b.name}">−</button>
+          <span class="box-qty-value" data-type="bagel" data-name="${b.name}">0</span>
+          <button type="button" class="box-qty-btn plus" data-type="bagel" data-name="${b.name}">+</button>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `).join('')
+    : '';
 
   // Render schmear options with qty controls
   schmearGrid.innerHTML = availableSchmears.map(s => `
@@ -285,15 +332,16 @@ function updateBoxCounters() {
 
   const bagelTotal = Object.values(bagelQuantities).reduce((sum, q) => sum + q, 0);
   const schmearTotal = Object.values(schmearQuantities).reduce((sum, q) => sum + q, 0);
+  const needsBagelSelection = Number(currentBoxData.bagelCount) > 0;
 
-  if (bagelCounter) {
+  if (bagelCounter && needsBagelSelection) {
     bagelCounter.textContent = `Selected ${bagelTotal} of ${currentBoxData.bagelCount}`;
   }
   if (schmearCounter) {
     schmearCounter.textContent = `Selected ${schmearTotal} of ${currentBoxData.schmearCount}`;
   }
 
-  const bagelOk = bagelTotal === currentBoxData.bagelCount;
+  const bagelOk = !needsBagelSelection || bagelTotal === currentBoxData.bagelCount;
   const schmearOk = schmearTotal === currentBoxData.schmearCount;
 
   // Update button disabled states
@@ -311,7 +359,7 @@ function updateBoxCounters() {
     if (isMinus) {
       btn.disabled = currentQty === 0;
     } else if (isPlus) {
-      btn.disabled = currentTotal >= maxCount;
+      btn.disabled = maxCount <= 0 || currentTotal >= maxCount;
     }
   });
 
@@ -325,8 +373,9 @@ function confirmBoxSelection() {
 
   const bagelTotal = Object.values(bagelQuantities).reduce((sum, q) => sum + q, 0);
   const schmearTotal = Object.values(schmearQuantities).reduce((sum, q) => sum + q, 0);
+  const needsBagelSelection = Number(currentBoxData.bagelCount) > 0;
 
-  if (bagelTotal !== currentBoxData.bagelCount) return;
+  if (needsBagelSelection && bagelTotal !== currentBoxData.bagelCount) return;
   if (schmearTotal !== currentBoxData.schmearCount) return;
 
   // Build arrays with quantities (e.g., { 'Plain': 2 } => ['Plain', 'Plain'])
@@ -386,6 +435,7 @@ function initBoxPopup() {
 async function renderBagelBoxes() {
   const boxSection = document.getElementById('boxSection');
   const boxContainer = document.getElementById('boxContainer');
+  const bagelBitesSection = document.getElementById('bagelBitesSection');
   if (!boxSection || !boxContainer) return;
 
   try {
@@ -400,6 +450,7 @@ async function renderBagelBoxes() {
         return;
       }
       boxSection.style.display = 'none';
+      if (bagelBitesSection) bagelBitesSection.style.display = 'none';
       return;
     }
 
@@ -410,6 +461,7 @@ async function renderBagelBoxes() {
     
     if (!boxes || boxes.length === 0) {
       boxSection.style.display = 'none';
+      if (bagelBitesSection) bagelBitesSection.style.display = 'none';
       return;
     }
 
@@ -423,16 +475,25 @@ async function renderBagelBoxes() {
       renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
     } else {
       boxSection.style.display = 'none';
+      if (bagelBitesSection) bagelBitesSection.style.display = 'none';
     }
   }
 }
 
 function renderBoxesToDOM(boxes, boxSection, boxContainer) {
-  boxContainer.innerHTML = boxes.map(box => `
+  const bagelBitesSection = document.getElementById('bagelBitesSection');
+  const bagelBitesContainer = document.getElementById('bagelBitesContainer');
+
+  const bagelBitesBoxes = boxes.filter(isBagelBitesBox);
+  const regularBoxes = boxes.filter(box => !isBagelBitesBox(box));
+
+  const renderBoxCards = (target, targetBoxes) => {
+    if (!target) return;
+    target.innerHTML = targetBoxes.map(box => `
     <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${box.bagelCount}" data-schmears="${box.schmearCount}" data-is-box="true">
       <div class="menu-item-info">
         <h3>${box.name}</h3>
-        <p class="box-contents">${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}</p>
+        <p class="box-contents">${getBoxContentsText(box)}</p>
         ${box.description ? `<p class="box-desc">${box.description}</p>` : ''}
         <p class="price">₹${Number(box.price).toFixed(2)}</p>
         <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
@@ -440,15 +501,23 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
     </div>
   `).join('');
 
-  boxSection.style.display = 'block';
-
-  // Add click handler for ADD buttons
-  boxContainer.querySelectorAll('.box-add-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const boxData = JSON.parse(btn.dataset.box.replace(/&#39;/g, "'"));
-      openBoxPopup(boxData);
+    target.querySelectorAll('.box-add-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const boxData = normalizeBoxForPopup(JSON.parse(btn.dataset.box.replace(/&#39;/g, "'")));
+        openBoxPopup(boxData);
+      });
     });
-  });
+  };
+
+  renderBoxCards(boxContainer, regularBoxes);
+  if (bagelBitesContainer) {
+    renderBoxCards(bagelBitesContainer, bagelBitesBoxes);
+  }
+
+  boxSection.style.display = regularBoxes.length > 0 ? 'block' : 'none';
+  if (bagelBitesSection) {
+    bagelBitesSection.style.display = bagelBitesBoxes.length > 0 ? 'block' : 'none';
+  }
 
   initBoxPopup();
 }

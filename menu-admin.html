@@ -134,6 +134,18 @@
             </div>
         </section>
 
+        <!-- Bagel Bites Settings Section -->
+        <section class="combo-settings box-settings">
+            <h3>Bagel Bites</h3>
+            <p class="muted">Create bagel bites boxes with customizable bite and schmear counts.</p>
+            
+            <button type="button" class="btn-add" id="addBitesBtn" style="margin-bottom: 1rem;">+ Add New Bagel Bites Box</button>
+            
+            <div id="bitesGridAdmin" class="box-grid-admin">
+                <p class="muted">Loading bagel bites…</p>
+            </div>
+        </section>
+
         <button class="btn-add" id="addItemBtn">+ Add New Item</button>
 
         <div id="menuGridAdmin" class="menu-grid-admin">
@@ -241,12 +253,77 @@
         </div>
     </div>
 
+    <!-- Modal for add/edit bagel bites -->
+    <div id="bitesModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="bitesModalTitle">Add Bagel Bites Box</h3>
+            <form id="bitesForm">
+                <div class="form-group">
+                    <label for="bitesId">Box ID *</label>
+                    <input type="text" id="bitesId" name="bitesId" required placeholder="e.g., bagel_bites_18">
+                </div>
+                <div class="form-group">
+                    <label for="bitesName">Name *</label>
+                    <input type="text" id="bitesName" name="bitesName" required placeholder="e.g., Bagel Bites Box (18)">
+                </div>
+                <div class="form-group">
+                    <label for="bitesBiteCount">Number of Bagel Bites *</label>
+                    <input type="number" id="bitesBiteCount" name="bitesBiteCount" required min="1" value="18">
+                </div>
+                <div class="form-group">
+                    <label for="bitesSchmearCount">Number of Schmears *</label>
+                    <input type="number" id="bitesSchmearCount" name="bitesSchmearCount" required min="0" value="2">
+                </div>
+                <div class="form-group">
+                    <label for="bitesPrice">Price (₹) *</label>
+                    <input type="number" id="bitesPrice" name="bitesPrice" required min="0" step="10" placeholder="e.g., 650">
+                </div>
+                <div class="form-group">
+                    <label for="bitesDescription">Description (optional)</label>
+                    <input type="text" id="bitesDescription" name="bitesDescription" placeholder="e.g., Perfect for sharing!">
+                </div>
+                <div class="form-group">
+                    <label>Image source</label>
+                    <div style="display:flex; gap:1rem; align-items:center;">
+                        <label><input type="radio" name="bitesImageSource" value="url" checked> Image URL</label>
+                        <label><input type="radio" name="bitesImageSource" value="upload"> Upload</label>
+                    </div>
+                </div>
+                <div class="form-group" id="bitesImageUrlGroup">
+                    <label for="bitesImageUrl">Image path or URL</label>
+                    <input type="text" id="bitesImageUrl" name="bitesImageUrl" placeholder="webpimages/bagel-bites.webp">
+                </div>
+                <div class="form-group" id="bitesImageUploadGroup" style="display:none;">
+                    <label for="bitesImageFile">Upload image</label>
+                    <input type="file" id="bitesImageFile" name="bitesImageFile" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <img id="bitesImagePreview" class="image-preview" style="display:none;">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="bitesAvailable" name="bitesAvailable" checked>
+                        Available for order
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelBitesBtn">Cancel</button>
+                    <button type="submit" class="btn-save">Save Bagel Bites Box</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="js/admin-gate.js"></script>
     <script>
     let allItems = [];
     let editingId = null;
     let currentImageUrl = '';
     let currentImageMode = 'url';
+    let allBites = [];
+    let editingBitesId = null;
+    let currentBitesImageUrl = '';
+    let currentBitesImageMode = 'url';
 
     function getAdminToken() {
         console.debug('[menu-admin] Requesting admin token');
@@ -580,6 +657,256 @@
     });
     // ====== END BAGEL BOX FUNCTIONS ======
 
+    // ====== BAGEL BITES FUNCTIONS ======
+    async function loadBagelBites() {
+        const grid = document.getElementById('bitesGridAdmin');
+        console.debug('[menu-admin] Loading bagel bites');
+        try {
+            const response = await fetch(`/.netlify/functions/bagel-boxes?ts=${Date.now()}`, { cache: 'no-store' });
+            if (response.ok) {
+                const allBoxes = await response.json();
+                // Filter for bagel bites only
+                allBites = allBoxes.filter(box => {
+                    if (box.isBagelBites === true) return true;
+                    const key = `${box.id || ''} ${box.name || ''}`.toLowerCase();
+                    return key.includes('bagel_bites') || key.includes('bagel bites');
+                });
+                console.debug('[menu-admin] Loaded bagel bites:', allBites.length);
+                renderBagelBites();
+            } else {
+                throw new Error('Failed to fetch bagel bites');
+            }
+        } catch (e) {
+            console.error('[menu-admin] Load bagel bites failed:', e);
+            grid.textContent = '';
+            const msg = document.createElement('p');
+            msg.className = 'muted';
+            msg.textContent = `Error loading bagel bites: ${e.message}`;
+            grid.appendChild(msg);
+        }
+    }
+
+    function renderBagelBites() {
+        const grid = document.getElementById('bitesGridAdmin');
+        grid.textContent = '';
+        
+        if (!allBites || allBites.length === 0) {
+            grid.innerHTML = '<p class="muted">No bagel bites boxes defined yet.</p>';
+            return;
+        }
+
+        allBites.forEach(bites => {
+            const card = document.createElement('div');
+            card.className = 'menu-card';
+            const biteCount = Number(bites.biteCount) || 18;
+            const schmearCount = Number(bites.schmearCount) || 0;
+            card.innerHTML = `
+                <h4>${bites.name} ${!bites.isAvailable ? '<span style="color:#999;">(Unavailable)</span>' : ''}</h4>
+                ${bites.imageUrl ? `<img src="${bites.imageUrl}" alt="${bites.name}" style="max-width: 200px; margin: 0.5rem 0; border-radius: 4px;">` : ''}
+                <p><strong>Contents:</strong> ${biteCount} bagel bite${biteCount > 1 ? 's' : ''} + ${schmearCount} schmear${schmearCount !== 1 ? 's' : ''}</p>
+                <p><strong>Price:</strong> ₹${Number(bites.price).toFixed(2)}</p>
+                ${bites.description ? `<p><strong>Description:</strong> ${bites.description}</p>` : ''}
+                <div class="menu-card-actions">
+                    <button class="btn-edit" onclick="editBites('${bites.id}')">Edit</button>
+                    <button class="btn-delete" onclick="deleteBites('${bites.id}')">Delete</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function openBitesModal(bites = null) {
+        editingBitesId = bites ? bites.id : null;
+        const modal = document.getElementById('bitesModal');
+        const form = document.getElementById('bitesForm');
+        const title = document.getElementById('bitesModalTitle');
+        const idField = document.getElementById('bitesId');
+        const imagePreview = document.getElementById('bitesImagePreview');
+        
+        form.reset();
+        if (imagePreview) imagePreview.style.display = 'none';
+        currentBitesImageUrl = '';
+        currentBitesImageMode = 'url';
+        
+        if (bites) {
+            title.textContent = 'Edit Bagel Bites Box';
+            idField.value = bites.id;
+            idField.disabled = true;
+            document.getElementById('bitesName').value = bites.name || '';
+            document.getElementById('bitesBiteCount').value = Number(bites.biteCount) || 18;
+            document.getElementById('bitesSchmearCount').value = Number(bites.schmearCount) || 0;
+            document.getElementById('bitesPrice').value = bites.price || '';
+            document.getElementById('bitesDescription').value = bites.description || '';
+            document.getElementById('bitesImageUrl').value = bites.imageUrl || '';
+            document.getElementById('bitesAvailable').checked = bites.isAvailable !== false;
+            
+            if (bites.imageUrl) {
+                currentBitesImageUrl = bites.imageUrl;
+                if (imagePreview) {
+                    imagePreview.src = bites.imageUrl;
+                    imagePreview.style.display = 'block';
+                }
+            }
+        } else {
+            title.textContent = 'Add Bagel Bites Box';
+            idField.value = '';
+            idField.disabled = false;
+            document.getElementById('bitesBiteCount').value = 18;
+            document.getElementById('bitesSchmearCount').value = 2;
+            document.getElementById('bitesAvailable').checked = true;
+        }
+        
+        modal.classList.add('active');
+    }
+
+    function closeBitesModal() {
+        document.getElementById('bitesModal').classList.remove('active');
+        editingBitesId = null;
+        currentBitesImageUrl = '';
+    }
+
+    async function editBites(bitesId) {
+        const bites = allBites.find(b => b.id === bitesId);
+        if (bites) openBitesModal(bites);
+    }
+
+    async function deleteBites(bitesId) {
+        if (!confirm(`Delete this bagel bites box? This cannot be undone.`)) return;
+        
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/.netlify/functions/bagel-boxes?id=${bitesId}`, {
+                method: 'DELETE',
+                headers: { 'x-admin-token': token }
+            });
+
+            if (response.ok) {
+                showMessage('Bagel bites box deleted', 'success');
+                await loadBagelBites();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                throw new Error('Failed to delete bagel bites box');
+            }
+        } catch (e) {
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    // Image source toggle for bagel bites
+    document.querySelectorAll('input[name="bitesImageSource"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const urlGroup = document.getElementById('bitesImageUrlGroup');
+            const uploadGroup = document.getElementById('bitesImageUploadGroup');
+            if (e.target.value === 'url') {
+                urlGroup.style.display = '';
+                uploadGroup.style.display = 'none';
+                currentBitesImageMode = 'url';
+            } else {
+                urlGroup.style.display = 'none';
+                uploadGroup.style.display = '';
+                currentBitesImageMode = 'upload';
+            }
+        });
+    });
+
+    // Image preview for bagel bites
+    document.getElementById('bitesImageUrl')?.addEventListener('input', (e) => {
+        const preview = document.getElementById('bitesImagePreview');
+        if (preview && e.target.value) {
+            preview.src = e.target.value;
+            preview.style.display = 'block';
+            currentBitesImageUrl = e.target.value;
+        } else if (preview) {
+            preview.style.display = 'none';
+        }
+    });
+
+    document.getElementById('bitesImageFile')?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const preview = document.getElementById('bitesImagePreview');
+                if (preview) {
+                    preview.src = ev.target.result;
+                    preview.style.display = 'block';
+                }
+                currentBitesImageUrl = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('addBitesBtn')?.addEventListener('click', () => openBitesModal());
+    document.getElementById('cancelBitesBtn')?.addEventListener('click', closeBitesModal);
+
+    document.getElementById('bitesForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const token = getAdminToken();
+        if (!token) {
+            showMessage('Admin token required.', 'error');
+            return;
+        }
+
+        const data = {
+            id: document.getElementById('bitesId').value.trim(),
+            name: document.getElementById('bitesName').value.trim(),
+            biteCount: Number(document.getElementById('bitesBiteCount').value),
+            schmearCount: Number(document.getElementById('bitesSchmearCount').value),
+            price: Number(document.getElementById('bitesPrice').value),
+            description: document.getElementById('bitesDescription').value.trim(),
+            imageUrl: currentBitesImageMode === 'url' ? document.getElementById('bitesImageUrl').value.trim() : currentBitesImageUrl,
+            isAvailable: document.getElementById('bitesAvailable').checked,
+            isBagelBites: true,
+            bagelCount: 0 // Bagel bites don't need bagel selection
+        };
+
+        if (!data.id || !data.name || !data.price) {
+            showMessage('Please fill in all required fields', 'error');
+            return;
+        }
+
+        try {
+            const isEditing = editingBitesId !== null;
+            const url = isEditing 
+                ? `/.netlify/functions/bagel-boxes?id=${editingBitesId}` 
+                : '/.netlify/functions/bagel-boxes';
+            
+            const response = await fetch(url, {
+                method: isEditing ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showMessage(isEditing ? 'Bagel bites box updated' : 'Bagel bites box created', 'success');
+                closeBitesModal();
+                await loadBagelBites();
+            } else {
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || 'Failed to save bagel bites box');
+            }
+        } catch (e) {
+            showMessage(`Error: ${e.message}`, 'error');
+        }
+    });
+    // ====== END BAGEL BITES FUNCTIONS ======
+
     function renderMenuItems() {
         const grid = document.getElementById('menuGridAdmin');
         grid.textContent = '';
@@ -902,7 +1229,10 @@
     // Load menu items only after admin gate unlocks
     document.addEventListener('DOMContentLoaded', () => {
         if (window.AdminGate) {
-            window.AdminGate.requireAdminAccess(loadMenuItems);
+            window.AdminGate.requireAdminAccess(async () => {
+                await loadMenuItems();
+                await loadBagelBites();
+            });
         }
     });
     </script>

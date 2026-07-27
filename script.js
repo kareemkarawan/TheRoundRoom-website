@@ -80,6 +80,8 @@ window.addBoxToCart = function(boxData, selectedBagels, selectedSchmears) {
         qty: 1,
         itemTotal: boxData.price,
         isBox: true,
+        isBagelBites: boxData.isBagelBites === true,
+        biteCount: Number(boxData.biteCount) || 0,
         boxId: boxData.id,
         boxName: boxData.name,
         bagelCount: boxData.bagelCount,
@@ -444,11 +446,13 @@ function updateCart() {
         cartItemsDiv.innerHTML = cartItems.map(item => {
             // For boxes, show selected items below
             let detailsHtml = '';
-            if (item.isBox && item.bagelsStr) {
-                detailsHtml = `<div class="cart-box-details">
-                    <small>Bagels: ${item.bagelsStr}</small>
-                    ${item.schmearsStr !== 'None' ? `<small>Schmears: ${item.schmearsStr}</small>` : ''}
-                </div>`;
+            if (item.isBox) {
+                const detailLines = [];
+                if (item.bagelsStr) detailLines.push(`<small>Bagels: ${item.bagelsStr}</small>`);
+                if (item.schmearsStr && item.schmearsStr !== 'None') detailLines.push(`<small>Schmears: ${item.schmearsStr}</small>`);
+                if (detailLines.length > 0) {
+                    detailsHtml = `<div class="cart-box-details">${detailLines.join('')}</div>`;
+                }
             }
             return `<div class="cart-item">
                 <div class="cart-item-left">

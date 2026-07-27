@@ -76,24 +76,41 @@ async function handlePost(body) {
   }
 
   const priceValue = Number(box.price);
-  const bagelCount = Number(box.bagelCount);
-  const schmearCount = Number(box.schmearCount);
+  const bagelCount = Number(box.bagelCount) || 0;
+  const schmearCount = Number(box.schmearCount) || 0;
+  const biteCount = Number(box.biteCount) || 0;
   const availability = typeof box.isAvailable === "boolean" ? box.isAvailable : true;
+  const isBagelBites = box.isBagelBites === true;
 
   // Validate required fields
-  if (!box.id || !box.name || Number.isNaN(priceValue) || Number.isNaN(bagelCount) || Number.isNaN(schmearCount)) {
+  if (!box.id || !box.name || Number.isNaN(priceValue)) {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: "Missing required fields: id, name, price, bagelCount, schmearCount",
+        error: "Missing required fields: id, name, price",
       }),
     };
   }
 
-  if (bagelCount < 1 || schmearCount < 0) {
+  // For bagel bites, biteCount is required; for regular boxes, bagelCount is required
+  if (isBagelBites && biteCount < 1) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "bagelCount must be at least 1, schmearCount must be 0 or more" }),
+      body: JSON.stringify({ error: "biteCount must be at least 1 for bagel bites" }),
+    };
+  }
+
+  if (!isBagelBites && bagelCount < 1) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "bagelCount must be at least 1 for bagel boxes" }),
+    };
+  }
+
+  if (schmearCount < 0) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "schmearCount must be 0 or more" }),
     };
   }
 
@@ -117,6 +134,9 @@ async function handlePost(body) {
       description: box.description || "",
       bagelCount,
       schmearCount,
+      biteCount,
+      isBagelBites,
+      imageUrl: box.imageUrl || "",
       price: priceValue,
       isAvailable: availability,
       sortOrder: Number(box.sortOrder) || 0,
@@ -175,13 +195,24 @@ async function handlePut(body, boxId) {
   // Validate counts if provided
   if (updates.bagelCount !== undefined) {
     const val = Number(updates.bagelCount);
-    if (Number.isNaN(val) || val < 1) {
+    if (Number.isNaN(val) || val < 0) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "bagelCount must be at least 1" }),
+        body: JSON.stringify({ error: "bagelCount must be 0 or more" }),
       };
     }
     updates.bagelCount = val;
+  }
+
+  if (updates.biteCount !== undefined) {
+    const val = Number(updates.biteCount);
+    if (Number.isNaN(val) || val < 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "biteCount must be 0 or more" }),
+      };
+    }
+    updates.biteCount = val;
   }
 
   if (updates.schmearCount !== undefined) {
@@ -193,6 +224,14 @@ async function handlePut(body, boxId) {
       };
     }
     updates.schmearCount = val;
+  }
+
+  if (updates.imageUrl !== undefined) {
+    updates.imageUrl = String(updates.imageUrl || "");
+  }
+
+  if (updates.isBagelBites !== undefined) {
+    updates.isBagelBites = updates.isBagelBites === true;
   }
 
   try {
