@@ -16,5 +16,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.0.0",
     "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2"
   }
 }
