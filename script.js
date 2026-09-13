@@ -1529,18 +1529,28 @@ async function saveOrder(orderPayload) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(orderPayload)
         });
-        const result = await response.json();
+
+        const contentType = response.headers.get('content-type') || '';
+        const rawText = await response.text();
+        let result = null;
+
+        try {
+            result = rawText ? JSON.parse(rawText) : {};
+        } catch (e) {
+            result = { error: rawText || 'Unable to read server response' };
+        }
+
         if (response.ok) {
             window.dispatchEvent(new Event('ordersUpdated'));
             return result;
-        } else {
-            console.error('Failed to save order:', result);
-            return result;
         }
-    } catch (e) { 
-        console.error('Could not save order', e); 
+
+        console.error('Failed to save order:', result);
+        return result;
+    } catch (e) {
+        console.error('Could not save order', e);
+        return { error: 'Could not reach the order service. Please try again.' };
     }
-    return null;
 }
 
 async function generateReceiptPdf(orderData, razorpayResponse) {

@@ -328,24 +328,55 @@ async function handlePost(body) {
 
     const amountPaise = Math.round(total * 100);
     const receipt = `rr_${Date.now()}`;
-    const razorpayRes = await fetch("https://api.razorpay.com/v1/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64")}`,
-      },
-      body: JSON.stringify({
-        amount: amountPaise,
-        currency: settings.currency,
-        receipt,
-        notes: {
-          source: "the-round-room",
-          orderNumber,
-        },
-      }),
-    });
 
-    const razorpayData = await razorpayRes.json();
+    const razorpayController = new AbortController();
+    const razorpayTimeout = setTimeout(() => razorpayController.abort(), 8000);
+
+    let razorpayRes;
+    let razorpayData;
+
+    try {
+      razorpayRes = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64")}`,
+        },
+        body: JSON.stringify({
+          amount: amountPaise,
+          currency: settings.currency,
+          receipt,
+          notes: {
+            source: "the-round-room",
+            orderNumber,
+          },
+        }),
+        signal: razorpayController.signal,
+      });
+
+      razorpayData = await razorpayRes.json();
+    } catch (err) {
+      clearTimeout(razorpayTimeout);
+      if (err?.name === "AbortError") {
+        console.error("Razorpay order creation timed out", { orderNumber });
+        return {
+          statusCode: 504,
+          body: JSON.stringify({ error: "Razorpay order creation timed out. Please try again." }),
+        };
+      }
+
+      console.error("Razorpay order creation network error", {
+        orderNumber,
+        message: err?.message,
+      });
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ error: "Razorpay order creation failed. Please try again.", details: err?.message }),
+      };
+    } finally {
+      clearTimeout(razorpayTimeout);
+    }
+
     if (!razorpayRes.ok) {
       console.error("Razorpay order creation failed", {
         status: razorpayRes.status,
