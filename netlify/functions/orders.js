@@ -42,15 +42,26 @@ function normalizeDeliveryFee(value, fallback = 100) {
 let cachedClient = null;
 
 async function getClient() {
+  if (!uri) {
+    throw new Error("MONGODB_URI is not configured. Please add it in Netlify environment variables.");
+  }
+
   if (cachedClient) {
     return cachedClient;
   }
+
   const client = new MongoClient(uri, {
     serverSelectionTimeoutMS: 5000,
   });
-  await client.connect();
-  cachedClient = client;
-  return client;
+
+  try {
+    await client.connect();
+    cachedClient = client;
+    return client;
+  } catch (err) {
+    console.error("MongoDB connection failed:", err.message);
+    throw new Error(`Database connection failed: ${err.message}`);
+  }
 }
 
 function buildHeaders(isAdminRoute = false) {
