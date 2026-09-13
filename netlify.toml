@@ -47,6 +47,13 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    Content-Security-Policy = "frame-ancestors 'self'"
+    Strict-Transport-Security: max-age=31536000;
+
 # Preload hints for menu page
 [[headers]]
   for = "/order_page.html"

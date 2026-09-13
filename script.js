@@ -681,6 +681,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const data = await response.json();
                 collectionEnabled = data.collectionEnabled !== false;
+                window._rrDeliveryFee = Number(data.deliveryFee ?? 100);
                 const collectionOption = document.getElementById('collectionOption');
                 if (collectionOption) {
                     collectionOption.style.display = collectionEnabled ? '' : 'none';
@@ -791,11 +792,20 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCheckoutWithDiscount();
     }
 
+    function getDeliveryFee(subtotal, discountAmount = 0) {
+        const orderType = window._rrOrderType || 'delivery';
+        if (orderType !== 'delivery') return 0;
+        const discountedSubtotal = subtotal - discountAmount;
+        return discountedSubtotal < 1800 ? Number(window._rrDeliveryFee ?? 100) : 0;
+    }
+
     function updateCheckoutWithDiscount() {
         const subtotalEl = document.getElementById('checkoutSubtotal');
         const discountRow = document.getElementById('discountRow');
         const discountNameEl = document.getElementById('discountName');
         const discountAmtEl = document.getElementById('checkoutDiscount');
+        const deliveryFeeRow = document.getElementById('deliveryFeeRow');
+        const deliveryFeeAmtEl = document.getElementById('checkoutDeliveryFee');
         const sgstEl = document.getElementById('checkoutSgst');
         const cgstEl = document.getElementById('checkoutCgst');
         const totalEl = document.getElementById('checkoutTotal');
@@ -822,10 +832,18 @@ document.addEventListener('DOMContentLoaded', function() {
             discountRow.style.display = 'none';
         }
 
+        const deliveryFee = getDeliveryFee(subtotal);
+        if (deliveryFeeRow) {
+            deliveryFeeRow.style.display = window._rrOrderType === 'delivery' && deliveryFee > 0 ? 'flex' : 'none';
+        }
+        if (deliveryFeeAmtEl) {
+            deliveryFeeAmtEl.textContent = `₹${deliveryFee.toFixed(2)}`;
+        }
+
         const discountedSubtotal = subtotal - discountAmount;
         const sgst = discountedSubtotal * 0.025;
         const cgst = discountedSubtotal * 0.025;
-        const total = discountedSubtotal + sgst + cgst;
+        const total = discountedSubtotal + deliveryFee + sgst + cgst;
 
         if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
         if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
@@ -840,6 +858,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const sgstEl = document.getElementById('checkoutSgst');
         const cgstEl = document.getElementById('checkoutCgst');
         const totalEl = document.getElementById('checkoutTotal');
+        const deliveryFeeRow = document.getElementById('deliveryFeeRow');
+        const deliveryFeeAmtEl = document.getElementById('checkoutDeliveryFee');
         if (!itemsEl || !subtotalEl || !totalEl) return;
 
         let cart = null;
@@ -849,6 +869,8 @@ document.addEventListener('DOMContentLoaded', function() {
             subtotalEl.textContent = '₹0.00';
             if (sgstEl) sgstEl.textContent = '₹0.00';
             if (cgstEl) cgstEl.textContent = '₹0.00';
+            if (deliveryFeeRow) deliveryFeeRow.style.display = 'none';
+            if (deliveryFeeAmtEl) deliveryFeeAmtEl.textContent = '₹0.00';
             totalEl.textContent = '₹0.00';
             return;
         }
@@ -882,15 +904,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         subtotalEl.textContent = `₹${Number(cart.subtotal || 0).toFixed(2)}`;
+        const deliveryFee = getDeliveryFee(Number(cart.subtotal || 0));
+        if (deliveryFeeRow) {
+            deliveryFeeRow.style.display = window._rrOrderType === 'delivery' && deliveryFee > 0 ? 'flex' : 'none';
+        }
+        if (deliveryFeeAmtEl) {
+            deliveryFeeAmtEl.textContent = `₹${deliveryFee.toFixed(2)}`;
+        }
         // Apply discount if selected
         if (selectedDiscount) {
             updateCheckoutWithDiscount();
         } else {
-            const sgst = Number(cart.sgst ?? ((Number(cart.tax || 0)) / 2 || 0));
-            const cgst = Number(cart.cgst ?? ((Number(cart.tax || 0)) / 2 || 0));
+            const taxableSubtotal = Number(cart.subtotal || 0);
+            const sgst = taxableSubtotal * 0.025;
+            const cgst = taxableSubtotal * 0.025;
             if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
             if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
-            totalEl.textContent = `₹${Number(cart.total || 0).toFixed(2)}`;
+            const total = Number(cart.subtotal || 0) + deliveryFee + sgst + cgst;
+            totalEl.textContent = `₹${total.toFixed(2)}`;
         }
         if (loadingEl) loadingEl.style.display = 'none';
     }
@@ -1200,12 +1231,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 handler: async function (response) {
                     const paymentLoading = document.getElementById('paymentLoading');
                     if (paymentLoading) paymentLoading.style.display = 'flex';
-                    const verified = await verifyPayment(pendingOrderData.orderNumber, response);
-                    if (!verified) {
-                        if (paymentLoading) paymentLoading.style.display = 'none';
-                        alert('Payment verification failed. Please contact support with your order ID.');
-                        return;
-                    }
 
                     const summary = {
                         orderNumber: pendingOrderData.orderNumber,
@@ -1250,7 +1275,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', async function (response) {
-                await markPaymentFailed(pendingOrderData.orderNumber, response);
                 alert('Payment failed. Please try again.');
             });
             rzp.open();
@@ -1517,46 +1541,6 @@ async function saveOrder(orderPayload) {
         console.error('Could not save order', e); 
     }
     return null;
-}
-
-async function verifyPayment(orderNumber, razorpayResponse) {
-    if (!orderNumber || !razorpayResponse) return false;
-    try {
-        const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'VERIFY_PAYMENT',
-                razorpay_order_id: razorpayResponse.razorpay_order_id,
-                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
-                razorpay_signature: razorpayResponse.razorpay_signature
-            })
-        });
-        if (response.ok) return true;
-    } catch (e) {
-        console.error('Payment verification failed', e);
-    }
-    return false;
-}
-
-async function markPaymentFailed(orderNumber, razorpayResponse) {
-    if (!orderNumber || !razorpayResponse) return false;
-    try {
-        const meta = razorpayResponse?.error?.metadata || {};
-        const response = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'MARK_PAYMENT_FAILED',
-                razorpay_order_id: meta.order_id,
-                razorpay_payment_id: meta.payment_id || null
-            })
-        });
-        if (response.ok) return true;
-    } catch (e) {
-        console.error('Mark payment failed error', e);
-    }
-    return false;
 }
 
 async function generateReceiptPdf(orderData, razorpayResponse) {

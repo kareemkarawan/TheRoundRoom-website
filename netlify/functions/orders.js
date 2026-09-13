@@ -14,7 +14,6 @@
  */
 
 const { MongoClient, ObjectId } = require("mongodb");
-const crypto = require("crypto");
 const { isAdminAuthorized } = require("./utils");
 
 const uri = process.env.MONGODB_URI;
@@ -27,6 +26,18 @@ const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+const MAX_DELIVERY_FEE = 5000;
+
+function normalizeDeliveryFee(value, fallback = 100) {
+  const fee = Number(value);
+  if (!Number.isFinite(fee)) {
+    return fallback;
+  }
+  if (fee < 0) {
+    return 0;
+  }
+  return Math.min(MAX_DELIVERY_FEE, Math.round(fee));
+}
 
 let cachedClient = null;
 
@@ -63,6 +74,7 @@ async function getSettings(db) {
     minOrder: Number(settings?.minOrder ?? 0),
     dailyCapEnabled: typeof settings?.dailyCapEnabled === "boolean" ? settings.dailyCapEnabled : false,
     dailyCapLimit: Number(settings?.dailyCapLimit ?? 50),
+    deliveryFee: normalizeDeliveryFee(settings?.deliveryFee ?? 100),
   };
 }
 
@@ -297,8 +309,9 @@ async function handlePost(body) {
     }
 
     const discountedSubtotal = subtotal - discountAmount;
+    const deliveryFee = order.orderType === "delivery" && discountedSubtotal < 1800 ? settings.deliveryFee : 0;
     const tax = Number(((discountedSubtotal * settings.taxRate) / 100).toFixed(2));
-    const total = Number((discountedSubtotal + tax).toFixed(2));
+    const total = Number((discountedSubtotal + deliveryFee + tax).toFixed(2));
     const createdAt = new Date();
     const orderNumber = `${settings.invoicePrefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -344,6 +357,7 @@ async function handlePost(body) {
         subtotal,
         discount: discountInfo,
         discountedSubtotal,
+        deliveryFee,
         tax,
         total,
         currency: settings.currency,
@@ -400,6 +414,7 @@ async function handlePost(body) {
           subtotal,
           discount: discountInfo,
           discountedSubtotal,
+          deliveryFee,
           tax,
           total,
         },
@@ -566,7 +581,7 @@ async function handleGet(event) {
   }
 }
 
-// PATCH: update order status by order ID
+// PATCH: update order status by order ID only
 async function handlePatch(body, orderNumber) {
   if (!orderNumber) {
     return {
@@ -585,242 +600,11 @@ async function handlePatch(body, orderNumber) {
     };
   }
 
-  if (updates?.action === "VERIFY_PAYMENT") {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = updates || {};
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing Razorpay verification fields" }),
-      };
-    }
-
-    if (!RAZORPAY_KEY_SECRET) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Razorpay keys not configured" }),
-      };
-    }
-
-    const expected = crypto
-      .createHmac("sha256", RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
-
-    if (expected !== razorpay_signature) {
-      console.error("Payment verification mismatch", {
-        orderNumber,
-        razorpay_order_id,
-        razorpay_payment_id,
-      });
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid payment signature" }),
-      };
-    }
-
-    try {
-      const client = await getClient();
-      const db = client.db(dbName);
-      const collection = db.collection(collectionName);
-
-      const orderDoc = await collection.findOne({ orderNumber });
-      if (!orderDoc) {
-        console.error("Payment verification failed: order not found", { orderNumber });
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ error: "Order not found" }),
-        };
-      }
-
-      if (orderDoc?.payment?.providerOrderId !== razorpay_order_id) {
-        console.error("Payment verification failed: order ID mismatch", {
-          orderNumber,
-          razorpay_order_id,
-          providerOrderId: orderDoc?.payment?.providerOrderId,
-        });
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: "Order ID mismatch" }),
-        };
-      }
-
-      const expectedAmount = Math.round(Number(orderDoc?.pricing?.total || 0) * 100);
-      if (Number(orderDoc?.payment?.amount) !== expectedAmount) {
-        console.error("Payment verification failed: amount mismatch", {
-          orderNumber,
-          expectedAmount,
-          storedAmount: orderDoc?.payment?.amount,
-        });
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: "Amount mismatch" }),
-        };
-      }
-
-      const result = await collection.updateOne(
-        { orderNumber, "payment.providerOrderId": razorpay_order_id },
-        {
-          $set: {
-            status: "PAID",
-            payment: {
-              provider: "razorpay",
-              providerOrderId: razorpay_order_id,
-              providerPaymentId: razorpay_payment_id,
-              method: "Online",
-              status: "PAID",
-              amount: orderDoc?.payment?.amount,
-              currency: orderDoc?.payment?.currency || "INR",
-              paidAt: new Date(),
-            },
-            accounting: {
-              provider: null,
-              invoiceId: null,
-              invoiceNumber: null,
-              invoiceUrl: null,
-              syncedAt: null,
-            },
-            updatedAt: new Date(),
-          },
-          $push: {
-            events: {
-              type: "PAYMENT_VERIFIED",
-              at: new Date(),
-              details: {
-                razorpay_order_id,
-                razorpay_payment_id,
-              },
-            },
-          },
-        }
-      );
-
-      if (result.matchedCount === 0) {
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ error: "Order not found" }),
-        };
-      }
-
-      // Remove one discount use from user if discount was applied
-      if (orderDoc?.pricing?.discount?.id && orderDoc?.customer?.email) {
-        try {
-          const usersCollection = db.collection("users");
-          const userEmail = orderDoc.customer.email.toLowerCase().trim();
-          const discountIdUsed = orderDoc.pricing.discount.id;
-          
-          // Find user and remove exactly one matching discount entry
-          const user = await usersCollection.findOne({ email: userEmail });
-          if (user && Array.isArray(user.discounts)) {
-            const discountIndex = user.discounts.findIndex(d => d.discountId === discountIdUsed);
-            if (discountIndex !== -1) {
-              // Remove the discount at that index
-              await usersCollection.updateOne(
-                { email: userEmail },
-                { $unset: { [`discounts.${discountIndex}`]: 1 } }
-              );
-              // Clean up null values
-              await usersCollection.updateOne(
-                { email: userEmail },
-                { $pull: { discounts: null } }
-              );
-            }
-          }
-        } catch (discountErr) {
-          console.error("Error removing discount from user:", discountErr);
-          // Don't fail the payment verification if discount removal fails
-        }
-      }
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ success: true, message: "Payment verified" }),
-      };
-    } catch (err) {
-      console.error("PATCH payment error:", err);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: err.message }),
-      };
-    }
-  }
-
-  if (updates?.action === "MARK_PAYMENT_FAILED") {
-    const { razorpay_order_id, razorpay_payment_id } = updates || {};
-    if (!razorpay_order_id) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing razorpay_order_id" }),
-      };
-    }
-
-    try {
-      const client = await getClient();
-      const db = client.db(dbName);
-      const collection = db.collection(collectionName);
-
-      const orderDoc = await collection.findOne({ orderNumber });
-      if (!orderDoc) {
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ error: "Order not found" }),
-        };
-      }
-
-      if (orderDoc?.payment?.providerOrderId !== razorpay_order_id) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: "Order ID mismatch" }),
-        };
-      }
-
-      const result = await collection.updateOne(
-        { orderNumber, "payment.providerOrderId": razorpay_order_id },
-        {
-          $set: {
-            status: "PAYMENT_PENDING",
-            payment: {
-              provider: "razorpay",
-              providerOrderId: razorpay_order_id,
-              providerPaymentId: razorpay_payment_id || null,
-              method: "Online",
-              status: "FAILED",
-              amount: orderDoc?.payment?.amount,
-              currency: orderDoc?.payment?.currency || "INR",
-              paidAt: null,
-            },
-            updatedAt: new Date(),
-          },
-          $push: {
-            events: {
-              type: "PAYMENT_FAILED",
-              at: new Date(),
-              details: {
-                razorpay_order_id,
-                razorpay_payment_id: razorpay_payment_id || null,
-              },
-            },
-          },
-        }
-      );
-
-      if (result.matchedCount === 0) {
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ error: "Order not found" }),
-        };
-      }
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ success: true, message: "Payment marked failed" }),
-      };
-    } catch (err) {
-      console.error("PATCH payment failed error:", err);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: err.message }),
-      };
-    }
+  if (updates?.action) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Unsupported payment action. Use the webhook or an admin-only payment service." }),
+    };
   }
 
   const allowedStatuses = [
@@ -952,7 +736,7 @@ exports.handler = async (event) => {
   const body = event.body;
   const orderNumber = event.queryStringParameters?.orderNumber || event.queryStringParameters?.id;
   const isAdminRoute = method === "GET" || method === "DELETE";
-  const isStatusPatch = method === "PATCH" && !body?.includes("VERIFY_PAYMENT") && !body?.includes("MARK_PAYMENT_FAILED");
+  const isStatusPatch = method === "PATCH";
   const requiresAdmin = isAdminRoute || isStatusPatch;
 
   // CORS headers

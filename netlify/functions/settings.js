@@ -18,6 +18,18 @@ const dbName = "round_room";
 const collectionName = "settings";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
+const MAX_DELIVERY_FEE = 5000;
+
+function normalizeDeliveryFee(value, fallback = 100) {
+  const fee = Number(value);
+  if (!Number.isFinite(fee)) {
+    return fallback;
+  }
+  if (fee < 0) {
+    return 0;
+  }
+  return Math.min(MAX_DELIVERY_FEE, Math.round(fee));
+}
 
 function buildHeaders(isPublic = false) {
   const origin = isPublic ? "*" : (ADMIN_ORIGIN || "*");
@@ -101,6 +113,7 @@ async function handleGet(isAdmin = false, includeWeekly = false) {
           maxAdvanceDays: Number(settings?.maxAdvanceDays ?? 14),
           dailyCapEnabled: typeof settings?.dailyCapEnabled === "boolean" ? settings.dailyCapEnabled : false,
           dailyCapLimit: Number(settings?.dailyCapLimit ?? 50),
+          deliveryFee: normalizeDeliveryFee(settings?.deliveryFee ?? 100),
           dailyCapReached: dailyCapReached,
         }),
       };
@@ -134,6 +147,7 @@ async function handleGet(isAdmin = false, includeWeekly = false) {
           maxAdvanceDays: 14,
           dailyCapEnabled: false,
           dailyCapLimit: 50,
+          deliveryFee: normalizeDeliveryFee(100),
           dailyCapReached: false,
         }),
       };
@@ -179,6 +193,7 @@ async function handlePut(body) {
     dailyCapLimit: Number(updates.dailyCapLimit ?? 50),
     leadTimeDays: Number(updates.leadTimeDays ?? 1),
     maxAdvanceDays: Number(updates.maxAdvanceDays ?? 14),
+    deliveryFee: normalizeDeliveryFee(updates.deliveryFee ?? 100),
     updatedAt: new Date(),
   };
 

@@ -73,6 +73,12 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="deliveryFee">Delivery Fee (₹)</label>
+                    <input id="deliveryFee" name="deliveryFee" type="number" min="0" max="5000" step="1" placeholder="e.g., 100">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Applied for delivery orders below the free-delivery threshold</small>
+                </div>
+
+                <div class="form-group">
                     <label for="collectionEnabled">Collection at Popup</label>
                     <select id="collectionEnabled" name="collectionEnabled">
                         <option value="enabled">Enabled</option>
@@ -184,6 +190,7 @@
             document.getElementById('invoicePrefix').value = data.invoicePrefix || 'ORD';
             document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
             document.getElementById('minOrder').value = data.minOrder ?? '';
+            document.getElementById('deliveryFee').value = data.deliveryFee ?? '100';
             document.getElementById('collectionEnabled').value = data.collectionEnabled === false ? 'disabled' : 'enabled';
             document.getElementById('preorderOnlyMode').value = data.preorderOnlyMode === true ? 'enabled' : 'disabled';
             
@@ -218,6 +225,7 @@
             invoicePrefix: document.getElementById('invoicePrefix').value.trim() || 'ORD',
             storeOpen: document.getElementById('shopStatus').value === 'open',
             minOrder: Number(document.getElementById('minOrder').value || 0),
+            deliveryFee: Number(document.getElementById('deliveryFee').value || 0),
             collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled',
             preorderOnlyMode: document.getElementById('preorderOnlyMode').value === 'enabled',
             nextAvailableDate: document.getElementById('nextAvailableDate').value || null,
