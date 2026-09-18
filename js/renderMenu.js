@@ -88,11 +88,7 @@ async function renderCombo(menuItems, comboSettings) {
 
     const selectedPincode = getSelectedPincode();
     const comboAllowedPincodes = normalizeAllowedPincodes(comboSettings.allowedPincodes || comboSettings.availablePincodes || []);
-
-    if (selectedPincode && comboAllowedPincodes.length > 0 && !comboAllowedPincodes.includes(String(selectedPincode))) {
-      comboSection.style.display = 'none';
-      return;
-    }
+    const isPincodeBlocked = !!selectedPincode && comboAllowedPincodes.length > 0 && !comboAllowedPincodes.includes(String(selectedPincode));
 
     const availableBagels = menuItems.filter(item => 
       item.category?.toLowerCase() === 'bagels' && 
@@ -107,18 +103,13 @@ async function renderCombo(menuItems, comboSettings) {
       isItemAvailableForPincode(item, selectedPincode)
     );
 
-    if (availableBagels.length === 0 || availableSchmears.length === 0) {
-      comboSection.style.display = 'none';
-      return;
-    }
-
     const comboDescription = (comboSettings.description || '').trim();
 
     // Check if popup mode - apply 15% discount
     const isPopupMode = window._rrOrderType === 'popup';
     const originalPrice = comboSettings.price;
     const discountedPrice = isPopupMode ? originalPrice * 0.85 : originalPrice;
-    
+
     // Store combo price globally for cart calculations (use discounted price in popup mode)
     window._rrComboPrice = discountedPrice;
 
@@ -126,6 +117,20 @@ async function renderCombo(menuItems, comboSettings) {
     const priceHTML = isPopupMode 
       ? `<span class="combo-original-price">₹${Number(originalPrice).toFixed(2)}</span> <span class="combo-discounted-price">₹${Number(discountedPrice).toFixed(2)}</span>`
       : `₹${Number(originalPrice).toFixed(2)}`;
+
+    if (isPincodeBlocked || availableBagels.length === 0 || availableSchmears.length === 0) {
+      comboContainer.innerHTML = `
+        <div class="combo-item combo-item--unavailable" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${discountedPrice}">
+          ${comboDescription ? `<p class="combo-description">${escapeHtml(comboDescription)}</p>` : ''}
+          <div class="combo-unavailable-banner">Unavailable in your area</div>
+          <div class="combo-info">
+            <p class="combo-price">${priceHTML}</p>
+          </div>
+        </div>
+      `;
+      comboSection.style.display = 'block';
+      return;
+    }
 
     comboContainer.innerHTML = `
       <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${discountedPrice}">

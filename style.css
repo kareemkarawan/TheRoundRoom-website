@@ -1132,6 +1132,26 @@ footer {
 	gap: 1.5rem;
 }
 
+.combo-item--unavailable {
+	position: relative;
+	filter: grayscale(0.2) brightness(0.75);
+	opacity: 0.75;
+	pointer-events: none;
+}
+
+.combo-unavailable-banner {
+	background: rgba(20, 20, 20, 0.72);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	text-align: center;
+	padding: 0.55rem 0.75rem;
+	border-radius: 999px;
+	align-self: flex-start;
+}
+
 .combo-description {
 	margin: 0;
 	font-size: 0.92rem;
