@@ -732,14 +732,16 @@ function ensurePincodeGate() {
 async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
-  if (!grid) return;
-
   const selectedPincode = getSelectedPincode();
+
   if (!selectedPincode) {
     ensurePincodeGate();
     if (loader) loader.style.display = 'none';
+    if (!grid) return;
     return;
   }
+
+  if (!grid) return;
 
   let MenuItemClass = null;
   try {
