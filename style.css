@@ -1689,7 +1689,7 @@ footer {
 	text-align: center;
 	letter-spacing: 0.08em;
 	background: #fff;
-	color: var(--rr-text);
+	color: #111;
 }
 
 .pincode-gate-form input::placeholder {
