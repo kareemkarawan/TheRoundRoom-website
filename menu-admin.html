@@ -140,6 +140,19 @@
                     <p class="muted">Loading schmears...</p>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label for="comboDescription">Sandwich description</label>
+                <textarea id="comboDescription" name="comboDescription" rows="3" placeholder="e.g. Toasted bagel with your choice of schmear and a classic breakfast sandwich feel."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Available at these delivery pincodes:</label>
+                <div id="comboPincodes" class="pincode-checkbox-grid">
+                    <p class="muted">Loading delivery pincodes...</p>
+                </div>
+                <small class="muted">Leave all unchecked to allow the sandwich at every delivery pincode.</small>
+            </div>
             
             <button type="button" class="btn-combo-save" id="saveComboBtn">Save Sandwich Settings</button>
         </section>
@@ -422,9 +435,16 @@
             return;
         }
 
+        const nameMap = {
+            itemPincodes: 'itemPincode',
+            boxPincodes: 'boxPincode',
+            bitesPincodes: 'bitesPincode',
+            comboPincodes: 'comboPincode'
+        };
+
         container.innerHTML = allDeliveryPincodes.map(code => `
             <label class="pincode-checkbox-item">
-                <input type="checkbox" name="${containerId === 'itemPincodes' ? 'itemPincode' : containerId === 'boxPincodes' ? 'boxPincode' : 'bitesPincode'}" value="${code}" ${selectedSet.has(code) ? 'checked' : ''}>
+                <input type="checkbox" name="${nameMap[containerId] || 'pincode'}" value="${code}" ${selectedSet.has(code) ? 'checked' : ''}>
                 ${code}
             </label>
         `).join('');
@@ -451,7 +471,13 @@
     }
 
     function getSelectedPincodes(containerId) {
-        const selector = containerId === 'itemPincodes' ? 'input[name="itemPincode"]' : containerId === 'boxPincodes' ? 'input[name="boxPincode"]' : 'input[name="bitesPincode"]';
+        const selectorMap = {
+            itemPincodes: 'input[name="itemPincode"]',
+            boxPincodes: 'input[name="boxPincode"]',
+            bitesPincodes: 'input[name="bitesPincode"]',
+            comboPincodes: 'input[name="comboPincode"]'
+        };
+        const selector = selectorMap[containerId] || 'input[name="pincode"]';
         return Array.from(document.querySelectorAll(selector))
             .filter(input => input.checked)
             .map(input => input.value);
@@ -499,7 +525,9 @@
         price: 0,
         isAvailable: false,
         availableBagels: [],
-        availableSchmears: []
+        availableSchmears: [],
+        allowedPincodes: [],
+        description: ''
     };
 
     async function loadComboSettings() {
@@ -521,16 +549,15 @@
         const schmearsContainer = document.getElementById('comboSchmears');
         const priceInput = document.getElementById('comboPrice');
         const availableCheckbox = document.getElementById('comboAvailable');
+        const descriptionInput = document.getElementById('comboDescription');
 
-        // Set price and availability
         if (priceInput) priceInput.value = comboSettings.price || '';
         if (availableCheckbox) availableCheckbox.checked = comboSettings.isAvailable === true;
+        if (descriptionInput) descriptionInput.value = comboSettings.description || '';
 
-        // Get bagels and schmears from allItems
         const bagels = allItems.filter(item => (item.category || '').toLowerCase() === 'bagels');
         const schmears = allItems.filter(item => (item.category || '').toLowerCase() === 'schmears');
 
-        // Render bagel checkboxes
         if (bagelsContainer) {
             if (bagels.length === 0) {
                 bagelsContainer.innerHTML = '<p class="muted">No bagels found. Add bagels to the menu first.</p>';
@@ -545,7 +572,6 @@
             }
         }
 
-        // Render schmear checkboxes
         if (schmearsContainer) {
             if (schmears.length === 0) {
                 schmearsContainer.innerHTML = '<p class="muted">No schmears found. Add schmears to the menu first.</p>';
@@ -559,6 +585,8 @@
                 `).join('');
             }
         }
+
+        renderPincodeCheckboxes('comboPincodes', comboSettings.allowedPincodes || comboSettings.availablePincodes || []);
     }
 
     async function saveComboSettings() {
@@ -572,16 +600,16 @@
 
         const price = Number(document.getElementById('comboPrice').value) || 0;
         const isAvailable = document.getElementById('comboAvailable').checked;
+        const description = (document.getElementById('comboDescription').value || '').trim();
+        const allowedPincodes = getSelectedPincodes('comboPincodes');
         
-        // Get selected bagels
         const availableBagels = Array.from(document.querySelectorAll('input[name="comboBagel"]:checked'))
             .map(cb => cb.value);
         
-        // Get selected schmears
         const availableSchmears = Array.from(document.querySelectorAll('input[name="comboSchmear"]:checked'))
             .map(cb => cb.value);
 
-        const data = { price, isAvailable, availableBagels, availableSchmears };
+        const data = { price, isAvailable, availableBagels, availableSchmears, description, allowedPincodes };
 
         try {
             const response = await fetch('/.netlify/functions/combo-settings', {

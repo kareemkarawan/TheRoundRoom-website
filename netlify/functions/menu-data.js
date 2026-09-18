@@ -53,6 +53,8 @@ exports.handler = async (event) => {
       isAvailable: false,
       availableBagels: [],
       availableSchmears: [],
+      description: "",
+      allowedPincodes: [],
     };
 
     return {

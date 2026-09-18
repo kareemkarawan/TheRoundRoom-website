@@ -40,6 +40,15 @@ function getSelectedPincode() {
   return (localStorage.getItem(MENU_PINCODE_KEY) || '').trim();
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function isItemAvailableForPincode(item, selectedPincode) {
   if (!selectedPincode) return true;
   const allowedPincodes = normalizeAllowedPincodes(item?.allowedPincodes || item?.availablePincodes || []);
@@ -78,6 +87,13 @@ async function renderCombo(menuItems, comboSettings) {
     }
 
     const selectedPincode = getSelectedPincode();
+    const comboAllowedPincodes = normalizeAllowedPincodes(comboSettings.allowedPincodes || comboSettings.availablePincodes || []);
+
+    if (selectedPincode && comboAllowedPincodes.length > 0 && !comboAllowedPincodes.includes(String(selectedPincode))) {
+      comboSection.style.display = 'none';
+      return;
+    }
+
     const availableBagels = menuItems.filter(item => 
       item.category?.toLowerCase() === 'bagels' && 
       item.isAvailable !== false &&
@@ -96,6 +112,8 @@ async function renderCombo(menuItems, comboSettings) {
       return;
     }
 
+    const comboDescription = (comboSettings.description || '').trim();
+
     // Check if popup mode - apply 15% discount
     const isPopupMode = window._rrOrderType === 'popup';
     const originalPrice = comboSettings.price;
@@ -111,6 +129,7 @@ async function renderCombo(menuItems, comboSettings) {
 
     comboContainer.innerHTML = `
       <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${discountedPrice}">
+        ${comboDescription ? `<p class="combo-description">${escapeHtml(comboDescription)}</p>` : ''}
         <div class="combo-selectors">
           <div class="combo-selector-group">
             <label for="comboBagelSelect">Choose your bagel for the sandwich:</label>
@@ -252,7 +271,25 @@ function getBoxContentsText(box) {
   return `${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}`;
 }
 
-function openBoxPopup(box) {
+function getBoxOptionItems(box, categoryKey, fallbackItems) {
+  const allowedIds = Array.isArray(box?.availableBagels || box?.allowedBagels)
+    ? (box.availableBagels || box.allowedBagels || [])
+    : Array.isArray(box?.availableSchmears || box?.allowedSchmears)
+      ? (box.availableSchmears || box.allowedSchmears || [])
+      : [];
+
+  const targetKey = categoryKey === 'bagel' ? 'availableBagels' : 'availableSchmears';
+  const selectedIds = Array.isArray(box?.[targetKey] || box?.[`allowed${categoryKey === 'bagel' ? 'Bagels' : 'Schmears'}`])
+    ? (box?.[targetKey] || box?.[`allowed${categoryKey === 'bagel' ? 'Bagels' : 'Schmears'}`] || [])
+    : [];
+
+  const ids = selectedIds.length ? selectedIds : (fallbackItems || []).map(item => item.id);
+  if (!ids.length) return fallbackItems || [];
+
+  return (fallbackItems || []).filter(item => ids.includes(item.id));
+}
+
+function openBoxPopup(box, boxBagelOptions = null, boxSchmearOptions = null) {
   currentBoxData = normalizeBoxForPopup(box);
   bagelQuantities = {};
   schmearQuantities = {};
@@ -268,6 +305,9 @@ function openBoxPopup(box) {
 
   titleEl.textContent = currentBoxData.name;
 
+  const selectedBagels = boxBagelOptions || getBoxOptionItems(currentBoxData, 'bagel', availableBagels);
+  const selectedSchmears = boxSchmearOptions || getBoxOptionItems(currentBoxData, 'schmear', availableSchmears);
+
   const needsBagelSelection = Number(currentBoxData.bagelCount) > 0;
 
   if (bagelGroup) {
@@ -277,9 +317,8 @@ function openBoxPopup(box) {
     schmearGroup.style.display = '';
   }
 
-  // Render bagel options only for boxes that require bagel selection.
   bagelGrid.innerHTML = needsBagelSelection
-    ? availableBagels.map(b => `
+    ? selectedBagels.map(b => `
       <div class="box-selection-item" data-type="bagel" data-name="${b.name}">
         <span class="box-selection-name">${b.name}</span>
         <div class="box-qty-controls">
@@ -291,8 +330,7 @@ function openBoxPopup(box) {
     `).join('')
     : '';
 
-  // Render schmear options with qty controls
-  schmearGrid.innerHTML = availableSchmears.map(s => `
+  schmearGrid.innerHTML = selectedSchmears.map(s => `
     <div class="box-selection-item" data-type="schmear" data-name="${s.name}">
       <span class="box-selection-name">${s.name}</span>
       <div class="box-qty-controls">
@@ -546,7 +584,9 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
       btn.addEventListener('click', () => {
         if (btn.disabled) return;
         const boxData = normalizeBoxForPopup(JSON.parse(btn.dataset.box.replace(/&#39;/g, "'")));
-        openBoxPopup(boxData);
+        const bagelOptions = getBoxOptionItems(boxData, 'bagel', availableBagels);
+        const schmearOptions = getBoxOptionItems(boxData, 'schmear', availableSchmears);
+        openBoxPopup(boxData, bagelOptions, schmearOptions);
       });
     });
   };

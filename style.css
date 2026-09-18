@@ -1132,6 +1132,13 @@ footer {
 	gap: 1.5rem;
 }
 
+.combo-description {
+	margin: 0;
+	font-size: 0.92rem;
+	line-height: 1.5;
+	color: rgba(17, 17, 17, 0.75);
+}
+
 .combo-selectors {
 	display: flex;
 	flex-direction: column;

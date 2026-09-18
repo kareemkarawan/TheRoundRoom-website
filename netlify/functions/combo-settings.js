@@ -19,6 +19,15 @@ const collectionName = "combo_settings";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
+function normalizeAllowedPincodes(value) {
+  if (!value) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return [...new Set(values
+    .flatMap(v => String(v).split(',') || [])
+    .map(v => String(v).trim())
+    .filter(Boolean))];
+}
+
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
   return {
@@ -46,6 +55,8 @@ async function handleGet() {
         isAvailable: false,
         availableBagels: [],
         availableSchmears: [],
+        description: "",
+        allowedPincodes: [],
       };
     }
 
@@ -100,6 +111,8 @@ async function handlePut(body) {
       isAvailable: updates.isAvailable === true,
       availableBagels: Array.isArray(updates.availableBagels) ? updates.availableBagels : [],
       availableSchmears: Array.isArray(updates.availableSchmears) ? updates.availableSchmears : [],
+      description: typeof updates.description === "string" ? updates.description.trim() : "",
+      allowedPincodes: normalizeAllowedPincodes(updates.allowedPincodes || updates.availablePincodes || []),
       updatedAt: now,
     };
 
