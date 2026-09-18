@@ -1708,6 +1708,44 @@ footer {
 	cursor: pointer;
 }
 
+.pincode-gate-form button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 48px;
+	position: relative;
+}
+
+.pincode-gate-form button:disabled {
+	cursor: wait;
+	opacity: 0.9;
+}
+
+.pincode-submit-spinner {
+	display: none;
+	width: 0.8rem;
+	height: 0.8rem;
+	border: 2px solid rgba(109,36,48,0.3);
+	border-top-color: var(--rr-bg);
+	border-radius: 50%;
+	animation: pincode-spin 0.8s linear infinite;
+}
+
+.pincode-gate-form button.is-loading .pincode-submit-spinner {
+	display: inline-block;
+}
+
+.pincode-gate-form button.is-loading .pincode-submit-label {
+	opacity: 0.9;
+}
+
+@keyframes pincode-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
 .pincode-gate-error {
 	display: none;
 	margin-top: 0.5rem;

@@ -647,7 +647,10 @@ function ensurePincodeGate() {
         <p>Choose the delivery pincode to see what’s available in your area.</p>
         <div class="pincode-gate-form">
           <input id="menuPincodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 400001" />
-          <button id="menuPincodeSubmit" type="button">Continue</button>
+          <button id="menuPincodeSubmit" type="button">
+            <span class="pincode-submit-label">Continue</span>
+            <span class="pincode-submit-spinner" aria-hidden="true"></span>
+          </button>
         </div>
         <div id="menuPincodeError" class="pincode-gate-error"></div>
       </div>
@@ -664,6 +667,7 @@ function ensurePincodeGate() {
 
   const input = gate.querySelector('#menuPincodeInput');
   const submit = gate.querySelector('#menuPincodeSubmit');
+  const submitLabel = gate.querySelector('.pincode-submit-label');
   const error = gate.querySelector('#menuPincodeError');
   const entryState = gate.querySelector('#pincodeEntryState');
   const unavailableState = gate.querySelector('#pincodeUnavailableState');
@@ -680,6 +684,14 @@ function ensurePincodeGate() {
     error.classList.remove('visible');
   };
 
+  const setSubmitState = (isLoading) => {
+    submit.disabled = isLoading;
+    submit.classList.toggle('is-loading', isLoading);
+    if (submitLabel) {
+      submitLabel.textContent = isLoading ? 'Checking…' : 'Continue';
+    }
+  };
+
   submit.addEventListener('click', async () => {
     const value = input.value.trim();
     if (!value) {
@@ -687,6 +699,8 @@ function ensurePincodeGate() {
       error.classList.add('visible');
       return;
     }
+
+    setSubmitState(true);
 
     try {
       const response = await fetch('/.netlify/functions/pincodes', { cache: 'no-store' });
@@ -707,6 +721,8 @@ function ensurePincodeGate() {
       console.error('Pincode validation failed', e);
       error.textContent = 'Unable to validate pincode right now. Please try again.';
       error.classList.add('visible');
+    } finally {
+      setSubmitState(false);
     }
   });
 
