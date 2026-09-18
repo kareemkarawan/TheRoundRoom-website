@@ -19,6 +19,20 @@ const collectionName = "bagel_boxes";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
+function normalizeAllowedPincodes(value) {
+  const entries = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return [...new Set(entries
+    .map((p) => String(p).trim())
+    .filter(Boolean))];
+}
+
+function normalizeOptionList(value) {
+  const entries = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return [...new Set(entries
+    .map((item) => String(item).trim())
+    .filter(Boolean))];
+}
+
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
   const cacheControl = isAdminRoute 
@@ -81,6 +95,8 @@ async function handlePost(body) {
   const biteCount = Number(box.biteCount) || 0;
   const availability = typeof box.isAvailable === "boolean" ? box.isAvailable : true;
   const isBagelBites = box.isBagelBites === true;
+  const availableBagels = normalizeOptionList(box.availableBagels || box.allowedBagels || []);
+  const availableSchmears = normalizeOptionList(box.availableSchmears || box.allowedSchmears || []);
 
   // Validate required fields
   if (!box.id || !box.name || Number.isNaN(priceValue)) {
@@ -137,6 +153,9 @@ async function handlePost(body) {
       biteCount,
       isBagelBites,
       imageUrl: box.imageUrl || "",
+      availableBagels,
+      availableSchmears,
+      allowedPincodes: normalizeAllowedPincodes(box.allowedPincodes || box.availablePincodes || []),
       price: priceValue,
       isAvailable: availability,
       sortOrder: Number(box.sortOrder) || 0,
@@ -232,6 +251,23 @@ async function handlePut(body, boxId) {
 
   if (updates.isBagelBites !== undefined) {
     updates.isBagelBites = updates.isBagelBites === true;
+  }
+
+  if (updates.availableBagels !== undefined || updates.allowedBagels !== undefined) {
+    updates.availableBagels = normalizeOptionList(updates.availableBagels ?? updates.allowedBagels ?? []);
+    delete updates.allowedBagels;
+  }
+
+  if (updates.availableSchmears !== undefined || updates.allowedSchmears !== undefined) {
+    updates.availableSchmears = normalizeOptionList(updates.availableSchmears ?? updates.allowedSchmears ?? []);
+    delete updates.allowedSchmears;
+  }
+
+  if (updates.allowedPincodes !== undefined) {
+    updates.allowedPincodes = normalizeAllowedPincodes(updates.allowedPincodes);
+  }
+  if (updates.availablePincodes !== undefined) {
+    updates.availablePincodes = normalizeAllowedPincodes(updates.availablePincodes);
   }
 
   try {

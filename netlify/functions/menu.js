@@ -19,6 +19,13 @@ const collectionName = "menu";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
+function normalizeAllowedPincodes(value) {
+  const entries = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return [...new Set(entries
+    .map((p) => String(p).trim())
+    .filter(Boolean))];
+}
+
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
   return {
@@ -95,6 +102,7 @@ async function handlePost(body) {
       category: item.category,
       price: priceValue,
       imageUrl: item.imageUrl || "",
+      allowedPincodes: normalizeAllowedPincodes(item.allowedPincodes || item.availablePincodes || []),
       isAvailable: availability,
       createdAt: now,
       updatedAt: now,
@@ -139,6 +147,13 @@ async function handlePut(body, itemId) {
   try {
     const db = await getDB();
     const collection = db.collection(collectionName);
+
+    if (updates.allowedPincodes !== undefined) {
+      updates.allowedPincodes = normalizeAllowedPincodes(updates.allowedPincodes);
+    }
+    if (updates.availablePincodes !== undefined) {
+      updates.availablePincodes = normalizeAllowedPincodes(updates.availablePincodes);
+    }
 
     const result = await collection.updateOne(
       { id: itemId },

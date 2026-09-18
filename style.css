@@ -1612,6 +1612,114 @@ footer {
 	border-color: rgba(109,36,48,0.35);
 }
 
+.menu-item.menu-item--unavailable {
+	filter: grayscale(0.35) brightness(0.72);
+	opacity: 0.68;
+	position: relative;
+}
+
+.menu-item.menu-item--unavailable .item-controls {
+	opacity: 0.45;
+}
+
+.menu-item-unavailable-overlay {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(20, 20, 20, 0.72);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	text-align: center;
+	padding: 0.5rem 0.75rem;
+	pointer-events: none;
+}
+
+.pincode-gate-overlay {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(18, 18, 18, 0.68);
+	backdrop-filter: blur(6px);
+	z-index: 9999;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+
+.pincode-gate-overlay.active {
+	display: flex;
+}
+
+.pincode-gate-card {
+	background: var(--rr-bg);
+	border-radius: 16px;
+	padding: 2rem 1.5rem;
+	width: min(420px, 100%);
+	box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+	text-align: center;
+	color: #fff;
+}
+
+.pincode-gate-card h3 {
+	margin: 0 0 0.75rem 0;
+	color: #fff;
+	font-size: 1.6rem;
+}
+
+.pincode-gate-card p {
+	margin: 0 0 1.25rem 0;
+	color: rgba(255,255,255,0.9);
+	font-size: 0.95rem;
+}
+
+.pincode-gate-form {
+	display: grid;
+	gap: 0.9rem;
+}
+
+.pincode-gate-form input {
+	padding: 0.9rem 1rem;
+	border: 1px solid rgba(109,36,48,0.2);
+	border-radius: 10px;
+	font-size: 1rem;
+	text-align: center;
+	letter-spacing: 0.08em;
+	background: #fff;
+	color: var(--rr-text);
+}
+
+.pincode-gate-form input::placeholder {
+	color: #6b6b6b;
+}
+
+.pincode-gate-form button,
+.pincode-warning-button {
+	border: none;
+	border-radius: 10px;
+	padding: 0.9rem 1rem;
+	background: #fff;
+	color: var(--rr-bg);
+	font-weight: 700;
+	font-size: 0.95rem;
+	cursor: pointer;
+}
+
+.pincode-gate-error {
+	display: none;
+	margin-top: 0.5rem;
+	font-size: 0.82rem;
+	color: #b00020;
+	font-weight: 600;
+}
+
+.pincode-gate-error.visible {
+	display: block;
+}
+
 /* Moved to bottom - Mobile UI Improvements section */
 
 .small-menu-title h3 {

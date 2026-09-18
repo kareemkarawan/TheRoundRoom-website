@@ -38,7 +38,7 @@ window._rrBoxes = [];
 // Add a confirmed combo to the cart
 function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) {
     const comboId = `combo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    const displayName = `Combo: ${bagelName} + ${schmearName}`;
+    const displayName = `Bagel & Schmear Sandwich: ${bagelName} + ${schmearName}`;
     
     window._rrCombos.push({
         id: comboId,

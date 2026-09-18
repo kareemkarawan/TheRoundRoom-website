@@ -60,6 +60,9 @@
         .combo-checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 0.75rem; border-radius: 4px; background: #fafafa; }
         .combo-checkbox-item { display: flex; align-items: center; gap: 0.5rem; }
         .combo-checkbox-item input { width: auto; }
+        .pincode-checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 0.75rem; border-radius: 4px; background: #fafafa; }
+        .pincode-checkbox-item { display: flex; align-items: center; gap: 0.5rem; }
+        .pincode-checkbox-item input { width: auto; }
         .btn-combo-save { background: #6d2430; color: #fff; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; cursor: pointer; border-radius: 4px; }
         .btn-combo-save:hover { background: #8a2d3d; }
         /* Bagel box admin styles */
@@ -90,36 +93,36 @@
 
         <!-- Combo Settings Section -->
         <section class="combo-settings">
-            <h3>Bagel &amp; Schmear Combo Settings</h3>
-            <p class="muted">Configure the combo item that appears on the order page.</p>
+            <h3>Bagel &amp; Schmear Sandwich Settings</h3>
+            <p class="muted">Configure the sandwich item that appears on the order page.</p>
             
             <div class="form-group">
-                <label for="comboPrice">Combo Price (₹)</label>
+                <label for="comboPrice">Sandwich Price (₹)</label>
                 <input type="number" id="comboPrice" name="comboPrice" min="0" step="10" placeholder="e.g., 250">
             </div>
             
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" id="comboAvailable" name="comboAvailable">
-                    Combo available for order
+                    Sandwich available for order
                 </label>
             </div>
             
             <div class="form-group">
-                <label>Available Bagels for Combo:</label>
+                <label>Available Bagels for Sandwich:</label>
                 <div id="comboBagels" class="combo-checkbox-grid">
                     <p class="muted">Loading bagels...</p>
                 </div>
             </div>
             
             <div class="form-group">
-                <label>Available Schmears for Combo:</label>
+                <label>Available Schmears for Sandwich:</label>
                 <div id="comboSchmears" class="combo-checkbox-grid">
                     <p class="muted">Loading schmears...</p>
                 </div>
             </div>
             
-            <button type="button" class="btn-combo-save" id="saveComboBtn">Save Combo Settings</button>
+            <button type="button" class="btn-combo-save" id="saveComboBtn">Save Sandwich Settings</button>
         </section>
 
         <!-- Bagel Box Settings Section -->
@@ -202,6 +205,13 @@
                         Available for order
                     </label>
                 </div>
+                <div class="form-group">
+                    <label>Available at these delivery pincodes:</label>
+                    <div id="itemPincodes" class="pincode-checkbox-grid">
+                        <p class="muted">Loading delivery pincodes...</p>
+                    </div>
+                    <small class="muted">Leave all unchecked to allow this item at every delivery pincode.</small>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn-save">Save Item</button>
@@ -244,6 +254,25 @@
                         <input type="checkbox" id="boxAvailable" name="boxAvailable" checked>
                         Available for order
                     </label>
+                </div>
+                <div class="form-group">
+                    <label>Available bagels for this box:</label>
+                    <div id="boxBagels" class="combo-checkbox-grid">
+                        <p class="muted">Loading bagels...</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Available schmears for this box:</label>
+                    <div id="boxSchmears" class="combo-checkbox-grid">
+                        <p class="muted">Loading schmears...</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Available at these delivery pincodes:</label>
+                    <div id="boxPincodes" class="pincode-checkbox-grid">
+                        <p class="muted">Loading delivery pincodes...</p>
+                    </div>
+                    <small class="muted">Leave all unchecked to allow this box at every delivery pincode.</small>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="cancelBoxBtn">Cancel</button>
@@ -306,6 +335,25 @@
                         Available for order
                     </label>
                 </div>
+                <div class="form-group">
+                    <label>Available bagels for this box:</label>
+                    <div id="bitesBagels" class="combo-checkbox-grid">
+                        <p class="muted">Loading bagels...</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Available schmears for this box:</label>
+                    <div id="bitesSchmears" class="combo-checkbox-grid">
+                        <p class="muted">Loading schmears...</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Available at these delivery pincodes:</label>
+                    <div id="bitesPincodes" class="pincode-checkbox-grid">
+                        <p class="muted">Loading delivery pincodes...</p>
+                    </div>
+                    <small class="muted">Leave all unchecked to allow this box at every delivery pincode.</small>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="cancelBitesBtn">Cancel</button>
                     <button type="submit" class="btn-save">Save Bagel Bites Box</button>
@@ -324,12 +372,75 @@
     let editingBitesId = null;
     let currentBitesImageUrl = '';
     let currentBitesImageMode = 'url';
+    let allDeliveryPincodes = [];
 
     function getAdminToken() {
         console.debug('[menu-admin] Requesting admin token');
         const token = window.AdminGate ? window.AdminGate.getToken() : '';
         console.debug('[menu-admin] Admin token present:', Boolean(token));
         return token;
+    }
+
+    async function loadDeliveryPincodes() {
+        try {
+            const response = await fetch('/.netlify/functions/pincodes', { cache: 'no-store' });
+            if (response.ok) {
+                allDeliveryPincodes = (await response.json()).map(p => String(p.code)).sort((a, b) => Number(a) - Number(b));
+            }
+        } catch (e) {
+            console.error('[menu-admin] Failed to load delivery pincodes:', e);
+            allDeliveryPincodes = [];
+        }
+    }
+
+    function renderPincodeCheckboxes(containerId, selectedValues = []) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const selectedSet = new Set((selectedValues || []).map(code => String(code).trim()).filter(Boolean));
+
+        if (!allDeliveryPincodes.length) {
+            container.innerHTML = '<p class="muted">No delivery pincodes have been added yet.</p>';
+            return;
+        }
+
+        container.innerHTML = allDeliveryPincodes.map(code => `
+            <label class="pincode-checkbox-item">
+                <input type="checkbox" name="${containerId === 'itemPincodes' ? 'itemPincode' : containerId === 'boxPincodes' ? 'boxPincode' : 'bitesPincode'}" value="${code}" ${selectedSet.has(code) ? 'checked' : ''}>
+                ${code}
+            </label>
+        `).join('');
+    }
+
+    function renderOptionCheckboxes(containerId, selectedValues = [], itemType, optionName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const selectedSet = new Set((selectedValues || []).map(value => String(value).trim()).filter(Boolean));
+        const items = allItems.filter(item => (item.category || '').toLowerCase() === itemType && item.isAvailable !== false);
+
+        if (!items.length) {
+            container.innerHTML = `<p class="muted">No ${itemType} available. Add menu items first.</p>`;
+            return;
+        }
+
+        container.innerHTML = items.map(item => `
+            <label class="combo-checkbox-item">
+                <input type="checkbox" name="${optionName}" value="${item.id}" ${selectedSet.has(item.id) ? 'checked' : ''}>
+                ${item.name}
+            </label>
+        `).join('');
+    }
+
+    function getSelectedPincodes(containerId) {
+        const selector = containerId === 'itemPincodes' ? 'input[name="itemPincode"]' : containerId === 'boxPincodes' ? 'input[name="boxPincode"]' : 'input[name="bitesPincode"]';
+        return Array.from(document.querySelectorAll(selector))
+            .filter(input => input.checked)
+            .map(input => input.value);
+    }
+
+    function getSelectedOptionValues(name) {
+        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
+            .map(input => input.value);
     }
 
     async function loadMenuItems() {
@@ -353,6 +464,9 @@
             msg.textContent = `Error loading menu items: ${e.message}`;
             grid.appendChild(msg);
         }
+
+        await loadDeliveryPincodes();
+        renderPincodeCheckboxes('itemPincodes', []);
         
         // Also load combo settings and render combo checkboxes
         await loadComboSettings();
@@ -518,11 +632,22 @@
         }
 
         regularBoxes.forEach(box => {
+            const bagelNames = (box.availableBagels || []).map(id => {
+                const match = allItems.find(item => item.id === id && (item.category || '').toLowerCase() === 'bagels');
+                return match ? match.name : id;
+            });
+            const schmearNames = (box.availableSchmears || []).map(id => {
+                const match = allItems.find(item => item.id === id && (item.category || '').toLowerCase() === 'schmears');
+                return match ? match.name : id;
+            });
+
             const card = document.createElement('div');
             card.className = 'menu-card';
             card.innerHTML = `
                 <h4>${box.name} ${!box.isAvailable ? '<span style="color:#999;">(Unavailable)</span>' : ''}</h4>
                 <p><strong>Contents:</strong> ${box.bagelCount} bagel${box.bagelCount > 1 ? 's' : ''} + ${box.schmearCount} schmear${box.schmearCount !== 1 ? 's' : ''}</p>
+                <p><strong>Bagel options:</strong> ${bagelNames.length ? bagelNames.join(', ') : 'Any available bagel'}</p>
+                <p><strong>Schmear options:</strong> ${schmearNames.length ? schmearNames.join(', ') : 'Any available schmear'}</p>
                 <p><strong>Price:</strong> ₹${Number(box.price).toFixed(2)}</p>
                 ${box.description ? `<p><strong>Description:</strong> ${box.description}</p>` : ''}
                 <div class="menu-card-actions">
@@ -553,6 +678,9 @@
             document.getElementById('boxPrice').value = box.price || '';
             document.getElementById('boxDescription').value = box.description || '';
             document.getElementById('boxAvailable').checked = box.isAvailable !== false;
+            renderOptionCheckboxes('boxBagels', box.availableBagels || box.allowedBagels || [], 'bagels', 'boxBagel');
+            renderOptionCheckboxes('boxSchmears', box.availableSchmears || box.allowedSchmears || [], 'schmears', 'boxSchmear');
+            renderPincodeCheckboxes('boxPincodes', box.allowedPincodes || box.availablePincodes || []);
         } else {
             title.textContent = 'Add Bagel Box';
             idField.value = '';
@@ -560,6 +688,9 @@
             document.getElementById('boxBagelCount').value = 6;
             document.getElementById('boxSchmearCount').value = 2;
             document.getElementById('boxAvailable').checked = true;
+            renderOptionCheckboxes('boxBagels', [], 'bagels', 'boxBagel');
+            renderOptionCheckboxes('boxSchmears', [], 'schmears', 'boxSchmear');
+            renderPincodeCheckboxes('boxPincodes', []);
         }
         
         modal.classList.add('active');
@@ -625,7 +756,10 @@
             schmearCount: Number(document.getElementById('boxSchmearCount').value),
             price: Number(document.getElementById('boxPrice').value),
             description: document.getElementById('boxDescription').value.trim(),
-            isAvailable: document.getElementById('boxAvailable').checked
+            isAvailable: document.getElementById('boxAvailable').checked,
+            availableBagels: getSelectedOptionValues('boxBagel'),
+            availableSchmears: getSelectedOptionValues('boxSchmear'),
+            allowedPincodes: getSelectedPincodes('boxPincodes')
         };
 
         if (!data.id || !data.name || !data.price) {
@@ -746,6 +880,9 @@
             document.getElementById('bitesDescription').value = bites.description || '';
             document.getElementById('bitesImageUrl').value = bites.imageUrl || '';
             document.getElementById('bitesAvailable').checked = bites.isAvailable !== false;
+            renderOptionCheckboxes('bitesBagels', bites.availableBagels || bites.allowedBagels || [], 'bagels', 'bitesBagel');
+            renderOptionCheckboxes('bitesSchmears', bites.availableSchmears || bites.allowedSchmears || [], 'schmears', 'bitesSchmear');
+            renderPincodeCheckboxes('bitesPincodes', bites.allowedPincodes || bites.availablePincodes || []);
             
             if (bites.imageUrl) {
                 currentBitesImageUrl = bites.imageUrl;
@@ -761,6 +898,9 @@
             document.getElementById('bitesBiteCount').value = 18;
             document.getElementById('bitesSchmearCount').value = 2;
             document.getElementById('bitesAvailable').checked = true;
+            renderOptionCheckboxes('bitesBagels', [], 'bagels', 'bitesBagel');
+            renderOptionCheckboxes('bitesSchmears', [], 'schmears', 'bitesSchmear');
+            renderPincodeCheckboxes('bitesPincodes', []);
         }
         
         modal.classList.add('active');
@@ -875,7 +1015,10 @@
             imageUrl: currentBitesImageMode === 'url' ? document.getElementById('bitesImageUrl').value.trim() : currentBitesImageUrl,
             isAvailable: document.getElementById('bitesAvailable').checked,
             isBagelBites: true,
-            bagelCount: 0 // Bagel bites don't need bagel selection
+            bagelCount: 0,
+            availableBagels: getSelectedOptionValues('bitesBagel'),
+            availableSchmears: getSelectedOptionValues('bitesSchmear'),
+            allowedPincodes: getSelectedPincodes('bitesPincodes')
         };
 
         if (!data.id || !data.name || !data.price) {
@@ -1048,6 +1191,7 @@
                 document.getElementById('itemPrice').value = item.price;
                 document.getElementById('itemIsAvailable').checked = item.isAvailable !== false;
                 document.getElementById('itemImageUrl').value = item.imageUrl || '';
+                renderPincodeCheckboxes('itemPincodes', item.allowedPincodes || item.availablePincodes || []);
                 if (item.imageUrl) {
                     currentImageUrl = item.imageUrl;
                     document.getElementById('imagePreview').src = item.imageUrl;
@@ -1064,6 +1208,7 @@
             document.getElementById('itemForm').reset();
             document.getElementById('itemIsAvailable').checked = true;
             document.getElementById('itemImageFile').value = '';
+            renderPincodeCheckboxes('itemPincodes', []);
         }
         modal.classList.add('active');
     }
@@ -1190,8 +1335,9 @@
             imageUrl = currentImageUrl || '';
         }
         const isAvailable = document.getElementById('itemIsAvailable').checked;
+        const allowedPincodes = getSelectedPincodes('itemPincodes');
 
-        const data = { id: itemId, name, category, price, imageUrl, isAvailable };
+        const data = { id: itemId, name, category, price, imageUrl, isAvailable, allowedPincodes };
 
         try {
             let response;

@@ -24,7 +24,28 @@ const MENU_CACHE_KEY = `rr_menu_cache_${DEPLOY_VERSION}`;
 const COMBO_CACHE_KEY = `rr_combo_cache_${DEPLOY_VERSION}`;
 const BOXES_CACHE_KEY = `rr_boxes_cache_${DEPLOY_VERSION}`;
 const ALL_DATA_CACHE_KEY = `rr_all_data_cache_${DEPLOY_VERSION}`; // Combined cache
+const MENU_PINCODE_KEY = 'rr_menu_pincode';
 const CACHE_MAX_AGE = 60 * 1000; // 60 seconds - balance between speed and freshness
+
+function normalizeAllowedPincodes(value) {
+  if (!value) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return [...new Set(values
+    .flatMap(v => String(v).split(',') || [])
+    .map(v => String(v).trim())
+    .filter(Boolean))];
+}
+
+function getSelectedPincode() {
+  return (localStorage.getItem(MENU_PINCODE_KEY) || '').trim();
+}
+
+function isItemAvailableForPincode(item, selectedPincode) {
+  if (!selectedPincode) return true;
+  const allowedPincodes = normalizeAllowedPincodes(item?.allowedPincodes || item?.availablePincodes || []);
+  if (allowedPincodes.length === 0) return true;
+  return allowedPincodes.includes(String(selectedPincode));
+}
 
 function getCachedData(key) {
   try {
@@ -56,15 +77,18 @@ async function renderCombo(menuItems, comboSettings) {
       return;
     }
 
+    const selectedPincode = getSelectedPincode();
     const availableBagels = menuItems.filter(item => 
       item.category?.toLowerCase() === 'bagels' && 
       item.isAvailable !== false &&
-      comboSettings.availableBagels.includes(item.id)
+      comboSettings.availableBagels.includes(item.id) &&
+      isItemAvailableForPincode(item, selectedPincode)
     );
     const availableSchmears = menuItems.filter(item => 
       item.category?.toLowerCase() === 'schmears' && 
       item.isAvailable !== false &&
-      comboSettings.availableSchmears.includes(item.id)
+      comboSettings.availableSchmears.includes(item.id) &&
+      isItemAvailableForPincode(item, selectedPincode)
     );
 
     if (availableBagels.length === 0 || availableSchmears.length === 0) {
@@ -86,17 +110,17 @@ async function renderCombo(menuItems, comboSettings) {
       : `₹${Number(originalPrice).toFixed(2)}`;
 
     comboContainer.innerHTML = `
-      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Combo" data-price="${discountedPrice}">
+      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${discountedPrice}">
         <div class="combo-selectors">
           <div class="combo-selector-group">
-            <label for="comboBagelSelect">Choose your bagel:</label>
+            <label for="comboBagelSelect">Choose your bagel for the sandwich:</label>
             <select id="comboBagelSelect" class="combo-select" data-type="bagel">
               <option value="">Select a bagel</option>
               ${availableBagels.map(b => `<option value="${b.id}" data-name="${b.name}">${b.name}</option>`).join('')}
             </select>
           </div>
           <div class="combo-selector-group">
-            <label for="comboSchmearSelect">Choose your schmear:</label>
+            <label for="comboSchmearSelect">Choose the schmear to add inside:</label>
             <select id="comboSchmearSelect" class="combo-select" data-type="schmear">
               <option value="">Select a schmear</option>
               ${availableSchmears.map(s => `<option value="${s.id}" data-name="${s.name}">${s.name}</option>`).join('')}
@@ -495,28 +519,32 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
 
   const renderBoxCards = (target, targetBoxes) => {
     if (!target) return;
+    const selectedPincode = getSelectedPincode();
     target.innerHTML = targetBoxes.map(box => {
       const isBites = isBagelBitesBox(box);
       const biteCount = isBites ? (Number(box.biteCount) || 18) : 0;
       const bagelCount = isBites ? 0 : (Number(box.bagelCount) || 0);
       const schmearCount = Number(box.schmearCount) || 0;
+      const unavailableForPincode = !!selectedPincode && !isItemAvailableForPincode(box, selectedPincode);
       
       return `
-    <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
+    <div class="menu-item box-item${unavailableForPincode ? ' menu-item--unavailable' : ''}" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
       ${box.imageUrl ? `<img src="${box.imageUrl}" alt="${box.name}" loading="lazy">` : ''}
       <div class="menu-item-info">
         <h3>${box.name}</h3>
         <p class="box-contents">${getBoxContentsText(box)}</p>
         ${box.description ? `<p class="box-desc">${box.description}</p>` : ''}
         <p class="price">₹${Number(box.price).toFixed(2)}</p>
-        <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
+        <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}' ${unavailableForPincode ? 'disabled' : ''}>ADD</button>
       </div>
+      ${unavailableForPincode ? '<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div>' : ''}
     </div>
   `;
     }).join('');
 
     target.querySelectorAll('.box-add-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.disabled) return;
         const boxData = normalizeBoxForPopup(JSON.parse(btn.dataset.box.replace(/&#39;/g, "'")));
         openBoxPopup(boxData);
       });
@@ -538,6 +566,7 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
 
 // Helper to render menu items to the DOM
 function renderMenuItems(items, MenuItemClass, grid) {
+  const selectedPincode = getSelectedPincode();
   grid.querySelectorAll('.menu-item').forEach(el => el.remove());
 
   const categoryMap = {
@@ -549,29 +578,47 @@ function renderMenuItems(items, MenuItemClass, grid) {
   items
     .filter(data => data.isAvailable !== false)
     .forEach(data => {
-    let html;
-    if (MenuItemClass && MenuItemClass.fromData) {
-      const mi = MenuItemClass.fromData(data);
-      html = mi.renderHTML();
-    } else {
-      html = `<div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">` +
-        `${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}` +
-        `<div class="menu-item-info"><h3>${data.name}</h3><p class="price">₹${Number(data.price).toFixed(2)}</p>` +
-        `<div class="item-controls"><button class="qty-btn minus" data-id="${data.id}">−</button>` +
-        `<span class="qty" data-id="${data.id}">0</span>` +
-        `<button class="qty-btn plus" data-id="${data.id}">+</button></div></div></div>`;
-    }
+      const unavailableForPincode = !!selectedPincode && !isItemAvailableForPincode(data, selectedPincode);
+      let html;
+      if (MenuItemClass && MenuItemClass.fromData) {
+        const mi = MenuItemClass.fromData(data);
+        const originalHtml = mi.renderHTML();
+        const htmlWithClass = originalHtml.replace('class="menu-item"', `class="menu-item${unavailableForPincode ? ' menu-item--unavailable' : ''}"`);
+        html = unavailableForPincode
+          ? htmlWithClass.replace('</div>', `${'<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div></div>'}`)
+          : htmlWithClass;
+        if (unavailableForPincode) {
+          html = html.replace(/<button class="qty-btn minus" data-id="\$\{data.id\}">−<\/button>/g, '<button class="qty-btn minus" data-id="'+data.id+'" disabled>−</button>');
+          html = html.replace(/<button class="qty-btn plus" data-id="\$\{data.id\}">\+<\/button>/g, '<button class="qty-btn plus" data-id="'+data.id+'" disabled>+</button>');
+        }
+      } else {
+        html = `
+          <div class="menu-item${unavailableForPincode ? ' menu-item--unavailable' : ''}" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">
+            ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}
+            <div class="menu-item-info">
+              <h3>${data.name}</h3>
+              <p class="price">₹${Number(data.price).toFixed(2)}</p>
+              <div class="item-controls">
+                <button class="qty-btn minus" data-id="${data.id}" ${unavailableForPincode ? 'disabled' : ''}>−</button>
+                <span class="qty" data-id="${data.id}">0</span>
+                <button class="qty-btn plus" data-id="${data.id}" ${unavailableForPincode ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+            ${unavailableForPincode ? '<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div>' : ''}
+          </div>
+        `;
+      }
 
-    const cat = (data.category || '').trim().toLowerCase();
-    const targetId = categoryMap[cat];
-    if (targetId) {
-      const target = document.getElementById(targetId);
-      if (target) target.insertAdjacentHTML('beforeend', html);
-      else grid.insertAdjacentHTML('beforeend', html);
-    } else {
-      grid.insertAdjacentHTML('beforeend', html);
-    }
-  });
+      const cat = (data.category || '').trim().toLowerCase();
+      const targetId = categoryMap[cat];
+      if (targetId) {
+        const target = document.getElementById(targetId);
+        if (target) target.insertAdjacentHTML('beforeend', html);
+        else grid.insertAdjacentHTML('beforeend', html);
+      } else {
+        grid.insertAdjacentHTML('beforeend', html);
+      }
+    });
 
   // Restore cart quantities
   try {
@@ -586,10 +633,113 @@ function renderMenuItems(items, MenuItemClass, grid) {
   } catch (e) {}
 }
 
+function ensurePincodeGate() {
+  let gate = document.getElementById('pincodeGate');
+  if (gate) return gate;
+
+  gate = document.createElement('div');
+  gate.id = 'pincodeGate';
+  gate.className = 'pincode-gate-overlay active';
+  gate.innerHTML = `
+    <div class="pincode-gate-card">
+      <div id="pincodeEntryState">
+        <h3>Enter your pincode</h3>
+        <p>Choose the delivery pincode to see what’s available in your area.</p>
+        <div class="pincode-gate-form">
+          <input id="menuPincodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 400001" />
+          <button id="menuPincodeSubmit" type="button">Continue</button>
+        </div>
+        <div id="menuPincodeError" class="pincode-gate-error"></div>
+      </div>
+
+      <div id="pincodeUnavailableState" style="display:none;">
+        <h3>Sorry</h3>
+        <p>We don’t deliver to your location yet, but we’re working hard on it.</p>
+        <button id="pincodeContinueAnyway" class="pincode-warning-button" type="button">Continue to menu</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(gate);
+
+  const input = gate.querySelector('#menuPincodeInput');
+  const submit = gate.querySelector('#menuPincodeSubmit');
+  const error = gate.querySelector('#menuPincodeError');
+  const entryState = gate.querySelector('#pincodeEntryState');
+  const unavailableState = gate.querySelector('#pincodeUnavailableState');
+  const continueAnyway = gate.querySelector('#pincodeContinueAnyway');
+
+  const showUnavailableState = () => {
+    entryState.style.display = 'none';
+    unavailableState.style.display = 'block';
+  };
+
+  const showEntryState = () => {
+    entryState.style.display = 'block';
+    unavailableState.style.display = 'none';
+    error.classList.remove('visible');
+  };
+
+  submit.addEventListener('click', async () => {
+    const value = input.value.trim();
+    if (!value) {
+      error.textContent = 'Please enter a pincode.';
+      error.classList.add('visible');
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/pincodes', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Unable to validate pincode');
+      const pincodes = await response.json();
+      const validCodes = (pincodes || []).map(p => String(p.code));
+      if (!validCodes.includes(value)) {
+        showUnavailableState();
+        continueAnyway.dataset.pincode = value;
+        return;
+      }
+
+      localStorage.setItem(MENU_PINCODE_KEY, value);
+      error.classList.remove('visible');
+      gate.classList.remove('active');
+      renderMenu();
+    } catch (e) {
+      console.error('Pincode validation failed', e);
+      error.textContent = 'Unable to validate pincode right now. Please try again.';
+      error.classList.add('visible');
+    }
+  });
+
+  continueAnyway.addEventListener('click', () => {
+    const value = (continueAnyway.dataset.pincode || input.value.trim());
+    if (value) {
+      localStorage.setItem(MENU_PINCODE_KEY, value);
+    }
+    gate.classList.remove('active');
+    renderMenu();
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      submit.click();
+    }
+  });
+
+  showEntryState();
+  return gate;
+}
+
 async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
   if (!grid) return;
+
+  const selectedPincode = getSelectedPincode();
+  if (!selectedPincode) {
+    ensurePincodeGate();
+    if (loader) loader.style.display = 'none';
+    return;
+  }
 
   let MenuItemClass = null;
   try {

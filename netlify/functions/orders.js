@@ -286,8 +286,8 @@ async function handlePost(body) {
         subtotal += lineTotal;
         
         const comboName = combo.bagelName && combo.schmearName 
-          ? `Combo: ${combo.bagelName} + ${combo.schmearName}`
-          : "Bagel & Schmear Combo";
+          ? `Bagel & Schmear Sandwich: ${combo.bagelName} + ${combo.schmearName}`
+          : "Bagel & Schmear Sandwich";
         
         lineItems.push({
           menuItemId: "combo_bagel_schmear",
