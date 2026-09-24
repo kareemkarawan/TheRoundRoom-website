@@ -1258,7 +1258,7 @@ footer {
 
 @media (max-width: 600px) {
 	.category-grid {
-		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		grid-template-columns: 1fr;
 		justify-items: center;
 		gap: 0.85rem;
 		width: calc(100% - 0.75rem);
@@ -1266,8 +1266,9 @@ footer {
 	}
 
 	.category-grid .menu-item {
-		width: min(100%, 260px);
-		max-width: 260px;
+		width: 100%;
+		max-width: 420px;
+		/* or remove max-width entirely for full-width */
 		margin: 0 auto;
 	}
 
