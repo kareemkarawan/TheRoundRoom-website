@@ -1804,8 +1804,17 @@ footer {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 	gap: 1rem;
-	width: 100%;
-	margin-top: 1rem;
+	width: min(100%, 900px);
+	margin: 1rem auto 0;
+}
+
+.menu-loader.is-loading-skeleton {
+	padding: 0;
+	text-align: left;
+}
+
+.menu-loader.is-loading-skeleton::before {
+	display: none;
 }
 
 .skeleton-card {

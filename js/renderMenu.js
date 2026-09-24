@@ -859,6 +859,7 @@ async function renderMenu() {
     // No cache - show loading indicator
     if (loader) {
       loader.classList.remove('error');
+      loader.classList.add('is-loading-skeleton');
       loader.style.display = '';
       loader.innerHTML = `
         <div class="skeleton-grid">
@@ -942,6 +943,7 @@ async function renderMenu() {
     }
 
     if (loader) {
+      loader.classList.remove('is-loading-skeleton');
       loader.innerHTML = '';
       loader.style.display = 'none';
     }
