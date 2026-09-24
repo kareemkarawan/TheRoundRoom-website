@@ -1788,6 +1788,10 @@ footer {
 }
 
 .menu-loader::before {
+	display: none;
+}
+
+.menu-loader.error::before {
 	content: "";
 	display: inline-block;
 	width: 16px;
