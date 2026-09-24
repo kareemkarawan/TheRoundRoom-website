@@ -1258,7 +1258,21 @@ footer {
 
 @media (max-width: 600px) {
 	.category-grid {
-		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		justify-items: center;
+		gap: 0.85rem;
+		width: calc(100% - 0.75rem);
+		margin: 0 auto 1rem;
+	}
+
+	.category-grid .menu-item {
+		width: min(100%, 260px);
+		max-width: 260px;
+		margin: 0 auto;
+	}
+
+	.menu-item {
+		min-width: 0;
 	}
 }
 
