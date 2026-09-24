@@ -1,16 +1,6 @@
 <!DOCTYPE html>
-<!--
-  FILE: production.html
-  PURPOSE: Admin page showing tomorrow's orders with production totals for each menu item.
-  
-  NOTES:
-  - Requires admin token via AdminGate authentication
-  - Displays all orders scheduled for tomorrow
-  - Shows aggregated item counts at bottom for production planning
-  - Helps staff know what quantities to prepare
-  - Back button returns to staff orders page (/pookie)
--->
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,9 +8,11 @@
     <link rel="stylesheet" href="style.css?v=1784299120714">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js?v=1784299120714"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
 </head>
+
 <body class="staff-page">
     <nav class="top-nav">
         <div class="container">
@@ -57,7 +49,7 @@
                 <section style="border-top: 3px solid var(--rr-bg); padding-top: 2rem;">
                     <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--rr-bg);">Production Totals</h3>
                     <p class="muted" style="margin-bottom: 1.5rem;">Total quantities needed for tomorrow's orders</p>
-                    
+
                     <div id="totalsContainer"></div>
                 </section>
             </div>
@@ -82,9 +74,9 @@
             try {
                 const response = await fetch('/.netlify/functions/orders?production=1', {
                     method: 'GET',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'x-admin-token': token 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-token': token
                     }
                 });
 
@@ -96,15 +88,15 @@
                 if (!response.ok) throw new Error('Failed to load production data');
 
                 const data = await response.json();
-                
+
                 // Update date header
                 if (data.date) {
                     const date = new Date(data.date);
-                    const formatted = date.toLocaleDateString('en-IN', { 
+                    const formatted = date.toLocaleDateString('en-IN', {
                         weekday: 'long',
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
                     });
                     dateEl.textContent = `Orders for ${formatted}`;
                 }
@@ -125,7 +117,7 @@
 
         function renderOrders(orders) {
             const container = document.getElementById('ordersContainer');
-            
+
             if (orders.length === 0) {
                 container.innerHTML = '<p class="muted">No orders scheduled for tomorrow.</p>';
                 return;
@@ -134,7 +126,7 @@
             container.innerHTML = orders.map(order => {
                 const items = order.items.map(item => {
                     let itemName = item.name || 'Unknown Item';
-                    
+
                     // Handle combo items
                     if (item.isCombo) {
                         // For old orders, bagelName/schmearName might be missing, show combo name
@@ -154,12 +146,12 @@
                                 .map(([name, count]) => count > 1 ? `${count}× ${name}` : name)
                                 .join(', ');
                         };
-                        
+
                         const bagelList = formatSelections(item.selectedBagels || []);
                         const schmearList = formatSelections(item.selectedSchmears || []);
                         itemName = `${item.boxName || item.name || 'Box'}<br><small style="color: #666;">Bagels: ${bagelList}<br>Schmears: ${schmearList}</small>`;
                     }
-                    
+
                     return `<li>${item.qty}× ${itemName}</li>`;
                 }).join('');
 
@@ -186,7 +178,7 @@
 
         function renderTotals(itemTotals) {
             const container = document.getElementById('totalsContainer');
-            
+
             if (Object.keys(itemTotals).length === 0) {
                 container.innerHTML = '<p class="muted">No items to produce.</p>';
                 return;
@@ -264,4 +256,5 @@
         });
     </script>
 </body>
+
 </html>

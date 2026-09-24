@@ -1,27 +1,14 @@
 <!DOCTYPE html>
-<!--
-  FILE: collections-admin.html
-  PURPOSE: Admin page for managing collection (pickup) orders with a mobile-optimized card interface.
-  
-  NOTES:
-  - Requires admin token via AdminGate authentication
-  - Toggle to enable/disable collection at popup feature
-  - Displays PAID, PREPARING, READY orders only (orderType=collection)
-  - Card-based UI optimized for mobile staff use
-  - "Mark as Collected" button updates order status to COMPLETED
-  - Auto-refresh every 30 seconds for real-time updates
-  - Smooth card removal animation on completion
-  - Order notes highlighted in yellow for visibility
-  - Settings update via /.netlify/functions/settings API
--->
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collections - The Round Room</title>
     <link rel="stylesheet" href="style.css?v=1784299120714">
     <link rel="icon" type="image/png" href="images/Icon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <style>
         .collections-page {
@@ -30,6 +17,7 @@
             padding: 1rem;
             padding-top: 1rem;
         }
+
         .collections-header {
             display: flex;
             justify-content: space-between;
@@ -38,11 +26,13 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
+
         .collections-header h1 {
             font-size: 1.5rem;
             color: var(--rr-bg);
             margin: 0;
         }
+
         .toggle-container {
             display: flex;
             align-items: center;
@@ -50,23 +40,27 @@
             background: #fff;
             padding: 0.75rem 1rem;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
+
         .toggle-label {
             font-size: 0.9rem;
             color: #333;
             font-weight: 500;
         }
+
         .toggle-switch {
             position: relative;
             width: 52px;
             height: 28px;
         }
+
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
+
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -75,6 +69,7 @@
             border-radius: 28px;
             transition: 0.3s;
         }
+
         .toggle-slider:before {
             position: absolute;
             content: "";
@@ -86,70 +81,84 @@
             border-radius: 50%;
             transition: 0.3s;
         }
-        .toggle-switch input:checked + .toggle-slider {
+
+        .toggle-switch input:checked+.toggle-slider {
             background: var(--rr-bg);
         }
-        .toggle-switch input:checked + .toggle-slider:before {
+
+        .toggle-switch input:checked+.toggle-slider:before {
             transform: translateX(24px);
         }
+
         .orders-list {
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
+
         .collection-card {
             background: #fff;
             border-radius: 16px;
             padding: 1.25rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             border-left: 5px solid var(--rr-bg);
         }
+
         .collection-card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 1rem;
         }
+
         .customer-name {
             font-size: 1.35rem;
             font-weight: 700;
             color: var(--rr-bg);
             margin: 0;
         }
+
         .order-number {
             font-size: 0.8rem;
             color: #888;
             margin-top: 0.25rem;
         }
+
         .order-time {
             font-size: 0.85rem;
             color: #666;
             text-align: right;
         }
+
         .order-items {
             background: #f9f7f5;
             border-radius: 10px;
             padding: 1rem;
             margin-bottom: 1rem;
         }
+
         .order-item {
             display: flex;
             justify-content: space-between;
             padding: 0.5rem 0;
-            border-bottom: 1px dashed rgba(0,0,0,0.08);
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
             font-size: 1rem;
         }
+
         .order-item:last-child {
             border-bottom: none;
         }
+
         .item-qty {
             font-weight: 700;
             color: var(--rr-bg);
             margin-right: 0.5rem;
         }
+
         .item-name {
             flex: 1;
         }
+
         .order-note {
             background: #fff9e6;
             border: 1px solid #f5e6b3;
@@ -159,10 +168,12 @@
             font-size: 0.9rem;
             color: #806600;
         }
+
         .order-note strong {
             display: block;
             margin-bottom: 0.25rem;
         }
+
         .complete-btn {
             width: 100%;
             padding: 1rem;
@@ -175,19 +186,23 @@
             cursor: pointer;
             transition: all 200ms ease;
         }
+
         .complete-btn:active {
             transform: scale(0.98);
             opacity: 0.9;
         }
+
         .empty-state {
             text-align: center;
             padding: 3rem 1rem;
             color: #888;
         }
+
         .empty-state h2 {
             color: var(--rr-bg);
             margin-bottom: 0.5rem;
         }
+
         .refresh-btn {
             position: fixed;
             bottom: 1.5rem;
@@ -205,9 +220,11 @@
             align-items: center;
             justify-content: center;
         }
+
         .refresh-btn:active {
             transform: scale(0.95);
         }
+
         .back-link {
             color: var(--rr-bg);
             text-decoration: none;
@@ -217,17 +234,20 @@
             gap: 0.35rem;
             margin-bottom: 1rem;
         }
+
         .loading-message {
             text-align: center;
             padding: 2rem;
             color: #666;
         }
+
         .box-item-details {
             display: flex;
             flex-direction: column;
             gap: 0.1rem;
             margin-top: 0.25rem;
         }
+
         .box-item-details small {
             color: #888;
             font-size: 0.8rem;
@@ -235,10 +255,11 @@
         }
     </style>
 </head>
+
 <body>
     <main class="collections-page">
         <a href="/pookie" class="back-link">← Back to Orders</a>
-        
+
         <div class="collections-header">
             <h1>Collection Orders</h1>
             <div class="toggle-container">
@@ -317,15 +338,15 @@
         async function loadCollectionOrders() {
             const container = document.getElementById('ordersList');
             container.innerHTML = '<div class="loading-message">Loading collection orders...</div>';
-            
+
             try {
                 const res = await fetch('/.netlify/functions/orders?orderType=collection&status=PAID,PREPARING,READY', {
                     headers: { 'x-admin-token': ADMIN_TOKEN }
                 });
                 if (!res.ok) throw new Error('Failed to fetch orders');
-                
+
                 const orders = await res.json();
-                
+
                 if (!orders || orders.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -340,7 +361,7 @@
                     const createdAt = new Date(order.createdAt);
                     const timeStr = createdAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
                     const dateStr = createdAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-                    
+
                     const itemsHtml = (order.items || []).map(item => {
                         let detailsHtml = '';
                         if (item.isBox && (item.selectedBagels?.length || item.selectedSchmears?.length)) {
@@ -361,7 +382,7 @@
                         </div>
                     `;
                     }).join('');
-                    
+
                     const noteHtml = order.customer?.note ? `
                         <div class="order-note">
                             <strong>Note:</strong>
@@ -389,7 +410,7 @@
                         </div>
                     `;
                 }).join('');
-                
+
             } catch (e) {
                 console.error('Error loading orders:', e);
                 container.innerHTML = '<div class="empty-state"><p>Failed to load orders. Please try again.</p></div>';
@@ -398,7 +419,7 @@
 
         async function completeOrder(orderNumber) {
             if (!confirm('Mark this order as collected?')) return;
-            
+
             try {
                 const res = await fetch(`/.netlify/functions/orders?orderNumber=${encodeURIComponent(orderNumber)}`, {
                     method: 'PATCH',
@@ -408,7 +429,7 @@
                     },
                     body: JSON.stringify({ status: 'COMPLETED' })
                 });
-                
+
                 if (res.ok) {
                     const card = document.querySelector(`[data-order="${orderNumber}"]`);
                     if (card) {
@@ -443,4 +464,5 @@
         });
     </script>
 </body>
+
 </html>

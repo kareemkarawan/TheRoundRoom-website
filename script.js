@@ -1,21 +1,3 @@
-/**
- * FILE: script.js
- * PURPOSE: Main site script handling navigation, carousel, cart, checkout, payments, and authentication.
- *
- * NOTES:
- * - Handles hamburger menu toggle and mobile nav behavior
- * - Implements carousel with keyboard, touch, and button navigation
- * - Manages mobile bottom sheet cart with drag gestures
- * - Cart state synced to localStorage (key: rr_cart)
- * - Checkout flow integrates with Razorpay payment gateway
- * - Store open/closed status fetched from /.netlify/functions/settings
- * - User authentication via JWT tokens stored in rr_token
- * - Auto-logout after 30 minutes of inactivity
- * - PDF receipt generation using jsPDF library
- * - Discount codes support for logged-in users only
- * - Combos stored in window._rrCombos array with unique IDs
- * - Box sets stored in window._rrBoxes array with unique IDs and selected items
- */
 
 // Global array to store confirmed combos
 window._rrCombos = [];
@@ -32,14 +14,14 @@ window._rrBoxes = [];
             window._rrCombos = (cart.items || []).filter(item => item.isCombo) || [];
             window._rrBoxes = (cart.items || []).filter(item => item.isBox) || [];
         }
-    } catch (e) {}
+    } catch (e) { }
 })();
 
 // Add a confirmed combo to the cart
 function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) {
     const comboId = `combo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     const displayName = `Bagel & Schmear Sandwich: ${bagelName} + ${schmearName}`;
-    
+
     window._rrCombos.push({
         id: comboId,
         name: displayName,
@@ -52,14 +34,14 @@ function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) 
         bagelName,
         schmearName
     });
-    
+
     updateCart();
 }
 
 // Add a box set with selected bagels and schmears to the cart
-window.addBoxToCart = function(boxData, selectedBagels, selectedSchmears) {
+window.addBoxToCart = function (boxData, selectedBagels, selectedSchmears) {
     const boxId = `box_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    
+
     // Consolidate duplicates into count format: "2x Plain, 1x Everything"
     function consolidateItems(items) {
         const counts = {};
@@ -68,11 +50,11 @@ window.addBoxToCart = function(boxData, selectedBagels, selectedSchmears) {
             .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
             .join(', ');
     }
-    
+
     const bagelsStr = consolidateItems(selectedBagels);
     const schmearsStr = selectedSchmears.length > 0 ? consolidateItems(selectedSchmears) : 'None';
     const displayName = `${boxData.name}`;
-    
+
     window._rrBoxes.push({
         id: boxId,
         name: displayName,
@@ -91,7 +73,7 @@ window.addBoxToCart = function(boxData, selectedBagels, selectedSchmears) {
         bagelsStr,
         schmearsStr
     });
-    
+
     updateCart();
 };
 
@@ -143,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 track.style.transition = '';
             }
             // update active/prev/next classes first so they animate concurrently with the transform
-            slides.forEach(function (s) { s.classList.remove('active','prev','next'); });
+            slides.forEach(function (s) { s.classList.remove('active', 'prev', 'next'); });
             slide.classList.add('active');
             // (prev/next classes already applied above)
             track.style.transform = 'translateX(' + translateX + 'px)';
@@ -213,10 +195,10 @@ function setBottomSheetState(state) {
     const sheet = document.getElementById('cartBottomSheet');
     const overlay = document.getElementById('bottomSheetOverlay');
     if (!sheet) return;
-    
+
     bottomSheetState = state;
     sheet.className = 'cart-bottom-sheet ' + state;
-    
+
     if (overlay) {
         if (state === 'expanded') {
             overlay.classList.add('visible');
@@ -234,51 +216,51 @@ function toggleBottomSheet() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const sheet = document.getElementById('cartBottomSheet');
     const handle = document.getElementById('sheetHandle');
     const header = document.getElementById('sheetHeader');
     const overlay = document.getElementById('bottomSheetOverlay');
     const checkoutBtn = document.getElementById('sheetCheckoutBtn');
-    
+
     if (!sheet) return;
-    
+
     if (overlay) {
-        overlay.addEventListener('click', function() {
+        overlay.addEventListener('click', function () {
             setBottomSheetState('peek');
         });
     }
-    
+
     if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', function(e) {
+        checkoutBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             const mainCheckoutBtn = document.getElementById('checkoutBtn');
             if (mainCheckoutBtn) mainCheckoutBtn.click();
         });
     }
-    
+
     function startDrag(clientY) {
         sheetDragging = true;
         sheetDidMove = false;
         sheetStartY = clientY;
         sheetCurrentY = clientY;
     }
-    
+
     function moveDrag(clientY) {
         if (!sheetDragging) return;
-        
+
         const diff = clientY - sheetStartY;
-        
+
         if (Math.abs(diff) > 10) {
             sheetDidMove = true;
             sheet.style.transition = 'none';
         }
-        
+
         if (!sheetDidMove) return;
-        
+
         sheetCurrentY = clientY;
         const windowHeight = window.innerHeight;
-        
+
         let baseTranslateY;
         if (bottomSheetState === 'peek') {
             baseTranslateY = windowHeight - 72;
@@ -287,22 +269,22 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             baseTranslateY = windowHeight;
         }
-        
+
         const newTranslateY = Math.max(0, Math.min(windowHeight - 72, baseTranslateY + diff));
         sheet.style.transform = `translateY(${newTranslateY}px)`;
     }
-    
+
     function endDrag() {
         if (!sheetDragging) return;
-        
+
         const wasDrag = sheetDidMove;
         sheetDragging = false;
         sheet.style.transition = '';
         sheet.style.transform = '';
-        
+
         if (wasDrag) {
             const diff = sheetCurrentY - sheetStartY;
-            
+
             if (Math.abs(diff) > 50) {
                 if (diff < 0) {
                     setBottomSheetState('expanded');
@@ -315,27 +297,27 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             toggleBottomSheet();
         }
-        
+
         sheetDidMove = false;
     }
-    
-    sheet.addEventListener('touchstart', function(e) {
+
+    sheet.addEventListener('touchstart', function (e) {
         const rect = sheet.getBoundingClientRect();
         const touchY = e.touches[0].clientY - rect.top;
         if (touchY < 90) {
             startDrag(e.touches[0].clientY);
         }
     }, { passive: true });
-    
-    document.addEventListener('touchmove', function(e) {
+
+    document.addEventListener('touchmove', function (e) {
         if (sheetDragging) {
             moveDrag(e.touches[0].clientY);
         }
     }, { passive: true });
-    
+
     document.addEventListener('touchend', endDrag);
-    
-    sheet.addEventListener('mousedown', function(e) {
+
+    sheet.addEventListener('mousedown', function (e) {
         const rect = sheet.getBoundingClientRect();
         const mouseY = e.clientY - rect.top;
         if (mouseY < 90) {
@@ -343,13 +325,13 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
         }
     });
-    
-    document.addEventListener('mousemove', function(e) {
+
+    document.addEventListener('mousemove', function (e) {
         if (sheetDragging) {
             moveDrag(e.clientY);
         }
     });
-    
+
     document.addEventListener('mouseup', endDrag);
 });
 
@@ -364,7 +346,7 @@ function adjustSheetQty(itemId, delta) {
                 window._rrCombos.splice(comboIndex, 1);
             }
         }
-    // Check if it's a box item (starts with "box_")
+        // Check if it's a box item (starts with "box_")
     } else if (itemId.startsWith('box_')) {
         const boxIndex = window._rrBoxes.findIndex(b => b.id === itemId);
         if (boxIndex !== -1) {
@@ -392,7 +374,7 @@ function removeSheetItem(itemId) {
         if (comboIndex !== -1) {
             window._rrCombos.splice(comboIndex, 1);
         }
-    // Check if it's a box item (starts with "box_")
+        // Check if it's a box item (starts with "box_")
     } else if (itemId.startsWith('box_')) {
         const boxIndex = window._rrBoxes.findIndex(b => b.id === itemId);
         if (boxIndex !== -1) {
@@ -415,13 +397,13 @@ function updateCart() {
         const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
         if (!qtyEl) return;
         const qty = parseInt(qtyEl.textContent) || 0;
-                
+
         if (qty > 0) {
             const name = item.dataset.name;
             const price = parseFloat(item.dataset.price);
             const itemTotal = qty * price;
             const isBox = item.dataset.isBox === 'true';
-                    
+
             cartItems.push({ id, name, price, qty, itemTotal, isBox });
             subtotal += itemTotal;
         }
@@ -486,7 +468,7 @@ function updateCart() {
 
     const reviewItemsDiv = document.getElementById('reviewItems');
     if (reviewItemsDiv) {
-        reviewItemsDiv.innerHTML = cartItems.map(item => 
+        reviewItemsDiv.innerHTML = cartItems.map(item =>
             `<div class="review-item">
                 <span>${item.qty}x ${item.name}</span>
                 <span>₹${item.itemTotal.toFixed(2)}</span>
@@ -504,20 +486,20 @@ function updateCart() {
     const sheetSgst = document.getElementById('sheetSgst');
     const sheetCgst = document.getElementById('sheetCgst');
     const sheetTotalFull = document.getElementById('sheetTotalFull');
-    
+
     if (sheetItemCount) sheetItemCount.textContent = `(${totalQty} item${totalQty !== 1 ? 's' : ''})`;
     if (sheetTotal) sheetTotal.textContent = `₹${total.toFixed(2)}`;
     if (sheetSubtotal) sheetSubtotal.textContent = `₹${subtotal.toFixed(2)}`;
     if (sheetSgst) sheetSgst.textContent = `₹${sgst.toFixed(2)}`;
     if (sheetCgst) sheetCgst.textContent = `₹${cgst.toFixed(2)}`;
     if (sheetTotalFull) sheetTotalFull.textContent = `₹${total.toFixed(2)}`;
-    
+
     // Update sheet cart items with +/- and remove buttons
     if (sheetCartItems) {
         if (cartItems.length === 0) {
             sheetCartItems.innerHTML = '<p class="empty-cart">No items added</p>';
         } else {
-            sheetCartItems.innerHTML = cartItems.map(item => 
+            sheetCartItems.innerHTML = cartItems.map(item =>
                 `<div class="sheet-cart-item">
                     <div class="sheet-item-info">
                         <span class="sheet-item-name">${item.name}</span>
@@ -533,7 +515,7 @@ function updateCart() {
             ).join('');
         }
     }
-    
+
     if (totalQty > 0) {
         document.body.classList.add('has-cart-items');
     } else {
@@ -560,7 +542,7 @@ function updateCart() {
     if (cartWarning && cartItems.length > 0) cartWarning.style.display = 'none';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const cartSidebar = document.querySelector('.cart-sidebar');
     const cartToggle = document.getElementById('cartToggle');
 
@@ -572,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (!cartSidebar || !cartToggle) return;
 
-    cartToggle.addEventListener('click', function() {
+    cartToggle.addEventListener('click', function () {
         const isCollapsed = cartSidebar.classList.toggle('collapsed');
         cartToggle.setAttribute('aria-expanded', (!isCollapsed).toString());
     });
@@ -592,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', initCartCollapse);
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const checkoutBtn = document.getElementById('checkoutBtn');
     if (!checkoutBtn) return;
 
@@ -617,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 // Checkout form handling
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const checkoutForm = document.getElementById('checkoutForm');
     if (!checkoutForm) return; // not on this page
 
@@ -626,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.replace('/thankyou');
         return;
     }
-    
+
     let pendingOrderData = null;
     let validPincodes = [];
     let availableDiscounts = [];
@@ -634,9 +616,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let collectionEnabled = false;
 
     // Order type handling (delivery vs collection)
-        function handleOrderTypeChange() {
-            const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'delivery';
-            window._rrOrderType = orderType;
+    function handleOrderTypeChange() {
+        const orderType = document.querySelector('input[name="orderType"]:checked')?.value || 'delivery';
+        window._rrOrderType = orderType;
         const addressSection = document.getElementById('addressSection');
         const pincodeSection = document.getElementById('pincodeSection');
         const addressInput = document.getElementById('address');
@@ -671,8 +653,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (emailSection) emailSection.style.display = 'none';
             if (phoneSection) phoneSection.style.display = 'none';
         }
-            // Trigger discount logic update
-            loadAvailableDiscounts();
+        // Trigger discount logic update
+        loadAvailableDiscounts();
     }
 
     async function loadCollectionSetting() {
@@ -702,7 +684,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const discountSelector = document.getElementById('discountSelector');
         const discountLoginPrompt = document.getElementById('discountLoginPrompt');
         const token = localStorage.getItem('rr_token');
-        
+
         // For collection orders, apply 15% discount automatically and disable further discounts
         if (window._rrOrderType === 'collection') {
             if (discountSelector) {
@@ -716,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         // ...existing code...
-        
+
         // Only fetch profile if user has a token
         if (!token) {
             // User not logged in - show login prompt if discount selector exists
@@ -724,7 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (discountSelector) discountSelector.style.display = 'none';
             return;
         }
-        
+
         try {
             // Fetch user's personal discounts from profile
             const response = await fetch('/.netlify/functions/profile', {
@@ -732,7 +714,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             if (response.ok) {
                 const data = await response.json();
-                
+
                 // Auto-fill email and phone from profile
                 const emailInput = document.getElementById('email');
                 const phoneInput = document.getElementById('phone');
@@ -742,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (phoneInput && data.profile?.phone) {
                     phoneInput.value = data.profile.phone;
                 }
-                
+
                 // Group discounts by discountId and count uses available
                 const discountMap = new Map();
                 (data.profile?.discounts || []).forEach(d => {
@@ -933,7 +915,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const item = cart.items[index];
         const newQty = item.qty + delta;
-        
+
         if (newQty <= 0) {
             removeCartItem(index);
             return;
@@ -945,7 +927,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Recalculate cart totals
         recalculateCartTotals(cart);
-        
+
         localStorage.setItem('rr_cart', JSON.stringify(cart));
         renderCheckoutSummary();
     }
@@ -1062,15 +1044,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate order date is not in the past or before minimum allowed date
             const selectedDate = new Date(orderDate);
             const minDateStr = orderDateInput?.min;
-            
+
             if (minDateStr) {
                 const minDate = new Date(minDateStr);
                 if (selectedDate < minDate) {
                     if (paymentLoading) paymentLoading.style.display = 'none';
-                    const minFormatted = minDate.toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric' 
+                    const minFormatted = minDate.toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
                     });
                     alert(`Please select a date on or after ${minFormatted}.`);
                     return;
@@ -1146,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!created || !created.orderNumber) {
             if (paymentLoading) paymentLoading.style.display = 'none';
             let errMsg = created?.error || 'Failed to create order. Please try again.';
-            
+
             // Check if it's a daily cap error and show a friendly message
             if (created?.dailyCapReached === true || errMsg.toLowerCase().includes('daily order limit')) {
                 if (created?.requestedDate) {
@@ -1158,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     errMsg = 'We\'ve reached our maximum capacity for today. Please check back tomorrow or select a future date for pre-ordering. Thank you for your understanding!';
                 }
             }
-            
+
             alert(errMsg);
             return;
         }
@@ -1312,11 +1294,11 @@ async function initStoreStatus() {
         const modalTitle = document.getElementById('storeStatusTitle');
         const modalClose = modal ? modal.querySelector('.store-status-close') : null;
         const dismissed = sessionStorage.getItem('rr_store_closed_dismissed') === '1';
-        
+
         let messageText = 'Store is currently closed. We are not accepting orders right now.';
         let titleText = 'Store closed';
         let showModal = false;
-        
+
         if (dailyCapReached) {
             titleText = 'Today\'s capacity reached';
             messageText = 'We\'ve reached our maximum capacity for today. You can still place orders for future dates at checkout!';
@@ -1417,14 +1399,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const cart = data.cart || { items: [], subtotal: 0, sgst: 0, cgst: 0, tax: 0, total: 0 };
     const pricing = data.pricing || {};
     const discount = pricing.discount || null;
-    
+
     // Use pricing from server if available, otherwise fallback to cart values
     const subtotal = Number(pricing.subtotal ?? cart.subtotal ?? 0);
     const tax = Number(pricing.tax ?? cart.tax ?? 0);
     const sgst = Number(tax / 2);
     const cgst = Number(tax / 2);
     const total = Number(pricing.total ?? cart.total ?? 0);
-    
+
     // Consolidate duplicate items for display
     function formatBoxSelections(items) {
         if (!items || items.length === 0) return '';
@@ -1434,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
             .join(', ');
     }
-    
+
     const itemsHtml = (cart.items || []).map(item => {
         let detailsHtml = '';
         if (item.isBox && (item.selectedBagels?.length || item.selectedSchmears?.length)) {
@@ -1584,7 +1566,7 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
             const name = item.name || item.title || item.menuItemName || item.menuItemId || item.id || 'Item';
             const price = Number(item.price ?? item.unitPrice ?? item.unit_price ?? 0) || 0;
             const itemTotal = Number(item.itemTotal ?? item.lineTotal ?? item.total ?? (price * qty)) || 0;
-            
+
             // Include box selections
             let boxDetails = null;
             if (item.isBox && (item.selectedBagels?.length || item.selectedSchmears?.length)) {
@@ -1593,7 +1575,7 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
                     schmears: formatBoxSelections(item.selectedSchmears || [])
                 };
             }
-            
+
             return {
                 qty,
                 name: sanitizeText(name),
@@ -1620,8 +1602,8 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
     const amountPaise = Number(orderData?.amount || 0);
     const totalPaid = amountPaise > 0 ? amountPaise / 100 : Number(normalized.total || 0);
     // Calculate rates based on discountedSubtotal if discount exists
-    const discountedSubtotal = normalized.discount 
-        ? normalized.subtotal - (normalized.discount.amount || 0) 
+    const discountedSubtotal = normalized.discount
+        ? normalized.subtotal - (normalized.discount.amount || 0)
         : normalized.subtotal;
     const sgstRate = discountedSubtotal > 0 ? (Number(normalized.sgst || 0) / discountedSubtotal) * 100 : 0;
     const cgstRate = discountedSubtotal > 0 ? (Number(normalized.cgst || 0) / discountedSubtotal) * 100 : 0;
@@ -1704,14 +1686,14 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         y += 4;
         doc.setFontSize(11);
         doc.text(`Subtotal: Rs ${Number(normalized.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
-        
+
         // Add discount line if applicable
         if (normalized.discount) {
             doc.setTextColor(green[0], green[1], green[2]);
             doc.text(`Discount (${normalized.discount.percentage}%): -Rs ${Number(normalized.discount.amount || 0).toFixed(2)}`, 14, y); y += 6;
             doc.setTextColor(0, 0, 0);
         }
-        
+
         doc.text(`SGST (${sgstRate.toFixed(2)}%): Rs ${Number(normalized.sgst || 0).toFixed(2)}`, 14, y); y += 6;
         doc.text(`CGST (${cgstRate.toFixed(2)}%): Rs ${Number(normalized.cgst || 0).toFixed(2)}`, 14, y); y += 6;
         doc.text(`Total Paid: Rs ${Number(totalPaid || 0).toFixed(2)}`, 14, y);
@@ -1769,7 +1751,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!(location.pathname === '/' || location.pathname.endsWith('/index.html'))) return;
     if (sessionStorage.getItem('rr_menu_prefetch')) return;
     sessionStorage.setItem('rr_menu_prefetch', '1');
-    fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () {});
+    fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () { });
 });
 
 /**
@@ -1782,7 +1764,7 @@ document.addEventListener('DOMContentLoaded', function () {
 async function handleLogin(email, password, errorElementId, loadingElementId) {
     const loadingEl = loadingElementId ? document.getElementById(loadingElementId) : null;
     const submitBtn = document.querySelector('.submit-btn');
-    
+
     try {
         // Validate inputs
         if (!email || !password) {
@@ -1821,7 +1803,7 @@ async function handleLogin(email, password, errorElementId, loadingElementId) {
             // Hide loading state
             if (loadingEl) loadingEl.style.display = 'none';
             if (submitBtn) submitBtn.disabled = false;
-            
+
             const message = data.error || "Login failed";
             if (errorElementId) {
                 const errorEl = document.getElementById(errorElementId);
@@ -1848,7 +1830,7 @@ async function handleLogin(email, password, errorElementId, loadingElementId) {
         // Hide loading state
         if (loadingEl) loadingEl.style.display = 'none';
         if (submitBtn) submitBtn.disabled = false;
-        
+
         const message = "An error occurred during login";
         if (errorElementId) {
             const errorEl = document.getElementById(errorElementId);
@@ -1871,7 +1853,7 @@ async function handleLogin(email, password, errorElementId, loadingElementId) {
 async function handleRegister(email, phone, password, errorElementId, loadingElementId) {
     const loadingEl = loadingElementId ? document.getElementById(loadingElementId) : null;
     const submitBtn = document.querySelector('.submit-btn');
-    
+
     try {
         // Validate inputs
         if (!email || !phone || !password) {
@@ -1921,7 +1903,7 @@ async function handleRegister(email, phone, password, errorElementId, loadingEle
             // Hide loading state
             if (loadingEl) loadingEl.style.display = 'none';
             if (submitBtn) submitBtn.disabled = false;
-            
+
             const message = data.error || "Registration failed";
             if (message.includes("already exists")) {
                 alert(message);
@@ -1950,7 +1932,7 @@ async function handleRegister(email, phone, password, errorElementId, loadingEle
         // Hide loading state
         if (loadingEl) loadingEl.style.display = 'none';
         if (submitBtn) submitBtn.disabled = false;
-        
+
         const message = "An error occurred during registration";
         if (errorElementId) {
             const errorEl = document.getElementById(errorElementId);
@@ -2137,22 +2119,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (lastActivity && (now - lastActivity) > INACTIVITY_TIMEOUT) {
             // Auto logout due to inactivity - revoke session server-side
-            
+
             // Call logout API to revoke session (fire and forget)
             fetch("/.netlify/functions/logout", {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
-            }).catch(() => {}); // Ignore errors
-            
+            }).catch(() => { }); // Ignore errors
+
             localStorage.removeItem("rr_token");
             localStorage.removeItem("rr_email");
             localStorage.removeItem("rr_last_activity");
-            
+
             // Update UI if on page
             if (typeof updateAuthNav === "function") {
                 updateAuthNav();
             }
-            
+
             // Redirect to home with message
             if (window.location.pathname !== "/" && window.location.pathname !== "/index.html") {
                 window.location.href = "/?session_expired=1";
@@ -2168,12 +2150,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Track user activity
     const activityEvents = ["mousedown", "keydown", "touchstart", "scroll"];
-    activityEvents.forEach(function(eventName) {
+    activityEvents.forEach(function (eventName) {
         document.addEventListener(eventName, resetInactivityTimer, { passive: true });
     });
 
     // Check on page load
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         checkInactivity();
         if (localStorage.getItem("rr_token")) {
             resetInactivityTimer();
@@ -2181,7 +2163,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Check when tab becomes visible again
-    document.addEventListener("visibilitychange", function() {
+    document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "visible") {
             checkInactivity();
         }
@@ -2192,7 +2174,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // VISITOR COUNTER
 // ============================================
 (function initVisitorCounter() {
-    document.addEventListener('DOMContentLoaded', async function() {
+    document.addEventListener('DOMContentLoaded', async function () {
         const counterEl = document.getElementById('visitorCount');
         if (!counterEl) return;
 
@@ -2202,7 +2184,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 counterEl.textContent = data.totalVisits.toLocaleString();
@@ -2216,7 +2198,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     const data = await res.json();
                     counterEl.textContent = data.totalVisits.toLocaleString();
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
     });
 })();
@@ -2245,7 +2227,7 @@ function createEditorialPanel(editorialItem) {
 function showPanel(index) {
     const container = document.getElementById('editorialContainer');
     if (!container) return; // Element doesn't exist on this page
-    
+
     const editorialItem = editorialData[index];
     const panel = createEditorialPanel(editorialItem);
 
@@ -2260,9 +2242,9 @@ function showPanel(index) {
 function removePanel() {
     const container = document.getElementById('editorialContainer');
     if (!container) return; // Element doesn't exist on this page
-    
+
     const currentPanel = container.querySelector('.editorial-item');
-    
+
     if (currentPanel) {
         currentPanel.classList.add('woosh-out');
         setTimeout(() => {
@@ -2280,7 +2262,7 @@ function rotateEditorial() {
     }, 700);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Only initialize editorial rotation if the container exists (home page)
     if (document.getElementById('editorialContainer')) {
         showPanel(0);

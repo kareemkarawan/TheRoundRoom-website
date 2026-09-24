@@ -1,35 +1,26 @@
 <!DOCTYPE html>
-<!--
-  FILE: pookie.html
-  PURPOSE: Staff orders dashboard for viewing and managing customer orders with status updates.
-  
-  NOTES:
-  - Requires admin token via AdminGate authentication
-  - Orders table with status dropdown (CREATED, PAYMENT_PENDING, PAID, PREPARING, COMPLETED, CANCELLED)
-  - View order details in modal with customer info, items, and pricing
-  - "Clear" hides orders from view (stored in localStorage, not deleted from DB)
-  - Navigation links to: production, menu-admin, discounts-admin, collections-admin, pincodes-admin, settings, admin
-  - Commented-out Valentine's Day feature with fireworks animation (kept for future use)
-  - Real-time status updates via select dropdown
-  - ordersUpdated event listener for external updates
--->
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Round Room</title>   
+    <title>The Round Room</title>
     <link rel="stylesheet" href="style.css?v=1784299120714">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js?v=1784299120714"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
 </head>
+
 <body class="staff-page">
-    <div id="adminGate" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); color:#fff; z-index:5000; display:flex; align-items:center; justify-content:center;">
+    <div id="adminGate"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.85); color:#fff; z-index:5000; display:flex; align-items:center; justify-content:center;">
         <div style="max-width:360px; width:90%; background:#111; padding:1.5rem; border-radius:8px; text-align:center;">
             <h3 style="margin-top:0;">Admin Access</h3>
             <p class="muted" style="color:#ccc;">Enter admin token to continue.</p>
-            <input type="password" id="adminTokenInput" placeholder="Admin token" style="width:100%; padding:0.6rem; margin:0.75rem 0;">
+            <input type="password" id="adminTokenInput" placeholder="Admin token"
+                style="width:100%; padding:0.6rem; margin:0.75rem 0;">
             <button id="adminTokenBtn" class="btn" style="width:100%;">Unlock</button>
             <p id="adminGateError" style="color:#ffb3b3; margin-top:0.75rem; display:none;">Invalid token.</p>
         </div>
@@ -37,9 +28,9 @@
     <nav class="top-nav">
         <div class="container">
             <div class="nav-toggle" onclick="changeHamburger(this)">
-                <div class = "bar1"></div>
-                <div class = "bar2"></div>
-                <div class = "bar3"></div>
+                <div class="bar1"></div>
+                <div class="bar2"></div>
+                <div class="bar3"></div>
             </div>
             <ul class="nav-links" id="TopNav">
                 <li><a href="/production">Production</a></li>
@@ -90,7 +81,9 @@
                     </tr>
                 </thead>
                 <tbody id="ordersTbody">
-                    <tr><td colspan="7" class="muted">Loading orders…</td></tr>
+                    <tr>
+                        <td colspan="7" class="muted">Loading orders…</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -129,144 +122,147 @@
             gap: 0.15rem;
             margin-top: 0.25rem;
         }
+
         .box-order-details small {
             color: #666;
             font-size: 0.8rem;
         }
+
         .checkout-item .left {
             display: flex;
             align-items: flex-start;
             gap: 0.5rem;
         }
+
         .checkout-item .item-info {
             display: flex;
             flex-direction: column;
         }
     </style>
     <script>
-    function fmtDate(iso) {
-        try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
-    }
-
-    // Consolidate duplicate items: ['Plain', 'Plain', 'Everything'] => '2x Plain, Everything'
-    function formatSelections(items) {
-        if (!items || items.length === 0) return '';
-        const counts = {};
-        items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
-        return Object.entries(counts)
-            .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
-            .join(', ');
-    }
-
-    function initValentine() {
-        const yesBtn = document.getElementById('valentineYes');
-        const noBtn = document.getElementById('valentineNo');
-        const message = document.getElementById('valentineMessage');
-        const canvas = document.getElementById('valentineCanvas');
-        if (!yesBtn || !noBtn || !message || !canvas) return;
-
-        let animating = false;
-        let particles = [];
-        let animationId = null;
-
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = Math.max(1, rect.width);
-            canvas.height = Math.max(1, rect.height);
+        function fmtDate(iso) {
+            try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
         }
 
-        function createExplosion(x, y) {
-            const count = 60;
-            for (let i = 0; i < count; i += 1) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 1 + Math.random() * 3.5;
-                particles.push({
-                    x,
-                    y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    life: 60 + Math.random() * 40,
-                    color: `hsl(${Math.random() * 360}, 80%, 60%)`
-                });
+        // Consolidate duplicate items: ['Plain', 'Plain', 'Everything'] => '2x Plain, Everything'
+        function formatSelections(items) {
+            if (!items || items.length === 0) return '';
+            const counts = {};
+            items.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+            return Object.entries(counts)
+                .map(([name, count]) => count > 1 ? `${count}x ${name}` : name)
+                .join(', ');
+        }
+
+        function initValentine() {
+            const yesBtn = document.getElementById('valentineYes');
+            const noBtn = document.getElementById('valentineNo');
+            const message = document.getElementById('valentineMessage');
+            const canvas = document.getElementById('valentineCanvas');
+            if (!yesBtn || !noBtn || !message || !canvas) return;
+
+            let animating = false;
+            let particles = [];
+            let animationId = null;
+
+            function resizeCanvas() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = Math.max(1, rect.width);
+                canvas.height = Math.max(1, rect.height);
             }
-        }
 
-        function step() {
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles = particles.filter(p => p.life > 0);
-            particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.02;
-                p.life -= 1;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
-                ctx.fill();
+            function createExplosion(x, y) {
+                const count = 60;
+                for (let i = 0; i < count; i += 1) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 1 + Math.random() * 3.5;
+                    particles.push({
+                        x,
+                        y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        life: 60 + Math.random() * 40,
+                        color: `hsl(${Math.random() * 360}, 80%, 60%)`
+                    });
+                }
+            }
+
+            function step() {
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles = particles.filter(p => p.life > 0);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.02;
+                    p.life -= 1;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                if (animating || particles.length > 0) {
+                    animationId = requestAnimationFrame(step);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            function startFireworks() {
+                if (animating) return;
+                animating = true;
+                resizeCanvas();
+                createExplosion(canvas.width * 0.3, canvas.height * 0.5);
+                createExplosion(canvas.width * 0.7, canvas.height * 0.4);
+                createExplosion(canvas.width * 0.5, canvas.height * 0.6);
+                step();
+
+                setTimeout(() => {
+                    animating = false;
+                }, 2500);
+            }
+
+            function stopFireworks() {
+                animating = false;
+                particles = [];
+                if (animationId) cancelAnimationFrame(animationId);
+                const ctx = canvas.getContext('2d');
+                if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            yesBtn.addEventListener('click', () => {
+                message.textContent = 'Yay! You made my day 💘';
+                startFireworks();
             });
 
-            if (animating || particles.length > 0) {
-                animationId = requestAnimationFrame(step);
-            } else {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        }
+            noBtn.addEventListener('click', () => {
+                message.textContent = 'Is it too late now to say sorry?';
+                stopFireworks();
+            });
 
-        function startFireworks() {
-            if (animating) return;
-            animating = true;
+            window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
-            createExplosion(canvas.width * 0.3, canvas.height * 0.5);
-            createExplosion(canvas.width * 0.7, canvas.height * 0.4);
-            createExplosion(canvas.width * 0.5, canvas.height * 0.6);
-            step();
-
-            setTimeout(() => {
-                animating = false;
-            }, 2500);
         }
 
-        function stopFireworks() {
-            animating = false;
-            particles = [];
-            if (animationId) cancelAnimationFrame(animationId);
-            const ctx = canvas.getContext('2d');
-            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+        function renderOrders(orders) {
+            const hidden = getHiddenOrders();
+            const visibleOrders = (orders || []).filter(o => !hidden.has(o.orderNumber));
+            const tbody = document.getElementById('ordersTbody');
+            if (!visibleOrders || visibleOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="muted">No orders yet.</td></tr>';
+                return;
+            }
 
-        yesBtn.addEventListener('click', () => {
-            message.textContent = 'Yay! You made my day 💘';
-            startFireworks();
-        });
-
-        noBtn.addEventListener('click', () => {
-            message.textContent = 'Is it too late now to say sorry?';
-            stopFireworks();
-        });
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-    }
-
-    function renderOrders(orders) {
-        const hidden = getHiddenOrders();
-        const visibleOrders = (orders || []).filter(o => !hidden.has(o.orderNumber));
-        const tbody = document.getElementById('ordersTbody');
-        if (!visibleOrders || visibleOrders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="muted">No orders yet.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = visibleOrders.map(o => {
-            const customer = o.customer?.name || '—';
-            const placed = o.createdAt ? fmtDate(o.createdAt) : '—';
-            const status = o.status || 'CREATED';
-            const orderDate = o.orderDate 
-                ? new Date(o.orderDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
-                : '—';
-            return `
+            tbody.innerHTML = visibleOrders.map(o => {
+                const customer = o.customer?.name || '—';
+                const placed = o.createdAt ? fmtDate(o.createdAt) : '—';
+                const status = o.status || 'CREATED';
+                const orderDate = o.orderDate
+                    ? new Date(o.orderDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+                    : '—';
+                return `
                 <tr>
                     <td>${o.orderNumber || '—'}</td>
                     <td>${customer}</td>
@@ -274,35 +270,35 @@
                     <td>${placed}</td>
                     <td>
                         <select data-order="${o.orderNumber}" class="order-status-select">
-                            ${['CREATED','PAYMENT_PENDING','PAID','PREPARING','COMPLETED','CANCELLED'].map(s =>
-                                `<option value="${s}" ${s === status ? 'selected' : ''}>${s}</option>`
-                            ).join('')}
+                            ${['CREATED', 'PAYMENT_PENDING', 'PAID', 'PREPARING', 'COMPLETED', 'CANCELLED'].map(s =>
+                    `<option value="${s}" ${s === status ? 'selected' : ''}>${s}</option>`
+                ).join('')}
                         </select>
                     </td>
                     <td><button class="btn" data-view="${o.orderNumber}">View</button></td>
                     <td><button class="btn btn-delete" data-delete="${o.orderNumber}">Clear</button></td>
                 </tr>
             `;
-        }).join('');
-    }
+            }).join('');
+        }
 
-    function showOrderModal(order) {
-        const modal = document.getElementById('orderModal');
-        const body = document.getElementById('modalBody');
-        if (!modal || !body) return;
+        function showOrderModal(order) {
+            const modal = document.getElementById('orderModal');
+            const body = document.getElementById('modalBody');
+            if (!modal || !body) return;
 
-        const itemsHtml = (order.items || []).map(i => {
-            let detailsHtml = '';
-            // Show selected items for box orders
-            if (i.isBox && (i.selectedBagels?.length || i.selectedSchmears?.length)) {
-                const bagelsFormatted = formatSelections(i.selectedBagels || []);
-                const schmearsFormatted = formatSelections(i.selectedSchmears || []);
-                detailsHtml = `<div class="box-order-details">
+            const itemsHtml = (order.items || []).map(i => {
+                let detailsHtml = '';
+                // Show selected items for box orders
+                if (i.isBox && (i.selectedBagels?.length || i.selectedSchmears?.length)) {
+                    const bagelsFormatted = formatSelections(i.selectedBagels || []);
+                    const schmearsFormatted = formatSelections(i.selectedSchmears || []);
+                    detailsHtml = `<div class="box-order-details">
                     ${bagelsFormatted ? `<small>Bagels: ${bagelsFormatted}</small>` : ''}
                     ${schmearsFormatted ? `<small>Schmears: ${schmearsFormatted}</small>` : ''}
                 </div>`;
-            }
-            return `
+                }
+                return `
             <div class="checkout-item">
                 <div class="left">
                     <span class="qty">${i.qty}x</span>
@@ -314,9 +310,9 @@
                 <div>₹${Number(i.lineTotal || 0).toFixed(2)}</div>
             </div>
         `;
-        }).join('');
+            }).join('');
 
-        body.innerHTML = `
+            body.innerHTML = `
             <h3>Order ${order.orderNumber}</h3>
             <p><strong>Status:</strong> ${order.status}</p>
             <p><strong>Order Type:</strong> ${order.orderType === 'collection' ? 'Collection at Popup' : 'Delivery'}</p>
@@ -334,87 +330,86 @@
             </div>
         `;
 
-        modal.style.display = 'flex';
-        modal.setAttribute('aria-hidden', 'false');
-    }
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        }
 
-    async function loadOrders() {
-        const tbody = document.getElementById('ordersTbody');
-        tbody.innerHTML = '<tr><td colspan="6" class="muted">Loading orders…</td></tr>';
-        const orders = await getOrders();
-        renderOrders(orders);
-    }
+        async function loadOrders() {
+            const tbody = document.getElementById('ordersTbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="muted">Loading orders…</td></tr>';
+            const orders = await getOrders();
+            renderOrders(orders);
+        }
 
-    function bindOrdersTable() {
-        const table = document.getElementById('ordersTable');
-        if (!table) return;
+        function bindOrdersTable() {
+            const table = document.getElementById('ordersTable');
+            if (!table) return;
 
-        table.addEventListener('change', async (e) => {
-            const select = e.target.closest('.order-status-select');
-            if (!select) return;
-            const orderNumber = select.getAttribute('data-order');
-            await updateOrderStatus(orderNumber, select.value);
-        });
+            table.addEventListener('change', async (e) => {
+                const select = e.target.closest('.order-status-select');
+                if (!select) return;
+                const orderNumber = select.getAttribute('data-order');
+                await updateOrderStatus(orderNumber, select.value);
+            });
 
-        table.addEventListener('click', async (e) => {
-            const viewBtn = e.target.closest('[data-view]');
-            const delBtn = e.target.closest('[data-delete]');
-            if (viewBtn) {
-                const orderNumber = viewBtn.getAttribute('data-view');
-                const orders = await getOrders();
-                const order = orders.find(o => o.orderNumber === orderNumber);
-                if (order) showOrderModal(order);
-            }
-            if (delBtn) {
-                const orderNumber = delBtn.getAttribute('data-delete');
-                if (confirm(`Remove order ${orderNumber} from this view?`)) {
-                    hideOrderLocally(orderNumber);
-                    await loadOrders();
+            table.addEventListener('click', async (e) => {
+                const viewBtn = e.target.closest('[data-view]');
+                const delBtn = e.target.closest('[data-delete]');
+                if (viewBtn) {
+                    const orderNumber = viewBtn.getAttribute('data-view');
+                    const orders = await getOrders();
+                    const order = orders.find(o => o.orderNumber === orderNumber);
+                    if (order) showOrderModal(order);
                 }
-            }
-        });
-    }
-
-    function getHiddenOrders() {
-        try {
-            const raw = localStorage.getItem('rr_hidden_orders') || '[]';
-            const parsed = JSON.parse(raw);
-            return new Set(Array.isArray(parsed) ? parsed : []);
-        } catch (e) {
-            return new Set();
-        }
-    }
-
-    function hideOrderLocally(orderNumber) {
-        if (!orderNumber) return;
-        const hidden = getHiddenOrders();
-        hidden.add(orderNumber);
-        try {
-            localStorage.setItem('rr_hidden_orders', JSON.stringify(Array.from(hidden)));
-        } catch (e) { /* ignore */ }
-    }
-
-    document.getElementById('modalClose').addEventListener('click', () => {
-        const modal = document.getElementById('orderModal');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.setAttribute('aria-hidden', 'true');
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        if (window.AdminGate) {
-            window.AdminGate.requireAdminAccess(() => {
-                initValentine();
-                bindOrdersTable();
-                loadOrders();
-                window.addEventListener('ordersUpdated', loadOrders);
+                if (delBtn) {
+                    const orderNumber = delBtn.getAttribute('data-delete');
+                    if (confirm(`Remove order ${orderNumber} from this view?`)) {
+                        hideOrderLocally(orderNumber);
+                        await loadOrders();
+                    }
+                }
             });
         }
-    });
+
+        function getHiddenOrders() {
+            try {
+                const raw = localStorage.getItem('rr_hidden_orders') || '[]';
+                const parsed = JSON.parse(raw);
+                return new Set(Array.isArray(parsed) ? parsed : []);
+            } catch (e) {
+                return new Set();
+            }
+        }
+
+        function hideOrderLocally(orderNumber) {
+            if (!orderNumber) return;
+            const hidden = getHiddenOrders();
+            hidden.add(orderNumber);
+            try {
+                localStorage.setItem('rr_hidden_orders', JSON.stringify(Array.from(hidden)));
+            } catch (e) { /* ignore */ }
+        }
+
+        document.getElementById('modalClose').addEventListener('click', () => {
+            const modal = document.getElementById('orderModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.AdminGate) {
+                window.AdminGate.requireAdminAccess(() => {
+                    initValentine();
+                    bindOrdersTable();
+                    loadOrders();
+                    window.addEventListener('ordersUpdated', loadOrders);
+                });
+            }
+        });
     </script>
 
 </body>
+
 </html>
-
-

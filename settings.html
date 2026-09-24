@@ -1,18 +1,6 @@
 <!DOCTYPE html>
-<!--
-  FILE: settings.html
-  PURPOSE: Admin settings page for configuring store parameters like tax rate, currency, and shop status.
-  
-  NOTES:
-  - Requires admin token via AdminGate authentication
-  - Settings: tax rate, currency, invoice prefix, shop status, min order, collection toggle
-  - Fetches/saves settings via /.netlify/functions/settings API
-  - Shop status controls whether orders can be placed
-  - Collection at Popup option can be enabled/disabled
-  - Navigate back to /pookie (staff orders page)
-  - HTML structure incomplete - missing closing tags (intentional?)
--->
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,15 +8,17 @@
     <link rel="stylesheet" href="style.css?v=1784299120714">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js?v=1784299120714"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
 </head>
+
 <body class="staff-page">
     <nav class="top-nav">
         <div class="container">
             <button class="arrow" onclick="window.location.href='/pookie'">
-                <div class = "bar4"></div>
-                <div class = "bar5"></div>
+                <div class="bar4"></div>
+                <div class="bar5"></div>
             </button>
             <div class="logo">
                 <h1>THE ROUND ROOM</h1>
@@ -74,8 +64,10 @@
 
                 <div class="form-group">
                     <label for="deliveryFee">Delivery Fee (₹)</label>
-                    <input id="deliveryFee" name="deliveryFee" type="number" min="0" max="5000" step="1" placeholder="e.g., 100">
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">Applied for delivery orders below the free-delivery threshold</small>
+                    <input id="deliveryFee" name="deliveryFee" type="number" min="0" max="5000" step="1"
+                        placeholder="e.g., 100">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Applied for delivery orders below
+                        the free-delivery threshold</small>
                 </div>
 
                 <div class="form-group">
@@ -92,25 +84,30 @@
                         <option value="disabled">Disabled - Allow immediate orders</option>
                         <option value="enabled">Enabled - Only accept pre-orders</option>
                     </select>
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">When enabled, customers must select a future date (no immediate orders)</small>
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">When enabled, customers must select
+                        a future date (no immediate orders)</small>
                 </div>
 
                 <div class="form-group">
                     <label for="nextAvailableDate">Next Available Order Date</label>
                     <input id="nextAvailableDate" name="nextAvailableDate" type="date" placeholder="Select date">
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">The earliest date customers can select for delivery/pickup</small>
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">The earliest date customers can
+                        select for delivery/pickup</small>
                 </div>
 
                 <div class="form-group">
                     <label for="leadTimeDays">Lead Time (Days)</label>
                     <input id="leadTimeDays" name="leadTimeDays" type="number" min="0" step="1" placeholder="e.g., 1">
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">Minimum days in advance required for orders (0 = same day allowed)</small>
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Minimum days in advance required
+                        for orders (0 = same day allowed)</small>
                 </div>
 
                 <div class="form-group">
                     <label for="maxAdvanceDays">Max Advance Booking (Days)</label>
-                    <input id="maxAdvanceDays" name="maxAdvanceDays" type="number" min="1" max="90" step="1" value="14" placeholder="e.g., 14">
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">How far in advance customers can place orders</small>
+                    <input id="maxAdvanceDays" name="maxAdvanceDays" type="number" min="1" max="90" step="1" value="14"
+                        placeholder="e.g., 14">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">How far in advance customers can
+                        place orders</small>
                 </div>
 
                 <div class="form-group">
@@ -119,13 +116,16 @@
                         <option value="disabled">Disabled</option>
                         <option value="enabled">Enabled</option>
                     </select>
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">Enable to limit the number of orders per day</small>
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Enable to limit the number of
+                        orders per day</small>
                 </div>
 
                 <div class="form-group">
                     <label for="dailyCapLimit">Daily Order Limit</label>
-                    <input id="dailyCapLimit" name="dailyCapLimit" type="number" min="1" step="1" placeholder="e.g., 50">
-                    <small style="display: block; margin-top: 0.25rem; color: #666;">Maximum number of orders allowed per day (when enabled)</small>
+                    <input id="dailyCapLimit" name="dailyCapLimit" type="number" min="1" step="1"
+                        placeholder="e.g., 50">
+                    <small style="display: block; margin-top: 0.25rem; color: #666;">Maximum number of orders allowed
+                        per day (when enabled)</small>
                 </div>
 
                 <button type="button" class="btn" id="saveSettingsBtn">Save Settings</button>
@@ -160,154 +160,154 @@
 
     <script src="js/admin-gate.js"></script>
     <script>
-    function getAdminToken() {
-        console.debug('[settings] Requesting admin token');
-        const token = window.AdminGate ? window.AdminGate.getToken() : '';
-        console.debug('[settings] Admin token present:', Boolean(token));
-        return token;
-    }
-
-    async function loadSettings() {
-        const token = getAdminToken();
-        if (!token) return;
-        console.debug('[settings] Loading settings');
-        try {
-            const response = await fetch('/.netlify/functions/settings?admin=1', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
-            });
-            if (response.status === 401) {
-                if (window.AdminGate) window.AdminGate.lock();
-                throw new Error('Unauthorized');
-            }
-            if (!response.ok) throw new Error('Failed to load settings');
-            const data = await response.json();
-
-            console.debug('[settings] Loaded settings');
-
-            document.getElementById('taxRate').value = data.taxRate ?? '';
-            document.getElementById('currency').value = data.currency || 'INR';
-            document.getElementById('invoicePrefix').value = data.invoicePrefix || 'ORD';
-            document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
-            document.getElementById('minOrder').value = data.minOrder ?? '';
-            document.getElementById('deliveryFee').value = data.deliveryFee ?? '100';
-            document.getElementById('collectionEnabled').value = data.collectionEnabled === false ? 'disabled' : 'enabled';
-            document.getElementById('preorderOnlyMode').value = data.preorderOnlyMode === true ? 'enabled' : 'disabled';
-            
-            // Pre-order settings
-            if (data.nextAvailableDate) {
-                document.getElementById('nextAvailableDate').value = data.nextAvailableDate;
-            }
-            document.getElementById('leadTimeDays').value = data.leadTimeDays ?? '1';
-            document.getElementById('maxAdvanceDays').value = data.maxAdvanceDays ?? '14';
-            
-            // Daily cap settings
-            document.getElementById('dailyCapEnabled').value = data.dailyCapEnabled === true ? 'enabled' : 'disabled';
-            document.getElementById('dailyCapLimit').value = data.dailyCapLimit ?? '50';
-            
-            // Load weekly capacity table if daily cap is enabled
-            if (data.dailyCapEnabled === true) {
-                loadWeeklyCapacity();
-            }
-        } catch (e) {
-            console.error('[settings] Load failed:', e);
-            alert(`Error loading settings: ${e.message}`);
+        function getAdminToken() {
+            console.debug('[settings] Requesting admin token');
+            const token = window.AdminGate ? window.AdminGate.getToken() : '';
+            console.debug('[settings] Admin token present:', Boolean(token));
+            return token;
         }
-    }
 
-    async function saveSettings() {
-        const token = getAdminToken();
-        if (!token) return;
-        console.debug('[settings] Saving settings');
-        const payload = {
-            taxRate: Number(document.getElementById('taxRate').value || 0),
-            currency: document.getElementById('currency').value.trim() || 'INR',
-            invoicePrefix: document.getElementById('invoicePrefix').value.trim() || 'ORD',
-            storeOpen: document.getElementById('shopStatus').value === 'open',
-            minOrder: Number(document.getElementById('minOrder').value || 0),
-            deliveryFee: Number(document.getElementById('deliveryFee').value || 0),
-            collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled',
-            preorderOnlyMode: document.getElementById('preorderOnlyMode').value === 'enabled',
-            nextAvailableDate: document.getElementById('nextAvailableDate').value || null,
-            leadTimeDays: Number(document.getElementById('leadTimeDays').value || 1),
-            maxAdvanceDays: Number(document.getElementById('maxAdvanceDays').value || 14),
-            dailyCapEnabled: document.getElementById('dailyCapEnabled').value === 'enabled',
-            dailyCapLimit: Number(document.getElementById('dailyCapLimit').value || 50)
-        };
-
-        try {
-            const response = await fetch('/.netlify/functions/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-                body: JSON.stringify(payload)
-            });
-            if (response.status === 401) {
-                if (window.AdminGate) window.AdminGate.lock();
-                throw new Error('Unauthorized');
-            }
-            if (!response.ok) throw new Error('Failed to save settings');
-            console.debug('[settings] Save success');
-            alert('Settings saved');
-            
-            // Reload weekly capacity if daily cap is enabled
-            if (payload.dailyCapEnabled) {
-                loadWeeklyCapacity();
-            }
-        } catch (e) {
-            console.error('[settings] Save failed:', e);
-            alert(`Error saving settings: ${e.message}`);
-        }
-    }
-
-    async function loadWeeklyCapacity() {
-        const token = getAdminToken();
-        if (!token) return;
-        
-        const card = document.getElementById('weeklyCapCard');
-        const loader = document.getElementById('weeklyCapLoader');
-        const table = document.getElementById('weeklyCapTable');
-        const tbody = document.getElementById('weeklyCapBody');
-        
-        card.style.display = 'block';
-        loader.style.display = 'block';
-        table.style.display = 'none';
-        
-        try {
-            const response = await fetch('/.netlify/functions/settings?admin=1&weekly=1', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
-            });
-            
-            if (!response.ok) throw new Error('Failed to load weekly capacity');
-            const data = await response.json();
-            
-            if (!data.weeklyCapacity) {
-                throw new Error('No weekly data available');
-            }
-            
-            tbody.innerHTML = '';
-            
-            data.weeklyCapacity.forEach(day => {
-                const row = document.createElement('tr');
-                row.style.borderBottom = '1px solid #eee';
-                
-                const remaining = day.limit - day.count;
-                const percentage = day.limit > 0 ? (remaining / day.limit) * 100 : 100;
-                
-                let statusColor = '#28a745'; // green
-                let statusText = 'Available';
-                if (percentage <= 0) {
-                    statusColor = '#dc3545'; // red
-                    statusText = 'Full';
-                } else if (percentage <= 25) {
-                    statusColor = '#fd7e14'; // orange
-                    statusText = 'Low';
-                } else if (percentage <= 50) {
-                    statusColor = '#ffc107'; // yellow
-                    statusText = 'Medium';
+        async function loadSettings() {
+            const token = getAdminToken();
+            if (!token) return;
+            console.debug('[settings] Loading settings');
+            try {
+                const response = await fetch('/.netlify/functions/settings?admin=1', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
+                });
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    throw new Error('Unauthorized');
                 }
-                
-                row.innerHTML = `
+                if (!response.ok) throw new Error('Failed to load settings');
+                const data = await response.json();
+
+                console.debug('[settings] Loaded settings');
+
+                document.getElementById('taxRate').value = data.taxRate ?? '';
+                document.getElementById('currency').value = data.currency || 'INR';
+                document.getElementById('invoicePrefix').value = data.invoicePrefix || 'ORD';
+                document.getElementById('shopStatus').value = data.storeOpen === false ? 'closed' : 'open';
+                document.getElementById('minOrder').value = data.minOrder ?? '';
+                document.getElementById('deliveryFee').value = data.deliveryFee ?? '100';
+                document.getElementById('collectionEnabled').value = data.collectionEnabled === false ? 'disabled' : 'enabled';
+                document.getElementById('preorderOnlyMode').value = data.preorderOnlyMode === true ? 'enabled' : 'disabled';
+
+                // Pre-order settings
+                if (data.nextAvailableDate) {
+                    document.getElementById('nextAvailableDate').value = data.nextAvailableDate;
+                }
+                document.getElementById('leadTimeDays').value = data.leadTimeDays ?? '1';
+                document.getElementById('maxAdvanceDays').value = data.maxAdvanceDays ?? '14';
+
+                // Daily cap settings
+                document.getElementById('dailyCapEnabled').value = data.dailyCapEnabled === true ? 'enabled' : 'disabled';
+                document.getElementById('dailyCapLimit').value = data.dailyCapLimit ?? '50';
+
+                // Load weekly capacity table if daily cap is enabled
+                if (data.dailyCapEnabled === true) {
+                    loadWeeklyCapacity();
+                }
+            } catch (e) {
+                console.error('[settings] Load failed:', e);
+                alert(`Error loading settings: ${e.message}`);
+            }
+        }
+
+        async function saveSettings() {
+            const token = getAdminToken();
+            if (!token) return;
+            console.debug('[settings] Saving settings');
+            const payload = {
+                taxRate: Number(document.getElementById('taxRate').value || 0),
+                currency: document.getElementById('currency').value.trim() || 'INR',
+                invoicePrefix: document.getElementById('invoicePrefix').value.trim() || 'ORD',
+                storeOpen: document.getElementById('shopStatus').value === 'open',
+                minOrder: Number(document.getElementById('minOrder').value || 0),
+                deliveryFee: Number(document.getElementById('deliveryFee').value || 0),
+                collectionEnabled: document.getElementById('collectionEnabled').value === 'enabled',
+                preorderOnlyMode: document.getElementById('preorderOnlyMode').value === 'enabled',
+                nextAvailableDate: document.getElementById('nextAvailableDate').value || null,
+                leadTimeDays: Number(document.getElementById('leadTimeDays').value || 1),
+                maxAdvanceDays: Number(document.getElementById('maxAdvanceDays').value || 14),
+                dailyCapEnabled: document.getElementById('dailyCapEnabled').value === 'enabled',
+                dailyCapLimit: Number(document.getElementById('dailyCapLimit').value || 50)
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                    body: JSON.stringify(payload)
+                });
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    throw new Error('Unauthorized');
+                }
+                if (!response.ok) throw new Error('Failed to save settings');
+                console.debug('[settings] Save success');
+                alert('Settings saved');
+
+                // Reload weekly capacity if daily cap is enabled
+                if (payload.dailyCapEnabled) {
+                    loadWeeklyCapacity();
+                }
+            } catch (e) {
+                console.error('[settings] Save failed:', e);
+                alert(`Error saving settings: ${e.message}`);
+            }
+        }
+
+        async function loadWeeklyCapacity() {
+            const token = getAdminToken();
+            if (!token) return;
+
+            const card = document.getElementById('weeklyCapCard');
+            const loader = document.getElementById('weeklyCapLoader');
+            const table = document.getElementById('weeklyCapTable');
+            const tbody = document.getElementById('weeklyCapBody');
+
+            card.style.display = 'block';
+            loader.style.display = 'block';
+            table.style.display = 'none';
+
+            try {
+                const response = await fetch('/.netlify/functions/settings?admin=1&weekly=1', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
+                });
+
+                if (!response.ok) throw new Error('Failed to load weekly capacity');
+                const data = await response.json();
+
+                if (!data.weeklyCapacity) {
+                    throw new Error('No weekly data available');
+                }
+
+                tbody.innerHTML = '';
+
+                data.weeklyCapacity.forEach(day => {
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #eee';
+
+                    const remaining = day.limit - day.count;
+                    const percentage = day.limit > 0 ? (remaining / day.limit) * 100 : 100;
+
+                    let statusColor = '#28a745'; // green
+                    let statusText = 'Available';
+                    if (percentage <= 0) {
+                        statusColor = '#dc3545'; // red
+                        statusText = 'Full';
+                    } else if (percentage <= 25) {
+                        statusColor = '#fd7e14'; // orange
+                        statusText = 'Low';
+                    } else if (percentage <= 50) {
+                        statusColor = '#ffc107'; // yellow
+                        statusText = 'Medium';
+                    }
+
+                    row.innerHTML = `
                     <td style="padding: 0.75rem;">${day.dateFormatted}</td>
                     <td style="padding: 0.75rem;">${day.dayName}</td>
                     <td style="padding: 0.75rem; text-align: right; font-weight: 500;">${day.count}</td>
@@ -318,22 +318,22 @@
                         </span>
                     </td>
                 `;
-                tbody.appendChild(row);
-            });
-            
-            loader.style.display = 'none';
-            table.style.display = 'block';
-        } catch (e) {
-            console.error('[settings] Failed to load weekly capacity:', e);
-            loader.textContent = 'Failed to load weekly capacity data';
-        }
-    }
+                    tbody.appendChild(row);
+                });
 
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
-    document.addEventListener('DOMContentLoaded', () => {
-        if (window.AdminGate) {
-            window.AdminGate.requireAdminAccess(loadSettings);
+                loader.style.display = 'none';
+                table.style.display = 'block';
+            } catch (e) {
+                console.error('[settings] Failed to load weekly capacity:', e);
+                loader.textContent = 'Failed to load weekly capacity data';
+            }
         }
-    });
+
+        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.AdminGate) {
+                window.AdminGate.requireAdminAccess(loadSettings);
+            }
+        });
     </script>
 </body>

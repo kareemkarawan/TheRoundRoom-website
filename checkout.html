@@ -1,38 +1,26 @@
 <!DOCTYPE html>
-<!--
-  FILE: checkout.html
-  PURPOSE: Checkout page where customers enter delivery/collection details and complete payment via Razorpay.
-  
-  NOTES:
-  - Supports two order types: delivery and collection at popup
-  - Pincode validation against allowed delivery areas
-  - Discount codes loaded from API for logged-in users only
-  - Razorpay SDK loaded for payment processing
-  - jsPDF included for receipt generation
-  - Form validation requires: name, address (delivery only), phone, email, pincode (delivery)
-  - Store status banner shows if shop is closed
-  - Payment modal confirms amount before Razorpay checkout
-  - Tax calculation: SGST 2.5% + CGST 2.5%
--->
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Round Room</title>   
+    <title>The Round Room</title>
     <link rel="stylesheet" href="style.css?v=1784299120714">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="script.js?v=1784299120714"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <nav class="top-nav">
         <div class="container">
             <button class="arrow" onclick="window.location.href='/order_page'">
-                <div class = "bar4"></div>
-                <div class = "bar5"></div>
+                <div class="bar4"></div>
+                <div class="bar5"></div>
             </button>
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
@@ -88,9 +76,11 @@
                 </div>
             </div>
 
-            <div class="form-section preorder-only-notice" id="preorderOnlyNotice" style="display: none; background: var(--rr-bg); border-left: 4px solid var(--rr-text); padding: 1rem; margin-bottom: 1.5rem;">
+            <div class="form-section preorder-only-notice" id="preorderOnlyNotice"
+                style="display: none; background: var(--rr-bg); border-left: 4px solid var(--rr-text); padding: 1rem; margin-bottom: 1.5rem;">
                 <p style="margin: 0; font-weight: 500; color: white;">
-                    We are currently only accepting pre-orders for <span id="preorderOnlyDate" style="font-weight: 600;"></span> and after.
+                    We are currently only accepting pre-orders for <span id="preorderOnlyDate"
+                        style="font-weight: 600;"></span> and after.
                 </p>
             </div>
 
@@ -99,18 +89,22 @@
                     <input type="checkbox" id="preorderToggle" name="preorderToggle">
                     <span class="preorder-toggle-label">📅 Pre-order for a specific date</span>
                 </label>
-                <small style="display: block; margin-top: 0.5rem; color: #666;">Check this if you want to schedule your order for a future date</small>
+                <small style="display: block; margin-top: 0.5rem; color: #666;">Check this if you want to schedule your
+                    order for a future date</small>
             </div>
 
             <div class="form-section date-picker-section" id="datePickerSection" style="display: none;">
                 <label for="orderDate" style="color: var(--rr-bg);">Preferred Date *</label>
                 <div class="date-picker-wrapper">
-                    <input id="orderDate" name="orderDate" type="date" class="date-input" style="color: var(--rr-bg) !important; -webkit-text-fill-color: var(--rr-bg) !important; opacity: 1 !important;">
+                    <input id="orderDate" name="orderDate" type="date" class="date-input"
+                        style="color: var(--rr-bg) !important; -webkit-text-fill-color: var(--rr-bg) !important; opacity: 1 !important;">
                 </div>
-                <small id="orderDateHelp" style="display: block; margin-top: 0.25rem; color: #666;">Select your preferred delivery/collection date</small>
-                
+                <small id="orderDateHelp" style="display: block; margin-top: 0.25rem; color: #666;">Select your
+                    preferred delivery/collection date</small>
+
                 <!-- Available dates calendar -->
-                <div id="availableDatesInfo" class="available-dates-info" style="display: none; margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                <div id="availableDatesInfo" class="available-dates-info"
+                    style="display: none; margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #4CAF50;">
                     <div style="margin-bottom: 1rem;">
                         <strong style="color: #333; font-size: 1rem;">Available Dates (Next 2 Weeks)</strong>
                     </div>
@@ -118,13 +112,15 @@
                         Loading available dates...
                     </div>
                 </div>
-                
-                <div id="orderDateError" class="error-message" style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
+
+                <div id="orderDateError" class="error-message"
+                    style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
 
             <div class="form-section">
                 <label for="firstName">First name *</label>
-                <input id="firstName" name="firstName" type="text" required aria-required="true" placeholder="First name">
+                <input id="firstName" name="firstName" type="text" required aria-required="true"
+                    placeholder="First name">
             </div>
 
             <div class="form-section">
@@ -134,24 +130,29 @@
 
             <div class="form-section" id="addressSection">
                 <label for="address">Address *</label>
-                <textarea id="address" name="address" required aria-required="true" placeholder="Street, house number, city"></textarea>
+                <textarea id="address" name="address" required aria-required="true"
+                    placeholder="Street, house number, city"></textarea>
             </div>
 
             <div class="form-section">
                 <label for="phone">Phone number *</label>
-                <input id="phone" name="phone" type="tel" inputmode="tel" required aria-required="true" placeholder="e.g., +98 9...">
+                <input id="phone" name="phone" type="tel" inputmode="tel" required aria-required="true"
+                    placeholder="e.g., +98 9...">
             </div>
 
             <div class="form-section">
                 <label for="email">Email *</label>
-                <input id="email" name="email" type="email" inputmode="email" required aria-required="true" placeholder="your@email.com">
+                <input id="email" name="email" type="email" inputmode="email" required aria-required="true"
+                    placeholder="your@email.com">
             </div>
 
             <div class="form-section" id="pincodeSection">
                 <label for="pincode">Delivery Pincode *</label>
                 <input id="pincode" name="pincode" type="text" required aria-required="true" placeholder="e.g., 110001">
-                <div id="pincodeError" class="error-message" style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
-                <div id="pincodeSuccess" class="success-message" style="display:none; color:#4CAF50; margin-top:0.5rem; font-size:0.9rem;"></div>
+                <div id="pincodeError" class="error-message"
+                    style="display:none; color:#f44336; margin-top:0.5rem; font-size:0.9rem;"></div>
+                <div id="pincodeSuccess" class="success-message"
+                    style="display:none; color:#4CAF50; margin-top:0.5rem; font-size:0.9rem;"></div>
             </div>
 
             <div class="form-section">
@@ -174,7 +175,8 @@
                     </div>
                     <div class="payment-info">
                         <p><strong>Payment Method:</strong> Online Payment</p>
-                        <p class="muted" style="margin-top:0.5rem;">You will complete payment securely via Razorpay Checkout.</p>
+                        <p class="muted" style="margin-top:0.5rem;">You will complete payment securely via Razorpay
+                            Checkout.</p>
                     </div>
                 </div>
                 <div class="payment-actions">
@@ -206,89 +208,89 @@
     </footer>
 
     <script>
-    // Initialize order date picker with settings and availability from admin
-    (async function initOrderDatePicker() {
-        const orderDateInput = document.getElementById('orderDate');
-        if (!orderDateInput) return;
+        // Initialize order date picker with settings and availability from admin
+        (async function initOrderDatePicker() {
+            const orderDateInput = document.getElementById('orderDate');
+            if (!orderDateInput) return;
 
-        try {
-            // Fetch date settings and availability from API
-            const [settingsResponse, availabilityResponse] = await Promise.all([
-                fetch('/.netlify/functions/settings'),
-                fetch('/.netlify/functions/available-dates')
-            ]);
+            try {
+                // Fetch date settings and availability from API
+                const [settingsResponse, availabilityResponse] = await Promise.all([
+                    fetch('/.netlify/functions/settings'),
+                    fetch('/.netlify/functions/available-dates')
+                ]);
 
-            if (!settingsResponse.ok) {
-                console.warn('Could not load date settings, using defaults');
-                setDefaultDates();
-                return;
-            }
-
-            const settings = await settingsResponse.json();
-            const leadTimeDays = settings.leadTimeDays || 1;
-            const maxAdvanceDays = settings.maxAdvanceDays || 14;
-            const nextAvailableDate = settings.nextAvailableDate;
-            const preorderOnlyMode = typeof settings.preorderOnlyMode === 'boolean' ? settings.preorderOnlyMode : false;
-            const dailyCapEnabled = typeof settings.dailyCapEnabled === 'boolean' ? settings.dailyCapEnabled : false;
-
-            // Parse availability data
-            let availabilityData = null;
-            if (availabilityResponse.ok) {
-                availabilityData = await availabilityResponse.json();
-            }
-
-            // Handle preorder-only mode or daily cap situations
-            const preorderToggleSection = document.getElementById('preorderToggleSection');
-            const datePickerSection = document.getElementById('datePickerSection');
-            const preorderOnlyNotice = document.getElementById('preorderOnlyNotice');
-            const availableDatesInfo = document.getElementById('availableDatesInfo');
-            const availableDatesList = document.getElementById('availableDatesList');
-            
-            // Always show date picker if preorder-only mode OR if today's capacity is reached
-            const forceShowDatePicker = preorderOnlyMode || (dailyCapEnabled && settings.dailyCapReached);
-            
-            if (forceShowDatePicker) {
-                // Preorder-only or capacity reached: hide toggle, show date picker always, show notice
-                if (preorderToggleSection) preorderToggleSection.style.display = 'none';
-                if (datePickerSection) {
-                    datePickerSection.style.display = 'block';
-                    orderDateInput.required = true;
-                    orderDateInput.setAttribute('aria-required', 'true');
+                if (!settingsResponse.ok) {
+                    console.warn('Could not load date settings, using defaults');
+                    setDefaultDates();
+                    return;
                 }
-                if (preorderOnlyNotice) {
-                    preorderOnlyNotice.style.display = 'block';
-                }
-            } else {
-                // Normal mode: show toggle, hide date picker until checked
-                if (preorderToggleSection) preorderToggleSection.style.display = 'block';
-                if (datePickerSection) datePickerSection.style.display = 'none';
-                if (preorderOnlyNotice) preorderOnlyNotice.style.display = 'none';
-            }
 
-            // Display available dates if we have the data
-            if (availabilityData && availabilityData.dates && dailyCapEnabled) {
-                if (availableDatesInfo && availableDatesList) {
-                    // Build calendar grid for next 14 days
-                    const dates = availabilityData.dates.slice(0, 14); // Show 2 weeks
-                    
-                    if (dates.length > 0) {
-                        let html = '<div class="date-calendar" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem;">';
-                        
-                        const dayAbbreviations = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-                        
-                        dates.forEach(dateInfo => {
-                            const dateObj = new Date(dateInfo.date);
-                            const dayAbbr = dayAbbreviations[dateObj.getDay()];
-                            const dayNumber = dateObj.getDate();
-                            const isAvailable = dateInfo.available;
-                            const borderColor = isAvailable ? '#4CAF50' : '#f44336';
-                            const textColor = isAvailable ? '#4CAF50' : '#f44336';
-                            const cursor = isAvailable ? 'pointer' : 'default';
-                            const titleText = isAvailable && dateInfo.spotsRemaining !== null 
-                                ? `${dateInfo.spotsRemaining} spots remaining` 
-                                : (isAvailable ? 'Available' : 'Fully booked');
-                            
-                            html += `
+                const settings = await settingsResponse.json();
+                const leadTimeDays = settings.leadTimeDays || 1;
+                const maxAdvanceDays = settings.maxAdvanceDays || 14;
+                const nextAvailableDate = settings.nextAvailableDate;
+                const preorderOnlyMode = typeof settings.preorderOnlyMode === 'boolean' ? settings.preorderOnlyMode : false;
+                const dailyCapEnabled = typeof settings.dailyCapEnabled === 'boolean' ? settings.dailyCapEnabled : false;
+
+                // Parse availability data
+                let availabilityData = null;
+                if (availabilityResponse.ok) {
+                    availabilityData = await availabilityResponse.json();
+                }
+
+                // Handle preorder-only mode or daily cap situations
+                const preorderToggleSection = document.getElementById('preorderToggleSection');
+                const datePickerSection = document.getElementById('datePickerSection');
+                const preorderOnlyNotice = document.getElementById('preorderOnlyNotice');
+                const availableDatesInfo = document.getElementById('availableDatesInfo');
+                const availableDatesList = document.getElementById('availableDatesList');
+
+                // Always show date picker if preorder-only mode OR if today's capacity is reached
+                const forceShowDatePicker = preorderOnlyMode || (dailyCapEnabled && settings.dailyCapReached);
+
+                if (forceShowDatePicker) {
+                    // Preorder-only or capacity reached: hide toggle, show date picker always, show notice
+                    if (preorderToggleSection) preorderToggleSection.style.display = 'none';
+                    if (datePickerSection) {
+                        datePickerSection.style.display = 'block';
+                        orderDateInput.required = true;
+                        orderDateInput.setAttribute('aria-required', 'true');
+                    }
+                    if (preorderOnlyNotice) {
+                        preorderOnlyNotice.style.display = 'block';
+                    }
+                } else {
+                    // Normal mode: show toggle, hide date picker until checked
+                    if (preorderToggleSection) preorderToggleSection.style.display = 'block';
+                    if (datePickerSection) datePickerSection.style.display = 'none';
+                    if (preorderOnlyNotice) preorderOnlyNotice.style.display = 'none';
+                }
+
+                // Display available dates if we have the data
+                if (availabilityData && availabilityData.dates && dailyCapEnabled) {
+                    if (availableDatesInfo && availableDatesList) {
+                        // Build calendar grid for next 14 days
+                        const dates = availabilityData.dates.slice(0, 14); // Show 2 weeks
+
+                        if (dates.length > 0) {
+                            let html = '<div class="date-calendar" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem;">';
+
+                            const dayAbbreviations = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+                            dates.forEach(dateInfo => {
+                                const dateObj = new Date(dateInfo.date);
+                                const dayAbbr = dayAbbreviations[dateObj.getDay()];
+                                const dayNumber = dateObj.getDate();
+                                const isAvailable = dateInfo.available;
+                                const borderColor = isAvailable ? '#4CAF50' : '#f44336';
+                                const textColor = isAvailable ? '#4CAF50' : '#f44336';
+                                const cursor = isAvailable ? 'pointer' : 'default';
+                                const titleText = isAvailable && dateInfo.spotsRemaining !== null
+                                    ? `${dateInfo.spotsRemaining} spots remaining`
+                                    : (isAvailable ? 'Available' : 'Fully booked');
+
+                                html += `
                                 <div class="calendar-date ${isAvailable ? 'available' : 'unavailable'}" 
                                      ${isAvailable ? `data-date="${dateInfo.date}"` : ''}
                                      style="aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 2px solid ${borderColor}; color: ${textColor}; font-weight: 600; cursor: ${cursor};"
@@ -297,12 +299,12 @@
                                     <div style="font-size: 0.9rem; margin-top: 0.15rem;">${dayNumber}</div>
                                 </div>
                             `;
-                        });
-                        
-                        html += '</div>';
-                        
-                        // Add legend
-                        html += `
+                            });
+
+                            html += '</div>';
+
+                            // Add legend
+                            html += `
                             <div style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.8rem;">
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                                     <div style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid #4CAF50;"></div>
@@ -314,226 +316,227 @@
                                 </div>
                             </div>
                         `;
-                        
-                        availableDatesList.innerHTML = html;
-                        availableDatesInfo.style.display = 'block';
-                        
-                        // Add click handlers for date selection
-                        const calendarDates = availableDatesList.querySelectorAll('.calendar-date.available');
-                        const dateInput = document.getElementById('orderDate');
-                        
-                        calendarDates.forEach(dateEl => {
-                            dateEl.addEventListener('click', function() {
-                                const selectedDate = this.getAttribute('data-date');
-                                if (!selectedDate) return;
-                                
-                                // Update the date input
-                                dateInput.value = selectedDate;
-                                
-                                // Update visual selection
-                                calendarDates.forEach(el => {
-                                    el.classList.remove('selected');
-                                    el.style.background = '#fff';
-                                    el.style.color = '#4CAF50';
+
+                            availableDatesList.innerHTML = html;
+                            availableDatesInfo.style.display = 'block';
+
+                            // Add click handlers for date selection
+                            const calendarDates = availableDatesList.querySelectorAll('.calendar-date.available');
+                            const dateInput = document.getElementById('orderDate');
+
+                            calendarDates.forEach(dateEl => {
+                                dateEl.addEventListener('click', function () {
+                                    const selectedDate = this.getAttribute('data-date');
+                                    if (!selectedDate) return;
+
+                                    // Update the date input
+                                    dateInput.value = selectedDate;
+
+                                    // Update visual selection
+                                    calendarDates.forEach(el => {
+                                        el.classList.remove('selected');
+                                        el.style.background = '#fff';
+                                        el.style.color = '#4CAF50';
+                                    });
+
+                                    this.classList.add('selected');
+                                    this.style.background = '#4CAF50';
+                                    this.style.color = '#fff';
                                 });
-                                
-                                this.classList.add('selected');
-                                this.style.background = '#4CAF50';
-                                this.style.color = '#fff';
                             });
-                        });
-                        
-                        // Set initial selected state if date input has a value
-                        if (dateInput.value) {
-                            calendarDates.forEach(el => {
-                                if (el.getAttribute('data-date') === dateInput.value) {
-                                    el.classList.add('selected');
-                                    el.style.background = '#4CAF50';
-                                    el.style.color = '#fff';
-                                }
-                            });
+
+                            // Set initial selected state if date input has a value
+                            if (dateInput.value) {
+                                calendarDates.forEach(el => {
+                                    if (el.getAttribute('data-date') === dateInput.value) {
+                                        el.classList.add('selected');
+                                        el.style.background = '#4CAF50';
+                                        el.style.color = '#fff';
+                                    }
+                                });
+                            }
                         }
                     }
                 }
-            }
 
-            // Calculate min date (today + lead time)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
-            const minDate = new Date(today);
-            minDate.setDate(today.getDate() + leadTimeDays);
+                // Calculate min date (today + lead time)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+                const minDate = new Date(today);
+                minDate.setDate(today.getDate() + leadTimeDays);
 
-            // If admin set a specific next available date, use the later of the two
-            let actualMinDate = minDate;
-            if (nextAvailableDate) {
-                const adminDate = new Date(nextAvailableDate);
-                adminDate.setHours(0, 0, 0, 0); // Reset to start of day
-                if (adminDate > minDate) {
-                    actualMinDate = adminDate;
+                // If admin set a specific next available date, use the later of the two
+                let actualMinDate = minDate;
+                if (nextAvailableDate) {
+                    const adminDate = new Date(nextAvailableDate);
+                    adminDate.setHours(0, 0, 0, 0); // Reset to start of day
+                    if (adminDate > minDate) {
+                        actualMinDate = adminDate;
+                    }
                 }
-            }
 
-            // Calculate max date (min date + max advance days)
-            const maxDate = new Date(actualMinDate);
-            maxDate.setDate(actualMinDate.getDate() + maxAdvanceDays);
+                // Calculate max date (min date + max advance days)
+                const maxDate = new Date(actualMinDate);
+                maxDate.setDate(actualMinDate.getDate() + maxAdvanceDays);
 
-            // Format dates for input (YYYY-MM-DD)
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
+                // Format dates for input (YYYY-MM-DD)
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
 
-            // Set min/max on date picker
-            orderDateInput.min = formatDate(actualMinDate);
-            orderDateInput.max = formatDate(maxDate);
-            
-            // Find first available date and set as default
-            let defaultDate = actualMinDate;
-            if (availabilityData && availabilityData.dates) {
-                const firstAvailable = availabilityData.dates.find(d => d.available);
-                if (firstAvailable) {
-                    defaultDate = new Date(firstAvailable.date);
+                // Set min/max on date picker
+                orderDateInput.min = formatDate(actualMinDate);
+                orderDateInput.max = formatDate(maxDate);
+
+                // Find first available date and set as default
+                let defaultDate = actualMinDate;
+                if (availabilityData && availabilityData.dates) {
+                    const firstAvailable = availabilityData.dates.find(d => d.available);
+                    if (firstAvailable) {
+                        defaultDate = new Date(firstAvailable.date);
+                    }
                 }
-            }
-            orderDateInput.value = formatDate(defaultDate);
+                orderDateInput.value = formatDate(defaultDate);
 
-            // Update preorder-only notice with formatted date
-            if (forceShowDatePicker && preorderOnlyNotice) {
-                const preorderOnlyDateSpan = document.getElementById('preorderOnlyDate');
-                if (preorderOnlyDateSpan) {
-                    const dateFormatted = actualMinDate.toLocaleDateString('en-IN', { 
-                        weekday: 'long',
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                    });
-                    preorderOnlyDateSpan.textContent = dateFormatted;
-                }
-            }
-
-            // Update help text
-            const helpText = document.getElementById('orderDateHelp');
-            if (helpText) {
-                const minFormatted = actualMinDate.toLocaleDateString('en-IN', { 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric' 
-                });
-                helpText.textContent = `Earliest available: ${minFormatted}`;
-            }
-
-            // Add validation on date change - check against available dates
-            const errorDiv = document.getElementById('orderDateError');
-            orderDateInput.addEventListener('change', function() {
-                const selectedDate = new Date(this.value);
-                const minDate = new Date(this.min);
-                const maxDate = new Date(this.max);
-                const selectedDateString = this.value;
-                
-                errorDiv.style.display = 'none';
-                
-                if (selectedDate < minDate) {
-                    const minFormatted = minDate.toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric' 
-                    });
-                    errorDiv.textContent = `Please select a date on or after ${minFormatted}.`;
-                    errorDiv.style.display = 'block';
-                    this.value = formatDate(defaultDate);
-                    return;
-                }
-                
-                if (selectedDate > maxDate) {
-                    const maxFormatted = maxDate.toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric' 
-                    });
-                    errorDiv.textContent = `Please select a date on or before ${maxFormatted}.`;
-                    errorDiv.style.display = 'block';
-                    this.value = formatDate(defaultDate);
-                    return;
-                }
-                
-                // Check if date is available (if we have availability data)
-                if (availabilityData && availabilityData.dates && dailyCapEnabled) {
-                    const dateInfo = availabilityData.dates.find(d => d.date === selectedDateString);
-                    if (dateInfo && !dateInfo.available) {
-                        const formattedDate = selectedDate.toLocaleDateString('en-IN', { 
+                // Update preorder-only notice with formatted date
+                if (forceShowDatePicker && preorderOnlyNotice) {
+                    const preorderOnlyDateSpan = document.getElementById('preorderOnlyDate');
+                    if (preorderOnlyDateSpan) {
+                        const dateFormatted = actualMinDate.toLocaleDateString('en-IN', {
                             weekday: 'long',
-                            day: 'numeric', 
-                            month: 'long'
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
                         });
-                        errorDiv.textContent = `Sorry, ${formattedDate} is fully booked. Please select another date from the available dates above.`;
+                        preorderOnlyDateSpan.textContent = dateFormatted;
+                    }
+                }
+
+                // Update help text
+                const helpText = document.getElementById('orderDateHelp');
+                if (helpText) {
+                    const minFormatted = actualMinDate.toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                    helpText.textContent = `Earliest available: ${minFormatted}`;
+                }
+
+                // Add validation on date change - check against available dates
+                const errorDiv = document.getElementById('orderDateError');
+                orderDateInput.addEventListener('change', function () {
+                    const selectedDate = new Date(this.value);
+                    const minDate = new Date(this.min);
+                    const maxDate = new Date(this.max);
+                    const selectedDateString = this.value;
+
+                    errorDiv.style.display = 'none';
+
+                    if (selectedDate < minDate) {
+                        const minFormatted = minDate.toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                        errorDiv.textContent = `Please select a date on or after ${minFormatted}.`;
                         errorDiv.style.display = 'block';
                         this.value = formatDate(defaultDate);
                         return;
                     }
-                }
-            });
 
-        } catch (err) {
-            console.error('Error initializing date picker:', err);
-            setDefaultDates();
-        }
-
-        function setDefaultDates() {
-            // Fallback: tomorrow as min date
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const twoWeeks = new Date(tomorrow);
-            twoWeeks.setDate(tomorrow.getDate() + 14);
-
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-
-            orderDateInput.min = formatDate(tomorrow);
-            orderDateInput.max = formatDate(twoWeeks);
-            orderDateInput.value = formatDate(tomorrow);
-        }
-    })();
-
-    // Handle preorder toggle
-    document.addEventListener('DOMContentLoaded', function() {
-        const preorderToggle = document.getElementById('preorderToggle');
-        const datePickerSection = document.getElementById('datePickerSection');
-        const orderDateInput = document.getElementById('orderDate');
-        const availableDatesInfo = document.getElementById('availableDatesInfo');
-
-        if (preorderToggle && datePickerSection && orderDateInput) {
-            preorderToggle.addEventListener('change', function() {
-                if (this.checked) {
-                    datePickerSection.style.display = 'block';
-                    orderDateInput.required = true;
-                    orderDateInput.setAttribute('aria-required', 'true');
-                    // Show available dates info if it exists
-                    if (availableDatesInfo && availableDatesInfo.innerHTML.trim()) {
-                        availableDatesInfo.style.display = 'block';
+                    if (selectedDate > maxDate) {
+                        const maxFormatted = maxDate.toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                        errorDiv.textContent = `Please select a date on or before ${maxFormatted}.`;
+                        errorDiv.style.display = 'block';
+                        this.value = formatDate(defaultDate);
+                        return;
                     }
-                    // Smooth scroll to date picker
-                    setTimeout(() => {
-                        datePickerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
-                } else {
-                    datePickerSection.style.display = 'none';
-                    orderDateInput.required = false;
-                    orderDateInput.removeAttribute('aria-required');
-                    orderDateInput.value = ''; // Clear the date
-                    if (availableDatesInfo) {
-                        availableDatesInfo.style.display = 'none';
+
+                    // Check if date is available (if we have availability data)
+                    if (availabilityData && availabilityData.dates && dailyCapEnabled) {
+                        const dateInfo = availabilityData.dates.find(d => d.date === selectedDateString);
+                        if (dateInfo && !dateInfo.available) {
+                            const formattedDate = selectedDate.toLocaleDateString('en-IN', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long'
+                            });
+                            errorDiv.textContent = `Sorry, ${formattedDate} is fully booked. Please select another date from the available dates above.`;
+                            errorDiv.style.display = 'block';
+                            this.value = formatDate(defaultDate);
+                            return;
+                        }
                     }
-                }
-            });
-        }
-    });
+                });
+
+            } catch (err) {
+                console.error('Error initializing date picker:', err);
+                setDefaultDates();
+            }
+
+            function setDefaultDates() {
+                // Fallback: tomorrow as min date
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const twoWeeks = new Date(tomorrow);
+                twoWeeks.setDate(tomorrow.getDate() + 14);
+
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                orderDateInput.min = formatDate(tomorrow);
+                orderDateInput.max = formatDate(twoWeeks);
+                orderDateInput.value = formatDate(tomorrow);
+            }
+        })();
+
+        // Handle preorder toggle
+        document.addEventListener('DOMContentLoaded', function () {
+            const preorderToggle = document.getElementById('preorderToggle');
+            const datePickerSection = document.getElementById('datePickerSection');
+            const orderDateInput = document.getElementById('orderDate');
+            const availableDatesInfo = document.getElementById('availableDatesInfo');
+
+            if (preorderToggle && datePickerSection && orderDateInput) {
+                preorderToggle.addEventListener('change', function () {
+                    if (this.checked) {
+                        datePickerSection.style.display = 'block';
+                        orderDateInput.required = true;
+                        orderDateInput.setAttribute('aria-required', 'true');
+                        // Show available dates info if it exists
+                        if (availableDatesInfo && availableDatesInfo.innerHTML.trim()) {
+                            availableDatesInfo.style.display = 'block';
+                        }
+                        // Smooth scroll to date picker
+                        setTimeout(() => {
+                            datePickerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 100);
+                    } else {
+                        datePickerSection.style.display = 'none';
+                        orderDateInput.required = false;
+                        orderDateInput.removeAttribute('aria-required');
+                        orderDateInput.value = ''; // Clear the date
+                        if (availableDatesInfo) {
+                            availableDatesInfo.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        });
     </script>
 
 </body>
+
 </html>

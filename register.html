@@ -1,19 +1,6 @@
 <!DOCTYPE html>
-<!--
-  FILE: register.html
-  PURPOSE: User registration page for creating new accounts with email, phone, and password.
-  
-  NOTES:
-  - Form submits to handleRegister() function in script.js
-  - Requires email, phone number, and password (min 8 characters)
-  - Supports redirect parameter to return users after registration
-  - Error messages displayed in #registerError element
-  - Loading overlay shows during registration request
-  - Token stored in localStorage as rr_token on success
-  - Links to login page with redirect preservation
-  - Inline styles for auth-specific components
--->
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +8,8 @@
     <link rel="stylesheet" href="style.css?v=1784299120714">
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js?v=1784299120714" defer></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <style>
         .auth-container {
@@ -201,6 +189,7 @@
         }
     </style>
 </head>
+
 <body>
     <nav class="top-nav">
         <div class="container">
@@ -232,7 +221,8 @@
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" minlength="8" required />
+                    <input type="password" id="password" name="password" placeholder="Enter your password" minlength="8"
+                        required />
                     <div class="form-hint">Minimum 8 characters</div>
                 </div>
 
@@ -243,14 +233,14 @@
 
             <div class="auth-footer">
                 <p>Already have an account? <a href="/login.html" id="loginLink">Sign in</a></p>
-            <script>
-                // Pass redirect parameter to login page
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirect = urlParams.get('redirect');
-                if (redirect) {
-                    document.getElementById('loginLink').href = '/login.html?redirect=' + encodeURIComponent(redirect);
-                }
-            </script>
+                <script>
+                    // Pass redirect parameter to login page
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect');
+                    if (redirect) {
+                        document.getElementById('loginLink').href = '/login.html?redirect=' + encodeURIComponent(redirect);
+                    }
+                </script>
             </div>
         </div>
     </main>
@@ -283,6 +273,7 @@
             justify-content: center;
             z-index: 9999;
         }
+
         .auth-loading-spinner {
             width: 48px;
             height: 48px;
@@ -291,20 +282,29 @@
             border-radius: 50%;
             animation: authSpin 1s linear infinite;
         }
+
         @keyframes authSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         .auth-loading-overlay p {
             margin-top: 1rem;
             font-family: 'Satoshi', sans-serif;
             color: #6d2430;
             font-size: 1rem;
         }
+
         .submit-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
     </style>
 </body>
+
 </html>
