@@ -792,28 +792,98 @@ function ensurePincodeGate() {
 
 function showMenuSkeleton(loader) {
   if (!loader) return;
+  const grid = document.querySelector('.menu-grid');
+  if (grid) {
+    grid.style.display = 'none';
+  }
   loader.classList.remove('error');
   loader.classList.add('is-loading-skeleton');
   loader.style.display = '';
   loader.innerHTML = `
-    <div class="skeleton-grid">
-      <div class="skeleton-card">
-        <div class="skeleton-image"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line tiny"></div>
+    <div class="skeleton-menu-group">
+      <div class="small-menu-title skeleton-section-header">
+        <h3>BAGELS</h3>
+        <div class="section-line"></div>
       </div>
-      <div class="skeleton-card">
-        <div class="skeleton-image"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line tiny"></div>
+      <div class="skeleton-grid">
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
       </div>
-      <div class="skeleton-card">
-        <div class="skeleton-image"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line tiny"></div>
+    </div>
+
+    <div class="skeleton-menu-group">
+      <div class="small-menu-title skeleton-section-header">
+        <h3>SCHMEARS</h3>
+        <div class="section-line"></div>
+      </div>
+      <div class="skeleton-grid">
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skeleton-menu-group">
+      <div class="small-menu-title skeleton-section-header">
+        <h3>DESSERTS</h3>
+        <div class="section-line"></div>
+      </div>
+      <div class="skeleton-grid">
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
       </div>
     </div>
   `;
@@ -949,6 +1019,11 @@ async function renderMenu() {
       loader.classList.remove('is-loading-skeleton');
       loader.innerHTML = '';
       loader.style.display = 'none';
+    }
+
+    const menuGrid = document.querySelector('.menu-grid');
+    if (menuGrid) {
+      menuGrid.style.display = '';
     }
 
     // Re-render combo/boxes if data changed
