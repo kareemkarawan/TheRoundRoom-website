@@ -65,14 +65,14 @@ function getCachedData(key) {
     if (Date.now() - timestamp < CACHE_MAX_AGE) {
       return data;
     }
-  } catch (e) {}
+  } catch (e) { }
   return null;
 }
 
 function setCachedData(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function renderCombo(menuItems, comboSettings) {
@@ -90,14 +90,14 @@ async function renderCombo(menuItems, comboSettings) {
     const comboAllowedPincodes = normalizeAllowedPincodes(comboSettings.allowedPincodes || comboSettings.availablePincodes || []);
     const isPincodeBlocked = !!selectedPincode && comboAllowedPincodes.length > 0 && !comboAllowedPincodes.includes(String(selectedPincode));
 
-    const availableBagels = menuItems.filter(item => 
-      item.category?.toLowerCase() === 'bagels' && 
+    const availableBagels = menuItems.filter(item =>
+      item.category?.toLowerCase() === 'bagels' &&
       item.isAvailable !== false &&
       comboSettings.availableBagels.includes(item.id) &&
       isItemAvailableForPincode(item, selectedPincode)
     );
-    const availableSchmears = menuItems.filter(item => 
-      item.category?.toLowerCase() === 'schmears' && 
+    const availableSchmears = menuItems.filter(item =>
+      item.category?.toLowerCase() === 'schmears' &&
       item.isAvailable !== false &&
       comboSettings.availableSchmears.includes(item.id) &&
       isItemAvailableForPincode(item, selectedPincode)
@@ -114,7 +114,7 @@ async function renderCombo(menuItems, comboSettings) {
     window._rrComboPrice = discountedPrice;
 
     // Build price display HTML
-    const priceHTML = isPopupMode 
+    const priceHTML = isPopupMode
       ? `<span class="combo-original-price">₹${Number(originalPrice).toFixed(2)}</span> <span class="combo-discounted-price">₹${Number(discountedPrice).toFixed(2)}</span>`
       : `₹${Number(originalPrice).toFixed(2)}`;
 
@@ -177,7 +177,7 @@ async function renderCombo(menuItems, comboSettings) {
       const schmearSelected = schmearSelect && schmearSelect.value;
       const qty = parseInt(comboQtyEl.textContent) || 1;
       const bothSelected = bagelSelected && schmearSelected;
-      
+
       comboPlusBtn.disabled = !bothSelected;
       comboMinusBtn.disabled = !bothSelected || qty <= 1;
       confirmBtn.disabled = !bothSelected;
@@ -210,18 +210,18 @@ async function renderCombo(menuItems, comboSettings) {
 
     confirmBtn.addEventListener('click', () => {
       if (confirmBtn.disabled) return;
-      
+
       const bagelId = bagelSelect.value;
       const schmearId = schmearSelect.value;
       const bagelName = bagelSelect.selectedOptions[0]?.dataset?.name || '';
       const schmearName = schmearSelect.selectedOptions[0]?.dataset?.name || '';
       const qty = parseInt(comboQtyEl.textContent) || 1;
       const price = parseFloat(comboContainer.querySelector('.combo-item').dataset.price);
-      
+
       if (typeof addComboToCart === 'function') {
         addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price);
       }
-      
+
       resetComboSelector();
     });
 
@@ -418,12 +418,12 @@ function updateBoxCounters() {
     const name = btn.dataset.name;
     const isPlus = btn.classList.contains('plus');
     const isMinus = btn.classList.contains('minus');
-    
+
     const quantities = type === 'bagel' ? bagelQuantities : schmearQuantities;
     const maxCount = type === 'bagel' ? currentBoxData.bagelCount : currentBoxData.schmearCount;
     const currentTotal = Object.values(quantities).reduce((sum, q) => sum + q, 0);
     const currentQty = quantities[name] || 0;
-    
+
     if (isMinus) {
       btn.disabled = currentQty === 0;
     } else if (isPlus) {
@@ -509,7 +509,7 @@ async function renderBagelBoxes() {
   try {
     // Try cached boxes first
     const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
-    
+
     const response = await fetch('/.netlify/functions/bagel-boxes?activeOnly=true');
     if (!response.ok) {
       // If network fails but we have cache, use it
@@ -523,10 +523,10 @@ async function renderBagelBoxes() {
     }
 
     const boxes = await response.json();
-    
+
     // Cache the fresh data
     setCachedData(BOXES_CACHE_KEY, boxes);
-    
+
     if (!boxes || boxes.length === 0) {
       boxSection.style.display = 'none';
       if (bagelBitesSection) bagelBitesSection.style.display = 'none';
@@ -569,7 +569,7 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
       const bagelCount = isBites ? 0 : (Number(box.bagelCount) || 0);
       const schmearCount = Number(box.schmearCount) || 0;
       const unavailableForPincode = !!selectedPincode && !isItemAvailableForPincode(box, selectedPincode);
-      
+
       return `
     <div class="menu-item box-item${unavailableForPincode ? ' menu-item--unavailable' : ''}" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
       ${box.imageUrl ? `<img src="${box.imageUrl}" alt="${box.name}" loading="lazy">` : ''}
@@ -633,8 +633,8 @@ function renderMenuItems(items, MenuItemClass, grid) {
           ? htmlWithClass.replace('</div>', `${'<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div></div>'}`)
           : htmlWithClass;
         if (unavailableForPincode) {
-          html = html.replace(/<button class="qty-btn minus" data-id="\$\{data.id\}">−<\/button>/g, '<button class="qty-btn minus" data-id="'+data.id+'" disabled>−</button>');
-          html = html.replace(/<button class="qty-btn plus" data-id="\$\{data.id\}">\+<\/button>/g, '<button class="qty-btn plus" data-id="'+data.id+'" disabled>+</button>');
+          html = html.replace(/<button class="qty-btn minus" data-id="\$\{data.id\}">−<\/button>/g, '<button class="qty-btn minus" data-id="' + data.id + '" disabled>−</button>');
+          html = html.replace(/<button class="qty-btn plus" data-id="\$\{data.id\}">\+<\/button>/g, '<button class="qty-btn plus" data-id="' + data.id + '" disabled>+</button>');
         }
       } else {
         html = `
@@ -675,7 +675,7 @@ function renderMenuItems(items, MenuItemClass, grid) {
         if (qEl) qEl.textContent = it.qty;
       });
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function ensurePincodeGate() {
@@ -816,17 +816,17 @@ async function renderMenu() {
   const cachedMenu = getCachedData(MENU_CACHE_KEY);
   const cachedCombo = getCachedData(COMBO_CACHE_KEY);
   const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
-  
+
   if (cachedMenu && cachedMenu.length > 0) {
     // Render cached data immediately - no loading state
     if (loader) loader.style.display = 'none';
-    
+
     window._rrMenuItems = cachedMenu;
     availableBagels = cachedMenu.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
     availableSchmears = cachedMenu.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
-    
+
     renderMenuItems(cachedMenu, MenuItemClass, grid);
-    
+
     // Setup click handlers once
     if (!grid._rr_init) {
       grid.addEventListener('click', function (e) {
@@ -842,10 +842,10 @@ async function renderMenu() {
       });
       grid._rr_init = true;
     }
-    
+
     // Render combo and boxes from cache (no API calls needed)
     await renderCombo(cachedMenu, cachedCombo);
-    
+
     const boxSection = document.getElementById('boxSection');
     const boxContainer = document.getElementById('boxContainer');
     if (boxSection && boxContainer && cachedBoxes && cachedBoxes.length > 0) {
@@ -853,14 +853,35 @@ async function renderMenu() {
     } else if (boxSection) {
       boxSection.style.display = 'none';
     }
-    
+
     if (typeof updateCart === 'function') updateCart();
   } else {
     // No cache - show loading indicator
     if (loader) {
       loader.classList.remove('error');
       loader.style.display = '';
-      loader.textContent = 'Loading menu…';
+      loader.innerHTML = `
+        <div class="skeleton-grid">
+        <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line tiny"></div>
+        </div>
+        <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line tiny"></div>
+        </div>
+        </div>
+        `;
     }
   }
 
@@ -869,20 +890,20 @@ async function renderMenu() {
     const controller = new AbortController();
     const timeoutMs = 20000; // Increased to handle slow connections
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     // Single combined endpoint for all menu data
     const dataUrl = `/.netlify/functions/menu-data?version=${DEPLOY_VERSION}`;
-    
+
     let dataRes;
     try {
       dataRes = await fetch(dataUrl, { signal: controller.signal });
     } finally {
       clearTimeout(timer);
     }
-    
+
     if (!dataRes || !dataRes.ok) throw new Error('HTTP ' + (dataRes ? dataRes.status : 'NO_RESPONSE'));
     const allData = await dataRes.json();
-    
+
     const items = allData.menu || [];
     const comboSettings = allData.combo || null;
     const boxes = allData.boxes || [];
@@ -920,13 +941,16 @@ async function renderMenu() {
       }
     }
 
-    if (loader) loader.style.display = 'none';
+    if (loader) {
+      loader.innerHTML = '';
+      loader.style.display = 'none';
+    }
 
     // Re-render combo/boxes if data changed
     if (!cachedMenu || menuChanged || comboChanged) {
       // Render combo
       await renderCombo(items, comboSettings);
-      
+
       // Render boxes directly from combined response (no extra fetch needed)
       const boxSection = document.getElementById('boxSection');
       const boxContainer = document.getElementById('boxContainer');
@@ -957,16 +981,16 @@ async function renderMenu() {
 // Show/hide sections based on order type (popup mode = combos + desserts only)
 function applyOrderTypeVisibility() {
   const isPopupMode = window._rrOrderType === 'popup';
-  
+
   // Sections to hide in popup mode
   const bagelMenu = document.getElementById('bagelMenu');
   const schmearMenu = document.getElementById('schmearMenu');
   const dessertMenu = document.getElementById('dessertMenu');
   const boxSection = document.getElementById('boxSection');
-  
+
   // Find the small-menu-title parents for hiding the titles too
   const smallTitles = document.querySelectorAll('.small-menu-title');
-  
+
   if (isPopupMode) {
     // Hide individual menu categories (except desserts)
     if (bagelMenu) bagelMenu.style.display = 'none';
@@ -974,7 +998,7 @@ function applyOrderTypeVisibility() {
     if (boxSection) boxSection.style.display = 'none';
     // Keep desserts visible
     if (dessertMenu) dessertMenu.style.display = '';
-    
+
     // Hide titles for bagels, schmears only
     smallTitles.forEach(title => {
       const h3Text = title.querySelector('h3')?.textContent?.toLowerCase() || '';
@@ -991,7 +1015,7 @@ function applyOrderTypeVisibility() {
     if (schmearMenu) schmearMenu.style.display = '';
     if (dessertMenu) dessertMenu.style.display = '';
     // boxSection visibility is controlled by renderBagelBoxes
-    
+
     smallTitles.forEach(title => {
       title.style.display = '';
     });
@@ -999,15 +1023,15 @@ function applyOrderTypeVisibility() {
 }
 
 // Listen for order type selection to re-render
-window.addEventListener('orderTypeSelected', async function(e) {
+window.addEventListener('orderTypeSelected', async function (e) {
   // Re-render combo with updated pricing
   const cachedMenu = getCachedData(MENU_CACHE_KEY);
   const cachedCombo = getCachedData(COMBO_CACHE_KEY);
-  
+
   if (cachedMenu && cachedCombo) {
     await renderCombo(cachedMenu, cachedCombo);
   }
-  
+
   applyOrderTypeVisibility();
 });
 
