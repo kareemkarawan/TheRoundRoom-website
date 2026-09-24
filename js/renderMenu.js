@@ -790,6 +790,35 @@ function ensurePincodeGate() {
   return gate;
 }
 
+function showMenuSkeleton(loader) {
+  if (!loader) return;
+  loader.classList.remove('error');
+  loader.classList.add('is-loading-skeleton');
+  loader.style.display = '';
+  loader.innerHTML = `
+    <div class="skeleton-grid">
+      <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line tiny"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line tiny"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line tiny"></div>
+      </div>
+    </div>
+  `;
+}
+
 async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
@@ -857,33 +886,7 @@ async function renderMenu() {
     if (typeof updateCart === 'function') updateCart();
   } else {
     // No cache - show loading indicator
-    if (loader) {
-      loader.classList.remove('error');
-      loader.classList.add('is-loading-skeleton');
-      loader.style.display = '';
-      loader.innerHTML = `
-        <div class="skeleton-grid">
-        <div class="skeleton-card">
-        <div class="skeleton-image"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line tiny"></div>
-        </div>
-        <div class="skeleton-card">
-        <div class="skeleton-image"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line tiny"></div>
-        </div>
-        <div class="skeleton-card">
-        <div class="skeleton-image"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line tiny"></div>
-        </div>
-        </div>
-        `;
-    }
+    showMenuSkeleton(loader);
   }
 
   // Fetch fresh data in background using COMBINED endpoint (1 call instead of 3)

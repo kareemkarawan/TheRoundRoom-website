@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,16 +12,18 @@
     <link rel="icon" type="image/png" href="images/Icon.png">
     <script src="script.js?v=1784299120714"></script>
     <script type="module" src="js/renderMenu.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="webpimages/menu-bg.webp">
 </head>
+
 <body>
     <nav class="top-nav">
         <div class="container">
             <button class="arrow" onclick="window.location.href='/'">
-                <div class = "bar4"></div>
-                <div class = "bar5"></div>
+                <div class="bar4"></div>
+                <div class="bar5"></div>
             </button>
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
@@ -40,8 +43,9 @@
             <div class="big-menu-title">
                 <h2>MENU</h2>
             </div>
-            <p class="order-note order-note-inline" role="status" aria-live="polite">Our bagels are made fresh and need 24 hours to proof. Order by 2 PM for next-day delivery.</p>
-            <div id="menuLoader" class="menu-loader" role="status" aria-live="polite">Loading menu…</div>
+            <p class="order-note order-note-inline" role="status" aria-live="polite">Our bagels are made fresh and need
+                24 hours to proof. Order by 2 PM for next-day delivery.</p>
+            <div id="menuLoader" class="menu-loader" role="status" aria-live="polite"></div>
             <div class="menu-grid">
                 <div id="comboSection" class="combo-section" style="display:none;">
                     <div class="small-menu-title">
@@ -83,7 +87,7 @@
                     <div class="section-line"></div>
                 </div>
                 <div id="schmearMenu" class="category-grid">
-                    
+
                 </div>
 
                 <div class="small-menu-title">
@@ -99,7 +103,8 @@
         <aside class="cart-sidebar">
             <div class="cart-header">
                 <h3>YOUR CART</h3>
-                <button class="cart-toggle" id="cartToggle" aria-expanded="true" aria-controls="cartItems" aria-label="Toggle cart">
+                <button class="cart-toggle" id="cartToggle" aria-expanded="true" aria-controls="cartItems"
+                    aria-label="Toggle cart">
                     <span class="cart-toggle-total" id="toggleTotal">₹0.00</span>
                     <span class="cart-toggle-chevron" aria-hidden="true">▾</span>
                 </button>
@@ -125,9 +130,11 @@
                     <span id="total">₹0.00</span>
                 </div>
             </div>
-            <p class="cart-delivery-note">Complimentary delivery on orders above ₹1800. Delivery charges apply to orders below this amount.</p>
+            <p class="cart-delivery-note">Complimentary delivery on orders above ₹1800. Delivery charges apply to orders
+                below this amount.</p>
             <button class="checkout-btn" id="checkoutBtn" type="button">Checkout</button>
-            <p class="cart-warning" id="cartWarning" role="status" aria-live="polite" style="display:none;">Your basket is empty.</p>
+            <p class="cart-warning" id="cartWarning" role="status" aria-live="polite" style="display:none;">Your basket
+                is empty.</p>
         </aside>
     </div>
 
@@ -165,7 +172,8 @@
                     <span id="sheetTotalFull">₹0.00</span>
                 </div>
             </div>
-            <p class="sheet-delivery-note">Complimentary delivery on orders above ₹1800. Delivery charges apply to orders below this amount.</p>
+            <p class="sheet-delivery-note">Complimentary delivery on orders above ₹1800. Delivery charges apply to
+                orders below this amount.</p>
         </div>
         <div class="sheet-footer">
             <button class="sheet-checkout-btn" id="sheetCheckoutBtn">Checkout</button>
@@ -215,4 +223,5 @@
         </div>
     </footer>
 </body>
+
 </html>
