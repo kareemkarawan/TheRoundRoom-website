@@ -9,24 +9,12 @@
  * - Single cached client shared across function invocations
  */
 
-const { MongoClient } = require("mongodb");
-
-const uri = process.env.MONGODB_URI;
+const { createMongoClient } = require("../mongo-uri");
 const dbName = "round_room";
-
-// Validate MONGODB_URI exists at module load time
-if (!uri) {
-  console.error("CRITICAL: MONGODB_URI environment variable is not set!");
-}
 
 let cachedClient = null;
 
 async function getDB() {
-  // Check URI exists before attempting connection
-  if (!uri) {
-    throw new Error("MONGODB_URI is not configured. Please add it in Netlify environment variables.");
-  }
-
   if (cachedClient) {
     try {
       // Verify cached connection is still alive
@@ -38,7 +26,7 @@ async function getDB() {
     }
   }
 
-  const client = new MongoClient(uri, {
+  const client = createMongoClient({
     serverSelectionTimeoutMS: 10000,
     connectTimeoutMS: 10000,
     socketTimeoutMS: 30000,

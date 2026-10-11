@@ -8,15 +8,14 @@
  * - PATCH: Verify payment signature or update order status
  * - DELETE: Admin only, remove order by orderNumber (or all with all=1)
  * - Supports combo items with bagel/schmear selections
- * - Applies discounts if discountId provided and valid
  * - Orders stored in MongoDB round_room.orders collection
  * - Payment verification uses HMAC SHA256 signature check
  */
 
-const { MongoClient, ObjectId } = require("mongodb");
+const { ObjectId } = require("mongodb");
+const { createMongoClient } = require("../mongo-uri");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "orders";
 const menuCollectionName = "menu";
@@ -27,6 +26,14 @@ const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const MAX_DELIVERY_FEE = 5000;
+const ORDER_TYPES = new Set(["delivery", "collection"]);
+
+function normalizeOrderType(value) {
+  if (value === undefined || value === null) {
+    return "delivery";
+  }
+  return ORDER_TYPES.has(value) ? value : null;
+}
 
 function normalizeDeliveryFee(value, fallback = 100) {
   const fee = Number(value);
@@ -42,15 +49,11 @@ function normalizeDeliveryFee(value, fallback = 100) {
 let cachedClient = null;
 
 async function getClient() {
-  if (!uri) {
-    throw new Error("MONGODB_URI is not configured. Please add it in Netlify environment variables.");
-  }
-
   if (cachedClient) {
     return cachedClient;
   }
 
-  const client = new MongoClient(uri, {
+  const client = createMongoClient({
     serverSelectionTimeoutMS: 5000,
   });
 
@@ -86,6 +89,7 @@ async function getSettings(db) {
     dailyCapEnabled: typeof settings?.dailyCapEnabled === "boolean" ? settings.dailyCapEnabled : false,
     dailyCapLimit: Number(settings?.dailyCapLimit ?? 50),
     deliveryFee: normalizeDeliveryFee(settings?.deliveryFee ?? 100),
+    collectionEnabled: typeof settings?.collectionEnabled === "boolean" ? settings.collectionEnabled : true,
   };
 }
 
@@ -118,6 +122,14 @@ async function handlePost(body) {
     };
   }
 
+  const orderType = normalizeOrderType(order.orderType);
+  if (!orderType) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid order type" }),
+    };
+  }
+
   try {
     const client = await getClient();
     const db = client.db(dbName);
@@ -132,11 +144,18 @@ async function handlePost(body) {
       };
     }
 
+    if (orderType === "collection" && !settings.collectionEnabled) {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({ error: "Collection orders are currently unavailable" }),
+      };
+    }
+
     // Check daily order cap for the requested delivery date
     if (settings.dailyCapEnabled) {
       // Get the delivery date from the order, default to today
       const deliveryDateString = order.orderDate || new Date().toISOString().split('T')[0];
-      
+
       // Count orders scheduled for this delivery date (excluding cancelled)
       const dateOrderCount = await collection.countDocuments({
         orderDate: deliveryDateString,
@@ -146,7 +165,7 @@ async function handlePost(body) {
       if (dateOrderCount >= settings.dailyCapLimit) {
         return {
           statusCode: 403,
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             error: "Daily order limit reached for selected date",
             dailyCapReached: true,
             requestedDate: deliveryDateString
@@ -272,7 +291,7 @@ async function handlePost(body) {
     if (comboItems.length > 0) {
       const comboSettingsCollection = db.collection("combo_settings");
       const comboSettings = await comboSettingsCollection.findOne({ id: "combo" });
-      
+
       if (!comboSettings || !comboSettings.isAvailable) {
         return {
           statusCode: 400,
@@ -284,11 +303,11 @@ async function handlePost(body) {
         const comboPrice = Number(comboSettings.price || 0);
         const lineTotal = Number((comboPrice * combo.qty).toFixed(2));
         subtotal += lineTotal;
-        
-        const comboName = combo.bagelName && combo.schmearName 
+
+        const comboName = combo.bagelName && combo.schmearName
           ? `Bagel & Schmear Sandwich: ${combo.bagelName} + ${combo.schmearName}`
           : "Bagel & Schmear Sandwich";
-        
+
         lineItems.push({
           menuItemId: "combo_bagel_schmear",
           name: comboName,
@@ -302,27 +321,9 @@ async function handlePost(body) {
       }
     }
 
-    // Handle discount if provided
-    let discountAmount = 0;
-    let discountInfo = null;
-    if (order.discountId) {
-      const discountsCollection = db.collection("discounts");
-      const discount = await discountsCollection.findOne({ id: order.discountId, isActive: true });
-      if (discount) {
-        discountAmount = Number(((subtotal * discount.percentage) / 100).toFixed(2));
-        discountInfo = {
-          id: discount.id,
-          name: discount.name,
-          percentage: discount.percentage,
-          amount: discountAmount,
-        };
-      }
-    }
-
-    const discountedSubtotal = subtotal - discountAmount;
-    const deliveryFee = order.orderType === "delivery" && discountedSubtotal < 1800 ? settings.deliveryFee : 0;
-    const tax = Number(((discountedSubtotal * settings.taxRate) / 100).toFixed(2));
-    const total = Number((discountedSubtotal + deliveryFee + tax).toFixed(2));
+    const deliveryFee = orderType === "delivery" && subtotal < 1800 ? settings.deliveryFee : 0;
+    const tax = Number(((subtotal * settings.taxRate) / 100).toFixed(2));
+    const total = Number((subtotal + deliveryFee + tax).toFixed(2));
     const createdAt = new Date();
     const orderNumber = `${settings.invoicePrefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -392,13 +393,11 @@ async function handlePost(body) {
     const orderDoc = {
       orderNumber,
       status: "PAYMENT_PENDING",
-      orderType: order.orderType || "delivery",
+      orderType,
       orderDate: order.orderDate || null,
       items: lineItems,
       pricing: {
         subtotal,
-        discount: discountInfo,
-        discountedSubtotal,
         deliveryFee,
         tax,
         total,
@@ -454,8 +453,6 @@ async function handlePost(body) {
         key_id: RAZORPAY_KEY_ID,
         pricing: {
           subtotal,
-          discount: discountInfo,
-          discountedSubtotal,
           deliveryFee,
           tax,
           total,
@@ -481,39 +478,39 @@ async function handleGet(event) {
 
     // Build filter from query params
     const params = event.queryStringParameters || {};
-    
+
     // Handle production view (tomorrow's orders with totals)
     if (params.production === "1") {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(0, 0, 0, 0);
-      
+
       const tomorrowDateString = tomorrow.toISOString().split('T')[0];
-      
+
       // Find orders scheduled for tomorrow
       const filter = {
         orderDate: tomorrowDateString
       };
-      
+
       const orders = await collection
         .find(filter)
         .sort({ createdAt: -1 })
         .toArray();
-      
+
       // Load menu items to look up names for combo items without names
       const menuCollection = db.collection(menuCollectionName);
       const allMenuItems = await menuCollection.find({}).toArray();
       const menuMap = new Map(allMenuItems.map(m => [m.id, m]));
-      
+
       // Aggregate item totals
       const itemTotals = {};
-      
+
       for (const order of orders) {
         if (!order.items) continue;
-        
+
         for (const item of order.items) {
           let itemName = item.name || 'Unknown Item';
-          
+
           // Handle combo items - count bagels and schmears separately
           if (item.isCombo) {
             // Get bagel name - look up from menu if not stored
@@ -523,12 +520,12 @@ async function handleGet(event) {
               bagelName = bagelItem ? bagelItem.name : 'Bagel';
             }
             if (!bagelName) bagelName = 'Bagel';
-            
+
             // Ensure name includes "Bagel" for proper categorization
             if (!bagelName.toLowerCase().includes('bagel')) {
               bagelName = `${bagelName} Bagel`;
             }
-            
+
             // Get schmear name - look up from menu if not stored
             let schmearName = item.schmearName;
             if (!schmearName && item.schmearId) {
@@ -536,12 +533,12 @@ async function handleGet(event) {
               schmearName = schmearItem ? schmearItem.name : 'Schmear';
             }
             if (!schmearName) schmearName = 'Schmear';
-            
+
             // Ensure name includes "Schmear" or "Cream Cheese" for proper categorization
             if (!schmearName.toLowerCase().includes('schmear') && !schmearName.toLowerCase().includes('cream cheese')) {
               schmearName = `${schmearName} Schmear`;
             }
-            
+
             itemTotals[bagelName] = (itemTotals[bagelName] || 0) + item.qty;
             itemTotals[schmearName] = (itemTotals[schmearName] || 0) + item.qty;
           }
@@ -576,7 +573,7 @@ async function handleGet(event) {
           }
         }
       }
-      
+
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -593,13 +590,13 @@ async function handleGet(event) {
         }),
       };
     }
-    
+
     const filter = {};
-    
+
     if (params.orderType) {
       filter.orderType = params.orderType;
     }
-    
+
     if (params.status) {
       const statuses = params.status.split(',').map(s => s.trim());
       filter.status = { $in: statuses };

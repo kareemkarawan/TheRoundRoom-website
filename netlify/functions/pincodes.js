@@ -11,10 +11,9 @@
  * - Frontend uses pincode list to validate delivery addresses
  */
 
-const { MongoClient } = require("mongodb");
+const { createMongoClient } = require("../mongo-uri");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "pincodes";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
@@ -26,7 +25,7 @@ async function getClient() {
   if (cachedClient) {
     return cachedClient;
   }
-  const client = new MongoClient(uri, {
+  const client = createMongoClient({
     serverSelectionTimeoutMS: 5000,
   });
   await client.connect();

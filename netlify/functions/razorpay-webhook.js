@@ -12,9 +12,8 @@
  */
 
 const crypto = require("crypto");
-const { MongoClient } = require("mongodb");
+const { createMongoClient } = require("../mongo-uri");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "orders";
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -27,7 +26,7 @@ let cachedClient = null;
 
 async function getClient() {
   if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+  const client = createMongoClient({ serverSelectionTimeoutMS: 5000 });
   await client.connect();
   cachedClient = client;
   return client;
@@ -39,7 +38,7 @@ function verifySignature(rawBody, signature) {
     .createHmac("sha256", WEBHOOK_SECRET)
     .update(rawBody)
     .digest("hex");
-  
+
   if (expected.length !== signature.length) return false;
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
@@ -105,7 +104,7 @@ exports.handler = async (event) => {
         expectedAmount,
         webhookAmount,
       });
-      return { statusCode: 400, body: "Payment amount mismatch" }; 
+      return { statusCode: 400, body: "Payment amount mismatch" };
     }
 
     if (eventType === "payment.captured") {
@@ -148,7 +147,10 @@ exports.handler = async (event) => {
       );
     } else if (eventType === "payment.failed") {
       await collection.updateOne(
-        { "payment.providerOrderId": razorpayOrderId },
+        {
+          "payment.providerOrderId": razorpayOrderId,
+          "payment.status": { $ne: "PAID" },
+        },
         {
           $set: {
             status: "PAYMENT_PENDING",

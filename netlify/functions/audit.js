@@ -11,10 +11,9 @@
  * - Default limit is 100, max 300 entries per request
  */
 
-const { MongoClient } = require("mongodb");
+const { createMongoClient } = require("../mongo-uri");
 const { isAdminAuthorized } = require("./utils");
 
-const uri = process.env.MONGODB_URI;
 const dbName = "round_room";
 const collectionName = "audit_logs";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
@@ -24,7 +23,7 @@ let cachedClient = null;
 
 async function getClient() {
   if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+  const client = createMongoClient({ serverSelectionTimeoutMS: 5000 });
   await client.connect();
   cachedClient = client;
   return client;

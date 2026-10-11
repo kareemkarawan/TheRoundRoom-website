@@ -611,8 +611,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let pendingOrderData = null;
     let validPincodes = [];
-    let availableDiscounts = [];
-    let selectedDiscount = null;
     let collectionEnabled = false;
 
     // Order type handling (delivery vs collection)
@@ -653,8 +651,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (emailSection) emailSection.style.display = 'none';
             if (phoneSection) phoneSection.style.display = 'none';
         }
-        // Trigger discount logic update
-        loadAvailableDiscounts();
     }
 
     async function loadCollectionSetting() {
@@ -675,47 +671,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // Set up order type radio listeners
     const orderTypeRadios = document.querySelectorAll('input[name="orderType"]');
     orderTypeRadios.forEach(radio => {
-        radio.addEventListener('change', handleOrderTypeChange);
+        radio.addEventListener('change', () => {
+            handleOrderTypeChange();
+            renderCheckoutSummary();
+        });
     });
     // Ensure correct fields are shown/hidden on initial load
     handleOrderTypeChange();
 
-    async function loadAvailableDiscounts() {
-        const discountSelector = document.getElementById('discountSelector');
-        const discountLoginPrompt = document.getElementById('discountLoginPrompt');
+    async function loadProfileDetails() {
         const token = localStorage.getItem('rr_token');
-
-        // For collection orders, apply 15% discount automatically and disable further discounts
-        if (window._rrOrderType === 'collection') {
-            if (discountSelector) {
-                discountSelector.style.display = 'none';
-                discountSelector.disabled = true;
-            }
-            if (discountLoginPrompt) discountLoginPrompt.style.display = 'none';
-            // Set selectedDiscount to special collection discount
-            selectedDiscount = { id: 'collection15', name: 'Popup Collection 15% Off', percentage: 15 };
-            updateCheckoutWithDiscount();
-            return;
-        }
-        // ...existing code...
-
-        // Only fetch profile if user has a token
-        if (!token) {
-            // User not logged in - show login prompt if discount selector exists
-            if (discountLoginPrompt) discountLoginPrompt.style.display = 'block';
-            if (discountSelector) discountSelector.style.display = 'none';
-            return;
-        }
+        if (!token) return;
 
         try {
-            // Fetch user's personal discounts from profile
             const response = await fetch('/.netlify/functions/profile', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
                 const data = await response.json();
-
-                // Auto-fill email and phone from profile
                 const emailInput = document.getElementById('email');
                 const phoneInput = document.getElementById('phone');
                 if (emailInput && data.profile?.email) {
@@ -724,112 +697,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (phoneInput && data.profile?.phone) {
                     phoneInput.value = data.profile.phone;
                 }
-
-                // Group discounts by discountId and count uses available
-                const discountMap = new Map();
-                (data.profile?.discounts || []).forEach(d => {
-                    if (discountMap.has(d.discountId)) {
-                        discountMap.get(d.discountId).count += 1;
-                    } else {
-                        discountMap.set(d.discountId, { ...d, count: 1 });
-                    }
-                });
-                availableDiscounts = Array.from(discountMap.values()).map(d => ({
-                    id: d.discountId,
-                    name: d.name,
-                    percentage: d.percentage,
-                    usesRemaining: d.count
-                }));
-                populateDiscountDropdown();
             } else if (response.status === 401) {
-                // Token expired or invalid - clear it and show login prompt
                 localStorage.removeItem('rr_token');
-                if (discountLoginPrompt) discountLoginPrompt.style.display = 'block';
-                if (discountSelector) discountSelector.style.display = 'none';
             }
         } catch (e) {
-            // Only log actual network/server errors, not authentication issues
-            console.warn('Could not load discounts:', e.message);
+            console.warn('Could not load profile details:', e.message);
         }
     }
-
-    function populateDiscountDropdown() {
-        const select = document.getElementById('discountSelect');
-        if (!select) return;
-        select.innerHTML = '<option value="">No discount</option>';
-        availableDiscounts.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d.id;
-            const usesText = d.usesRemaining > 1 ? ` (${d.usesRemaining} uses left)` : '';
-            opt.textContent = `${d.name} (${d.percentage}% off)${usesText}`;
-            select.appendChild(opt);
-        });
-    }
-
-    function handleDiscountChange() {
-        const select = document.getElementById('discountSelect');
-        if (!select) return;
-        const discountId = select.value;
-        selectedDiscount = discountId ? availableDiscounts.find(d => d.id === discountId) : null;
-        updateCheckoutWithDiscount();
-    }
-
-    function getDeliveryFee(subtotal, discountAmount = 0) {
+    function getDeliveryFee(subtotal) {
         const orderType = window._rrOrderType || 'delivery';
         if (orderType !== 'delivery') return 0;
-        const discountedSubtotal = subtotal - discountAmount;
-        return discountedSubtotal < 1800 ? Number(window._rrDeliveryFee ?? 100) : 0;
-    }
-
-    function updateCheckoutWithDiscount() {
-        const subtotalEl = document.getElementById('checkoutSubtotal');
-        const discountRow = document.getElementById('discountRow');
-        const discountNameEl = document.getElementById('discountName');
-        const discountAmtEl = document.getElementById('checkoutDiscount');
-        const deliveryFeeRow = document.getElementById('deliveryFeeRow');
-        const deliveryFeeAmtEl = document.getElementById('checkoutDeliveryFee');
-        const sgstEl = document.getElementById('checkoutSgst');
-        const cgstEl = document.getElementById('checkoutCgst');
-        const totalEl = document.getElementById('checkoutTotal');
-
-        let cart = null;
-        try { cart = JSON.parse(localStorage.getItem('rr_cart') || 'null'); } catch (e) { cart = null; }
-        if (!cart || !cart.subtotal) return;
-
-        const subtotal = Number(cart.subtotal || 0);
-        let discountAmount = 0;
-
-        // Always auto-apply 15% discount for collection orders
-        if (window._rrOrderType === 'collection') {
-            discountAmount = subtotal * 0.15;
-            discountRow.style.display = 'flex';
-            discountNameEl.textContent = 'Popup Collection 15% Off';
-            discountAmtEl.textContent = `-₹${discountAmount.toFixed(2)}`;
-        } else if (selectedDiscount) {
-            discountAmount = (subtotal * selectedDiscount.percentage) / 100;
-            discountRow.style.display = 'flex';
-            discountNameEl.textContent = selectedDiscount.name;
-            discountAmtEl.textContent = `-₹${discountAmount.toFixed(2)}`;
-        } else {
-            discountRow.style.display = 'none';
-        }
-
-        const deliveryFee = getDeliveryFee(subtotal);
-        if (deliveryFeeRow) {
-            deliveryFeeRow.style.display = window._rrOrderType === 'delivery' && deliveryFee > 0 ? 'flex' : 'none';
-        }
-        if (deliveryFeeAmtEl) {
-            deliveryFeeAmtEl.textContent = `₹${deliveryFee.toFixed(2)}`;
-        }
-
-        const discountedSubtotal = subtotal - discountAmount;
-        const sgst = discountedSubtotal * 0.025;
-        const cgst = discountedSubtotal * 0.025;
-        const total = discountedSubtotal + deliveryFee + sgst + cgst;
-
-        if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
-        if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
-        if (totalEl) totalEl.textContent = `₹${total.toFixed(2)}`;
+        return subtotal < 1800 ? Number(window._rrDeliveryFee ?? 100) : 0;
     }
 
     function renderCheckoutSummary() {
@@ -893,18 +771,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (deliveryFeeAmtEl) {
             deliveryFeeAmtEl.textContent = `₹${deliveryFee.toFixed(2)}`;
         }
-        // Apply discount if selected
-        if (selectedDiscount) {
-            updateCheckoutWithDiscount();
-        } else {
-            const taxableSubtotal = Number(cart.subtotal || 0);
-            const sgst = taxableSubtotal * 0.025;
-            const cgst = taxableSubtotal * 0.025;
-            if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
-            if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
-            const total = Number(cart.subtotal || 0) + deliveryFee + sgst + cgst;
-            totalEl.textContent = `₹${total.toFixed(2)}`;
-        }
+        const subtotalValue = Number(cart.subtotal || 0);
+        const sgst = subtotalValue * 0.025;
+        const cgst = subtotalValue * 0.025;
+        if (sgstEl) sgstEl.textContent = `₹${sgst.toFixed(2)}`;
+        if (cgstEl) cgstEl.textContent = `₹${cgst.toFixed(2)}`;
+        const total = subtotalValue + deliveryFee + sgst + cgst;
+        totalEl.textContent = `₹${total.toFixed(2)}`;
         if (loadingEl) loadingEl.style.display = 'none';
     }
 
@@ -1002,6 +875,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Real-time pincode validation
     const pincodeInput = document.getElementById('pincode');
     if (pincodeInput) {
+        const savedPincode = (localStorage.getItem('rr_menu_pincode') || '').trim();
+        if (savedPincode) pincodeInput.value = savedPincode;
+
         pincodeInput.addEventListener('blur', async (e) => {
             await validatePincode(e.target.value);
         });
@@ -1120,7 +996,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     qty: Number(i.qty)
                 };
             }),
-            discountId: selectedDiscount ? selectedDiscount.id : null
         };
 
         // Create order and Razorpay order server-side before opening payment modal
@@ -1214,6 +1089,34 @@ document.addEventListener('DOMContentLoaded', function () {
                     const paymentLoading = document.getElementById('paymentLoading');
                     if (paymentLoading) paymentLoading.style.display = 'flex';
 
+                    // Verify payment with backend BEFORE trusting it client-side
+                    let verifyResult = null;
+                    try {
+                        const verifyRes = await fetch('/.netlify/functions/verify-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                orderNumber: pendingOrderData.orderNumber
+                            })
+                        });
+
+                        if (!verifyRes.ok) {
+                            if (paymentLoading) paymentLoading.style.display = 'none';
+                            alert('We could not confirm your payment. If money was deducted, your order will update automatically within a few minutes — please contact us if it does not, quoting order ' + pendingOrderData.orderNumber + '.');
+                            return;
+                        }
+
+                        verifyResult = await verifyRes.json();
+                    } catch (e) {
+                        if (paymentLoading) paymentLoading.style.display = 'none';
+                        alert('Network error while confirming your payment. Please do not retry blindly — if money was deducted, contact us with order ' + pendingOrderData.orderNumber + ' before placing another order.');
+                        return;
+                    }
+
+                    // Only now treat the payment as confirmed
                     const summary = {
                         orderNumber: pendingOrderData.orderNumber,
                         customer: pendingOrderData.customer,
@@ -1266,14 +1169,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load checkout summary and pincodes when form is ready
     renderCheckoutSummary();
     loadValidPincodes();
-    loadAvailableDiscounts();
+    loadProfileDetails();
     loadCollectionSetting();
-
-    // Discount dropdown listener
-    const discountSelect = document.getElementById('discountSelect');
-    if (discountSelect) {
-        discountSelect.addEventListener('change', handleDiscountChange);
-    }
 });
 
 /* ===== Store status (open/closed) ===== */
@@ -1398,7 +1295,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const cart = data.cart || { items: [], subtotal: 0, sgst: 0, cgst: 0, tax: 0, total: 0 };
     const pricing = data.pricing || {};
-    const discount = pricing.discount || null;
 
     // Use pricing from server if available, otherwise fallback to cart values
     const subtotal = Number(pricing.subtotal ?? cart.subtotal ?? 0);
@@ -1438,14 +1334,6 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
     }).join('');
 
-    // Build discount row if applicable
-    const discountHtml = discount ? `
-        <div class="row discount-row" style="color: #2e7d32;">
-            <span>Discount (${discount.percentage}%)</span>
-            <span>-₹${Number(discount.amount || 0).toFixed(2)}</span>
-        </div>
-    ` : '';
-
     container.innerHTML = `
         <h3>Thanks! Your payment is confirmed.</h3>
         <p>Order ID: <strong>${data.orderNumber}</strong></p>
@@ -1453,7 +1341,6 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="checkout-items" style="margin-top:1rem;">${itemsHtml || '<p>No items.</p>'}</div>
         <div class="checkout-breakdown" style="margin-top:1rem;">
             <div class="row"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
-            ${discountHtml}
             <div class="row"><span>SGST (2.5%)</span><span>₹${sgst.toFixed(2)}</span></div>
             <div class="row"><span>CGST (2.5%)</span><span>₹${cgst.toFixed(2)}</span></div>
             <div class="row total"><span>Total</span><span>₹${total.toFixed(2)}</span></div>
@@ -1593,20 +1480,15 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         const sgst = Number(cart.sgst ?? cart.SGST ?? cart.sgstAmount ?? 0) || (tax / 2);
         const cgst = Number(cart.cgst ?? cart.CGST ?? cart.cgstAmount ?? 0) || (tax / 2);
         const total = Number(pricing.total ?? cart.total ?? cart.totalAmount ?? 0) || (subtotal + tax);
-        const discount = pricing.discount || null;
 
-        return { items, subtotal, tax, sgst, cgst, total, discount };
+        return { items, subtotal, tax, sgst, cgst, total };
     }
 
     const normalized = normalizeReceiptData(orderData || {});
     const amountPaise = Number(orderData?.amount || 0);
     const totalPaid = amountPaise > 0 ? amountPaise / 100 : Number(normalized.total || 0);
-    // Calculate rates based on discountedSubtotal if discount exists
-    const discountedSubtotal = normalized.discount
-        ? normalized.subtotal - (normalized.discount.amount || 0)
-        : normalized.subtotal;
-    const sgstRate = discountedSubtotal > 0 ? (Number(normalized.sgst || 0) / discountedSubtotal) * 100 : 0;
-    const cgstRate = discountedSubtotal > 0 ? (Number(normalized.cgst || 0) / discountedSubtotal) * 100 : 0;
+    const sgstRate = normalized.subtotal > 0 ? (Number(normalized.sgst || 0) / normalized.subtotal) * 100 : 0;
+    const cgstRate = normalized.subtotal > 0 ? (Number(normalized.cgst || 0) / normalized.subtotal) * 100 : 0;
 
     async function loadImageDataUrl(url) {
         const res = await fetch(url);
@@ -1623,7 +1505,6 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         const doc = new window.jspdf.jsPDF();
         let y = 14;
         const burgundy = [109, 36, 48];
-        const green = [46, 125, 50];
 
         doc.setFillColor(burgundy[0], burgundy[1], burgundy[2]);
         doc.rect(0, 0, 210, 18, 'F');
@@ -1686,13 +1567,6 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         y += 4;
         doc.setFontSize(11);
         doc.text(`Subtotal: Rs ${Number(normalized.subtotal || 0).toFixed(2)}`, 14, y); y += 6;
-
-        // Add discount line if applicable
-        if (normalized.discount) {
-            doc.setTextColor(green[0], green[1], green[2]);
-            doc.text(`Discount (${normalized.discount.percentage}%): -Rs ${Number(normalized.discount.amount || 0).toFixed(2)}`, 14, y); y += 6;
-            doc.setTextColor(0, 0, 0);
-        }
 
         doc.text(`SGST (${sgstRate.toFixed(2)}%): Rs ${Number(normalized.sgst || 0).toFixed(2)}`, 14, y); y += 6;
         doc.text(`CGST (${cgstRate.toFixed(2)}%): Rs ${Number(normalized.cgst || 0).toFixed(2)}`, 14, y); y += 6;

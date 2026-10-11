@@ -59,7 +59,6 @@ exports.handler = async (event) => {
           email: 1,
           phone: 1,
           addresses: 1,
-          discounts: 1,
           createdAt: 1,
         },
       }
@@ -74,7 +73,6 @@ exports.handler = async (event) => {
         email: user.email,
         phone: user.phone,
         addresses: user.addresses || [],
-        discounts: user.discounts || [],
         createdAt: user.createdAt,
       },
     });

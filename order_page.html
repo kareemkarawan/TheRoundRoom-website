@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <nav class="top-nav">
+    <nav class="top-nav order-nav">
         <div class="container">
             <button class="arrow" onclick="window.location.href='/'">
                 <div class="bar4"></div>
@@ -28,6 +28,10 @@
             <div class="logo">
                 <h1 href="#story">THE ROUND ROOM</h1>
             </div>
+            <button class="menu-pincode-control menu-pincode-control--nav" id="menuPincodeControl" type="button" aria-label="Change delivery pincode" hidden>
+                <span class="menu-pincode-copy"><span class="menu-pincode-label">DELIVERING TO</span><strong id="menuCurrentPincode"></strong></span>
+                <span class="menu-pincode-change">Change</span>
+            </button>
             <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
         </div>
     </nav>

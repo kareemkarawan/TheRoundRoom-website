@@ -9,22 +9,13 @@
  * - Closes connection after test (not cached)
  */
 
-const { MongoClient } = require("mongodb");
+const { createMongoClient } = require("../mongo-uri");
 
 exports.handler = async () => {
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    return {
-      statusCode: 500,
-      body: "MONGODB_URI not set",
-    };
-  }
-
   let client;
 
   try {
-    client = new MongoClient(uri, {
+    client = createMongoClient({
       serverSelectionTimeoutMS: 5000,
     });
 
