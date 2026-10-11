@@ -1,2 +1,31 @@
 # Local Netlify folder
 .netlify
+
+# Local environment files and credentials
+.env*
+!.env.example
+
+# Local-only Docker configuration and MongoDB data
+/docker-compose.local.yml
+/docker-compose.local.yaml
+/docker-compose.override.yml
+/docker-compose.override.yaml
+/compose.local.yml
+/compose.local.yaml
+/compose.override.yml
+/compose.override.yaml
+/.env.docker
+/.docker/
+/mongo-data/
+/mongodb-data/
+/local-mongo-data/
+/data/db/
+
+# Private key and certificate files
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Installed dependencies
+node_modules/

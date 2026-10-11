@@ -40,6 +40,40 @@ function getSelectedPincode() {
   return (localStorage.getItem(MENU_PINCODE_KEY) || '').trim();
 }
 
+function updatePincodeControl() {
+  const control = document.getElementById('menuPincodeControl');
+  const value = document.getElementById('menuCurrentPincode');
+  const selectedPincode = getSelectedPincode();
+
+  if (!control || !value) return;
+  value.textContent = selectedPincode;
+  control.hidden = !selectedPincode;
+
+  if (!control.dataset.bound) {
+    control.dataset.bound = 'true';
+    control.addEventListener('click', () => {
+      const gate = ensurePincodeGate();
+      const input = gate.querySelector('#menuPincodeInput');
+      const error = gate.querySelector('#menuPincodeError');
+      const entryState = gate.querySelector('#pincodeEntryState');
+      const unavailableState = gate.querySelector('#pincodeUnavailableState');
+      const title = entryState?.querySelector('h3');
+      const description = entryState?.querySelector('p');
+      const submitLabel = gate.querySelector('.pincode-submit-label');
+
+      if (input) input.value = getSelectedPincode();
+      if (error) error.classList.remove('visible');
+      if (entryState) entryState.style.display = 'block';
+      if (unavailableState) unavailableState.style.display = 'none';
+      if (title) title.textContent = 'Change your pincode';
+      if (description) description.textContent = 'Enter a new delivery pincode to update what is available in your area.';
+      if (submitLabel) submitLabel.textContent = 'Update pincode';
+      gate.classList.add('active');
+      input?.focus();
+    });
+  }
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -105,35 +139,18 @@ async function renderCombo(menuItems, comboSettings) {
 
     const comboDescription = (comboSettings.description || '').trim();
 
-    // Check if popup mode - apply 15% discount
-    const isPopupMode = window._rrOrderType === 'popup';
-    const originalPrice = comboSettings.price;
-    const discountedPrice = isPopupMode ? originalPrice * 0.85 : originalPrice;
-
-    // Store combo price globally for cart calculations (use discounted price in popup mode)
-    window._rrComboPrice = discountedPrice;
-
-    // Build price display HTML
-    const priceHTML = isPopupMode
-      ? `<span class="combo-original-price">₹${Number(originalPrice).toFixed(2)}</span> <span class="combo-discounted-price">₹${Number(discountedPrice).toFixed(2)}</span>`
-      : `₹${Number(originalPrice).toFixed(2)}`;
+    const comboPrice = comboSettings.price;
+    window._rrComboPrice = comboPrice;
+    const priceHTML = `₹${Number(comboPrice).toFixed(2)}`;
 
     if (isPincodeBlocked || availableBagels.length === 0 || availableSchmears.length === 0) {
-      comboContainer.innerHTML = `
-        <div class="combo-item combo-item--unavailable" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${discountedPrice}">
-          ${comboDescription ? `<p class="combo-description">${escapeHtml(comboDescription)}</p>` : ''}
-          <div class="combo-unavailable-banner">Unavailable in your area</div>
-          <div class="combo-info">
-            <p class="combo-price">${priceHTML}</p>
-          </div>
-        </div>
-      `;
-      comboSection.style.display = 'block';
+      comboContainer.innerHTML = '';
+      comboSection.style.display = 'none';
       return;
     }
 
     comboContainer.innerHTML = `
-      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${discountedPrice}">
+      <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${comboPrice}">
         ${comboDescription ? `<p class="combo-description">${escapeHtml(comboDescription)}</p>` : ''}
         <div class="combo-selectors">
           <div class="combo-selector-group">
@@ -551,9 +568,13 @@ async function renderBagelBoxes() {
 function renderBoxesToDOM(boxes, boxSection, boxContainer) {
   const bagelBitesSection = document.getElementById('bagelBitesSection');
   const bagelBitesContainer = document.getElementById('bagelBitesContainer');
+  const selectedPincode = getSelectedPincode();
+  const visibleBoxes = boxes.filter(box =>
+    !selectedPincode || isItemAvailableForPincode(box, selectedPincode)
+  );
 
-  const bagelBitesBoxes = boxes.filter(isBagelBitesBox);
-  const regularBoxes = boxes.filter(box => !isBagelBitesBox(box));
+  const bagelBitesBoxes = visibleBoxes.filter(isBagelBitesBox);
+  const regularBoxes = visibleBoxes.filter(box => !isBagelBitesBox(box));
 
   console.debug('[renderMenu] Total boxes:', boxes.length, 'Bagel Bites:', bagelBitesBoxes.length, 'Regular:', regularBoxes.length);
   if (bagelBitesBoxes.length > 0) {
@@ -562,25 +583,21 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
 
   const renderBoxCards = (target, targetBoxes) => {
     if (!target) return;
-    const selectedPincode = getSelectedPincode();
     target.innerHTML = targetBoxes.map(box => {
       const isBites = isBagelBitesBox(box);
       const biteCount = isBites ? (Number(box.biteCount) || 18) : 0;
       const bagelCount = isBites ? 0 : (Number(box.bagelCount) || 0);
       const schmearCount = Number(box.schmearCount) || 0;
-      const unavailableForPincode = !!selectedPincode && !isItemAvailableForPincode(box, selectedPincode);
-
       return `
-    <div class="menu-item box-item${unavailableForPincode ? ' menu-item--unavailable' : ''}" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
+    <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
       ${box.imageUrl ? `<img src="${box.imageUrl}" alt="${box.name}" loading="lazy">` : ''}
       <div class="menu-item-info">
         <h3>${box.name}</h3>
         <p class="box-contents">${getBoxContentsText(box)}</p>
         ${box.description ? `<p class="box-desc">${box.description}</p>` : ''}
         <p class="price">₹${Number(box.price).toFixed(2)}</p>
-        <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}' ${unavailableForPincode ? 'disabled' : ''}>ADD</button>
+        <button class="box-add-btn" data-box='${JSON.stringify(box).replace(/'/g, "&#39;")}'>ADD</button>
       </div>
-      ${unavailableForPincode ? '<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div>' : ''}
     </div>
   `;
     }).join('');
@@ -621,35 +638,25 @@ function renderMenuItems(items, MenuItemClass, grid) {
   };
 
   items
-    .filter(data => data.isAvailable !== false)
+    .filter(data => data.isAvailable !== false && (!selectedPincode || isItemAvailableForPincode(data, selectedPincode)))
     .forEach(data => {
-      const unavailableForPincode = !!selectedPincode && !isItemAvailableForPincode(data, selectedPincode);
       let html;
       if (MenuItemClass && MenuItemClass.fromData) {
         const mi = MenuItemClass.fromData(data);
-        const originalHtml = mi.renderHTML();
-        const htmlWithClass = originalHtml.replace('class="menu-item"', `class="menu-item${unavailableForPincode ? ' menu-item--unavailable' : ''}"`);
-        html = unavailableForPincode
-          ? htmlWithClass.replace('</div>', `${'<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div></div>'}`)
-          : htmlWithClass;
-        if (unavailableForPincode) {
-          html = html.replace(/<button class="qty-btn minus" data-id="\$\{data.id\}">−<\/button>/g, '<button class="qty-btn minus" data-id="' + data.id + '" disabled>−</button>');
-          html = html.replace(/<button class="qty-btn plus" data-id="\$\{data.id\}">\+<\/button>/g, '<button class="qty-btn plus" data-id="' + data.id + '" disabled>+</button>');
-        }
+        html = mi.renderHTML();
       } else {
         html = `
-          <div class="menu-item${unavailableForPincode ? ' menu-item--unavailable' : ''}" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">
+          <div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">
             ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}
             <div class="menu-item-info">
               <h3>${data.name}</h3>
               <p class="price">₹${Number(data.price).toFixed(2)}</p>
               <div class="item-controls">
-                <button class="qty-btn minus" data-id="${data.id}" ${unavailableForPincode ? 'disabled' : ''}>−</button>
+                <button class="qty-btn minus" data-id="${data.id}">−</button>
                 <span class="qty" data-id="${data.id}">0</span>
-                <button class="qty-btn plus" data-id="${data.id}" ${unavailableForPincode ? 'disabled' : ''}>+</button>
+                <button class="qty-btn plus" data-id="${data.id}">+</button>
               </div>
             </div>
-            ${unavailableForPincode ? '<div class="menu-item-unavailable-overlay">Item unavailable at your pincode</div>' : ''}
           </div>
         `;
       }
@@ -761,6 +768,7 @@ function ensurePincodeGate() {
       localStorage.setItem(MENU_PINCODE_KEY, value);
       error.classList.remove('visible');
       gate.classList.remove('active');
+      updatePincodeControl();
       renderMenu();
     } catch (e) {
       console.error('Pincode validation failed', e);
@@ -777,6 +785,7 @@ function ensurePincodeGate() {
       localStorage.setItem(MENU_PINCODE_KEY, value);
     }
     gate.classList.remove('active');
+    updatePincodeControl();
     renderMenu();
   });
 
@@ -893,6 +902,7 @@ async function renderMenu() {
   const grid = document.querySelector('.menu-grid');
   const loader = document.getElementById('menuLoader');
   const selectedPincode = getSelectedPincode();
+  updatePincodeControl();
 
   if (!selectedPincode) {
     ensurePincodeGate();

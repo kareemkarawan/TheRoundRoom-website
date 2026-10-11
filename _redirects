@@ -1,3 +1,19 @@
+/netlify/* / 404!
+/test/* / 404!
+/.env* / 404!
+/docker-compose.local.yml / 404!
+/docker-compose.local.yaml / 404!
+/docker-compose.override.yml / 404!
+/docker-compose.override.yaml / 404!
+/compose.local.yml / 404!
+/compose.local.yaml / 404!
+/compose.override.yml / 404!
+/compose.override.yaml / 404!
+/.docker/* / 404!
+/mongo-data/* / 404!
+/mongodb-data/* / 404!
+/local-mongo-data/* / 404!
+/data/db/* / 404!
 /order_page /order_page.html 200
 /checkout /checkout.html 200
 /thankyou /thankyou.html 200
@@ -5,7 +21,6 @@
 /admin /admin.html 200
 /pookie-admin /admin 301
 /menu-admin /menu-admin.html 200
-/discounts-admin /discounts-admin.html 200
 /collections-admin /collections-admin.html 200
 /pincodes-admin /pincodes-admin.html 200
 /settings /settings.html 200
