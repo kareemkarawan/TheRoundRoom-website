@@ -86,6 +86,17 @@ function changeHamburger(x) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.video-container video').forEach(function (video) {
+        video.addEventListener('error', function () {
+            var source = video.querySelector('source[data-fallback]');
+            if (!source) return;
+
+            source.src = source.dataset.fallback;
+            source.removeAttribute('data-fallback');
+            video.load();
+        });
+    });
+
     var navLinks = document.querySelectorAll('.nav-links a');
     var topNav = document.getElementById('TopNav');
     var hamburger = document.querySelector('.nav-toggle');
