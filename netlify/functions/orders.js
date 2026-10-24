@@ -14,7 +14,7 @@
 
 const { ObjectId } = require("mongodb");
 const { createMongoClient } = require("../mongo-uri");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "orders";
@@ -788,6 +788,7 @@ exports.handler = async (event) => {
       headers,
       body: "",
     };
+
   }
 
   if (requiresAdmin && !isAdminAuthorized(event.headers, ADMIN_TOKEN)) {
@@ -821,3 +822,5 @@ exports.handler = async (event) => {
     headers,
   };
 };
+
+exports.handler = withNoStore(exports.handler);

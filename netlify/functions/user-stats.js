@@ -10,6 +10,7 @@
  */
 
 const { getDB } = require("./db");
+const { withNoStore } = require("./utils");
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
@@ -69,3 +70,5 @@ exports.handler = async (event) => {
     return buildResponse(500, { error: "Internal server error" });
   }
 };
+
+exports.handler = withNoStore(exports.handler);

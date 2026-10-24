@@ -12,7 +12,7 @@
  */
 
 const { getDB } = require("./db");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "settings";
@@ -237,6 +237,7 @@ exports.handler = async (event) => {
         headers,
         body: JSON.stringify({ error: "Unauthorized" }),
       };
+
     }
     
     const includeWeekly = event.queryStringParameters?.weekly === "1";
@@ -261,3 +262,5 @@ exports.handler = async (event) => {
     body: JSON.stringify({ error: "Method not allowed" }),
   };
 };
+
+exports.handler = withNoStore(exports.handler);

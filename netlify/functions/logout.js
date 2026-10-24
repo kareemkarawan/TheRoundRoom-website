@@ -13,6 +13,7 @@
 const { getDB } = require("./db");
 const { verifyAuth } = require("./auth");
 const { getClientIp, recordAuthEvent } = require("./auth-activity");
+const { withNoStore } = require("./utils");
 
 function buildResponse(statusCode, body) {
   return {
@@ -70,3 +71,5 @@ exports.handler = async (event) => {
     return buildResponse(500, { error: "Internal server error" });
   }
 };
+
+exports.handler = withNoStore(exports.handler);

@@ -1525,7 +1525,7 @@ async function generateReceiptPdf(orderData, razorpayResponse) {
         doc.text('THE ROUND ROOM', 14, 12);
 
         try {
-            const logoDataUrl = await loadImageDataUrl('images/Icon.png');
+            const logoDataUrl = await loadImageDataUrl('images/Icon.png?v=1792855803718');
             doc.addImage(logoDataUrl, 'PNG', 170, 3, 10, 10);
         } catch (e) {
             // ignore logo failures
@@ -1630,14 +1630,6 @@ async function deleteOrder(orderNumber) {
     } catch (e) { console.error('Could not delete order', e); }
     return false;
 }
-
-document.addEventListener('DOMContentLoaded', function () {
-    if (!document.querySelector('.top-nav')) return;
-    if (!(location.pathname === '/' || location.pathname.endsWith('/index.html'))) return;
-    if (sessionStorage.getItem('rr_menu_prefetch')) return;
-    sessionStorage.setItem('rr_menu_prefetch', '1');
-    fetch('/.netlify/functions/menu', { cache: 'no-store' }).catch(function () { });
-});
 
 /**
  * Frontend login function

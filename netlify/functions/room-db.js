@@ -10,6 +10,7 @@
  */
 
 const { createMongoClient } = require("../mongo-uri");
+const { withNoStore } = require("./utils");
 
 exports.handler = async () => {
   let client;
@@ -26,6 +27,7 @@ exports.handler = async () => {
       statusCode: 200,
       body: "Connected to MongoDB successfully 🎉",
     };
+
   } catch (err) {
     return {
       statusCode: 500,
@@ -35,3 +37,5 @@ exports.handler = async () => {
     if (client) await client.close();
   }
 };
+
+exports.handler = withNoStore(exports.handler);

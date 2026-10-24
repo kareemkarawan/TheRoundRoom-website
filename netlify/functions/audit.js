@@ -12,7 +12,7 @@
  */
 
 const { createMongoClient } = require("../mongo-uri");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "audit_logs";
@@ -199,3 +199,5 @@ exports.handler = async (event) => {
 
   return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
 };
+
+exports.handler = withNoStore(exports.handler);

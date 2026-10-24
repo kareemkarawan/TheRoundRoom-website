@@ -3,7 +3,7 @@
  * PURPOSE: Netlify function for CRUD operations on menu items.
  *
  * NOTES:
- * - GET: Public, returns all menu items (no-cache headers)
+ * - GET: Public, returns all menu items without caching
  * - POST: Admin only, creates new menu item with id, name, category, price
  * - PUT: Admin only, updates menu item by id query param
  * - DELETE: Admin only, removes menu item by id query param
@@ -12,7 +12,7 @@
  */
 
 const { getDB } = require("./db");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "menu";
@@ -51,10 +51,9 @@ async function handleGet() {
   } catch (err) {
     console.error("GET menu error:", err.message);
     console.error("Full error:", err);
-    // Return empty menu as fallback when DB is unavailable
     return {
-      statusCode: 200,
-      body: JSON.stringify([]),
+      statusCode: 503,
+      body: JSON.stringify({ error: "Menu is temporarily unavailable" }),
     };
   }
 }
@@ -221,7 +220,7 @@ async function handleDelete(itemId) {
   }
 }
 
-exports.handler = async (event) => {
+exports.handler = withNoStore(async (event) => {
   const method = event.httpMethod;
   const body = event.body;
   const itemId = event.queryStringParameters?.id;
@@ -229,11 +228,6 @@ exports.handler = async (event) => {
 
   // CORS headers
   const headers = buildHeaders(isAdminRoute);
-  if (method === "GET") {
-    // 30s cache, 60s stale-while-revalidate - fast but updates within ~90s
-    headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=60";
-  }
-
   // Handle preflight
   if (method === "OPTIONS") {
     return {
@@ -272,4 +266,4 @@ exports.handler = async (event) => {
     ...response,
     headers,
   };
-};
+});

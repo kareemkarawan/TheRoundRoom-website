@@ -7,12 +7,12 @@
  * - PUT: Updates combo settings (admin only, requires x-admin-token)
  * - Settings stored in MongoDB round_room.combo_settings collection
  * - Single document with id="combo" holds all combo configuration
- * - Uses no-cache headers for GET requests
+ * - Dynamic settings are never cached
  * - Default returns unavailable combo if no settings exist
  */
 
 const { getDB } = require("./db");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "combo_settings";
@@ -138,18 +138,13 @@ async function handlePut(body) {
   }
 }
 
-exports.handler = async (event) => {
+exports.handler = withNoStore(async (event) => {
   const method = event.httpMethod;
   const body = event.body;
   const isAdminRoute = method !== "GET" && method !== "OPTIONS";
 
   // CORS headers
   const headers = buildHeaders(isAdminRoute);
-  if (method === "GET") {
-    // 30s cache, 60s stale-while-revalidate - fast but updates within ~90s
-    headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=60";
-  }
-
   // Handle preflight
   if (method === "OPTIONS") {
     return {
@@ -184,4 +179,4 @@ exports.handler = async (event) => {
     ...response,
     headers,
   };
-};
+});

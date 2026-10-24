@@ -23,4 +23,19 @@ function isAdminAuthorized(headers = {}, adminToken) {
   return safeCompare(token, adminToken);
 }
 
-module.exports = { safeCompare, isAdminAuthorized };
+function withNoStore(handler) {
+  return async (...args) => {
+    const response = await handler(...args);
+    return {
+      ...response,
+      headers: {
+        ...response.headers,
+        "Cache-Control": "no-store",
+        "CDN-Cache-Control": "no-store",
+        "Netlify-CDN-Cache-Control": "no-store",
+      },
+    };
+  };
+}
+
+module.exports = { safeCompare, isAdminAuthorized, withNoStore };

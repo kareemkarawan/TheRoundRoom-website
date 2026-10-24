@@ -3,8 +3,8 @@
  * PURPOSE: Fetches menu items from API and renders them to the DOM with combo support.
  *
  * NOTES:
- * - Fetches from /.netlify/functions/menu and /.netlify/functions/combo-settings
- * - Uses localStorage cache for instant display while fetching fresh data
+ * - Fetches combined live data from /.netlify/functions/menu-data
+ * - Fetches live menu data without reusing cached responses
  * - Stores menu items globally in window._rrMenuItems for combo dropdowns
  * - Dynamically imports MenuItem model, falls back to inline HTML if import fails
  * - Categories map to DOM containers: bagels→bagelMenu, schmears→schmearMenu, desserts→dessertMenu
@@ -16,14 +16,24 @@
 
 window._rrMenuItems = [];
 
-// Cache keys for localStorage
-
-const MENU_CACHE_KEY = 'rr_menu_cache';
-const COMBO_CACHE_KEY = 'rr_combo_cache';
-const BOXES_CACHE_KEY = 'rr_boxes_cache';
-const ALL_DATA_CACHE_KEY = 'rr_all_data_cache'; // Combined cache
 const MENU_PINCODE_KEY = 'rr_menu_pincode';
-const CACHE_MAX_AGE = 60 * 1000; // 60 seconds - balance between speed and freshness
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get('v');
+let currentMenuItems = null;
+let currentComboSettings = null;
+
+function versionLocalAssetUrl(value) {
+  if (
+    !ASSET_VERSION ||
+    typeof value !== 'string' ||
+    !/^(?:\.\/|\/)?(?:images|webpimages|videos|fonts)\//.test(value)
+  ) {
+    return value;
+  }
+
+  const url = new URL(value, document.baseURI);
+  url.searchParams.set('v', ASSET_VERSION);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
 
 function normalizeAllowedPincodes(value) {
   if (!value) return [];
@@ -86,25 +96,6 @@ function isItemAvailableForPincode(item, selectedPincode) {
   const allowedPincodes = normalizeAllowedPincodes(item?.allowedPincodes || item?.availablePincodes || []);
   if (allowedPincodes.length === 0) return true;
   return allowedPincodes.includes(String(selectedPincode));
-}
-
-function getCachedData(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const { data, timestamp } = JSON.parse(raw);
-    // Return cached data if it's less than 5 minutes old
-    if (Date.now() - timestamp < CACHE_MAX_AGE) {
-      return data;
-    }
-  } catch (e) { }
-  return null;
-}
-
-function setCachedData(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (e) { }
 }
 
 async function renderCombo(menuItems, comboSettings) {
@@ -515,54 +506,6 @@ function initBoxPopup() {
   });
 }
 
-async function renderBagelBoxes() {
-  const boxSection = document.getElementById('boxSection');
-  const boxContainer = document.getElementById('boxContainer');
-  const bagelBitesSection = document.getElementById('bagelBitesSection');
-  if (!boxSection || !boxContainer) return;
-
-  try {
-    // Try cached boxes first
-    const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
-
-    const response = await fetch('/.netlify/functions/bagel-boxes?activeOnly=true');
-    if (!response.ok) {
-      // If network fails but we have cache, use it
-      if (cachedBoxes && cachedBoxes.length > 0) {
-        renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
-        return;
-      }
-      boxSection.style.display = 'none';
-      if (bagelBitesSection) bagelBitesSection.style.display = 'none';
-      return;
-    }
-
-    const boxes = await response.json();
-
-    // Cache the fresh data
-    setCachedData(BOXES_CACHE_KEY, boxes);
-
-    if (!boxes || boxes.length === 0) {
-      boxSection.style.display = 'none';
-      if (bagelBitesSection) bagelBitesSection.style.display = 'none';
-      return;
-    }
-
-    renderBoxesToDOM(boxes, boxSection, boxContainer);
-
-  } catch (err) {
-    console.warn('Failed to load bagel boxes', err);
-    // Try to use cached data on error
-    const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
-    if (cachedBoxes && cachedBoxes.length > 0) {
-      renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
-    } else {
-      boxSection.style.display = 'none';
-      if (bagelBitesSection) bagelBitesSection.style.display = 'none';
-    }
-  }
-}
-
 function renderBoxesToDOM(boxes, boxSection, boxContainer) {
   const bagelBitesSection = document.getElementById('bagelBitesSection');
   const bagelBitesContainer = document.getElementById('bagelBitesContainer');
@@ -588,7 +531,7 @@ function renderBoxesToDOM(boxes, boxSection, boxContainer) {
       const schmearCount = Number(box.schmearCount) || 0;
       return `
     <div class="menu-item box-item" data-id="${box.id}" data-name="${box.name}" data-price="${box.price}" data-bagels="${bagelCount}" data-bites="${biteCount}" data-schmears="${schmearCount}" data-is-box="true" data-is-bagel-bites="${isBites}">
-      ${box.imageUrl ? `<img src="${box.imageUrl}" alt="${box.name}" loading="lazy">` : ''}
+      ${box.imageUrl ? `<img src="${versionLocalAssetUrl(box.imageUrl)}" alt="${box.name}" loading="lazy">` : ''}
       <div class="menu-item-info">
         <h3>${box.name}</h3>
         <p class="box-contents">${getBoxContentsText(box)}</p>
@@ -640,12 +583,15 @@ function renderMenuItems(items, MenuItemClass, grid) {
     .forEach(data => {
       let html;
       if (MenuItemClass && MenuItemClass.fromData) {
-        const mi = MenuItemClass.fromData(data);
+        const mi = MenuItemClass.fromData({
+          ...data,
+          imageUrl: versionLocalAssetUrl(data.imageUrl || data.image || '')
+        });
         html = mi.renderHTML();
       } else {
         html = `
           <div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">
-            ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.name}" loading="lazy">` : ''}
+            ${data.imageUrl ? `<img src="${versionLocalAssetUrl(data.imageUrl)}" alt="${data.name}" loading="lazy">` : ''}
             <div class="menu-item-info">
               <h3>${data.name}</h3>
               <p class="price">₹${Number(data.price).toFixed(2)}</p>
@@ -913,114 +859,60 @@ async function renderMenu() {
 
   let MenuItemClass = null;
   try {
-    const mod = await import('./models/MenuItem.js');
+    const mod = await import('./models/MenuItem.js?v=1792855803718');
     MenuItemClass = mod && (mod.default || mod.MenuItem);
   } catch (e) {
     console.warn('Dynamic import of MenuItem failed, falling back to inline renderer', e);
   }
 
-  // Try to show cached data instantly for perceived performance
-  const cachedMenu = getCachedData(MENU_CACHE_KEY);
-  const cachedCombo = getCachedData(COMBO_CACHE_KEY);
-  const cachedBoxes = getCachedData(BOXES_CACHE_KEY);
+  showMenuSkeleton(loader);
 
-  if (cachedMenu && cachedMenu.length > 0) {
-    // Render cached data immediately - no loading state
-    if (loader) loader.style.display = 'none';
-
-    window._rrMenuItems = cachedMenu;
-    availableBagels = cachedMenu.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
-    availableSchmears = cachedMenu.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
-
-    renderMenuItems(cachedMenu, MenuItemClass, grid);
-
-    // Setup click handlers once
-    if (!grid._rr_init) {
-      grid.addEventListener('click', function (e) {
-        const btn = e.target.closest('.qty-btn');
-        if (!btn) return;
-        if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
-        const id = btn.dataset.id;
-        const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
-        let qty = parseInt(qtyEl.textContent) || 0;
-        if (btn.classList.contains('plus')) qty++; else qty = Math.max(0, qty - 1);
-        qtyEl.textContent = qty;
-        if (typeof updateCart === 'function') updateCart();
-      });
-      grid._rr_init = true;
-    }
-
-    // Render combo and boxes from cache (no API calls needed)
-    await renderCombo(cachedMenu, cachedCombo);
-
-    const boxSection = document.getElementById('boxSection');
-    const boxContainer = document.getElementById('boxContainer');
-    if (boxSection && boxContainer && cachedBoxes && cachedBoxes.length > 0) {
-      renderBoxesToDOM(cachedBoxes, boxSection, boxContainer);
-    } else if (boxSection) {
-      boxSection.style.display = 'none';
-    }
-
-    if (typeof updateCart === 'function') updateCart();
-  } else {
-    // No cache - show loading indicator
-    showMenuSkeleton(loader);
-  }
-
-  // Fetch fresh data in background using COMBINED endpoint (1 call instead of 3)
   try {
     const controller = new AbortController();
-    const timeoutMs = 20000; // Increased to handle slow connections
+    const timeoutMs = 20000;
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-    // Single combined endpoint for all menu data
-    const dataUrl = '/.netlify/functions/menu-data';
-
     let dataRes;
     try {
-      dataRes = await fetch(dataUrl, { signal: controller.signal });
+      const dataUrl = ASSET_VERSION
+        ? `/.netlify/functions/menu-data?v=${encodeURIComponent(ASSET_VERSION)}`
+        : '/.netlify/functions/menu-data';
+      dataRes = await fetch(dataUrl, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
     } finally {
       clearTimeout(timer);
     }
 
-    if (!dataRes || !dataRes.ok) throw new Error('HTTP ' + (dataRes ? dataRes.status : 'NO_RESPONSE'));
+    if (!dataRes.ok) throw new Error(`HTTP ${dataRes.status}`);
     const allData = await dataRes.json();
 
-    const items = allData.menu || [];
-    const comboSettings = allData.combo || null;
-    const boxes = allData.boxes || [];
+    if (!Array.isArray(allData.menu) || !Array.isArray(allData.boxes) || !allData.combo || typeof allData.combo !== 'object') {
+      throw new Error('Invalid menu data received');
+    }
 
-    // Cache the fresh data
-    setCachedData(MENU_CACHE_KEY, items);
-    if (comboSettings) setCachedData(COMBO_CACHE_KEY, comboSettings);
-    setCachedData(BOXES_CACHE_KEY, boxes);
+    currentMenuItems = allData.menu;
+    currentComboSettings = allData.combo;
+    const boxes = allData.boxes;
+    window._rrMenuItems = currentMenuItems;
+    availableBagels = currentMenuItems.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
+    availableSchmears = currentMenuItems.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
 
-    // Check if data changed from cache
-    const menuChanged = JSON.stringify(items) !== JSON.stringify(cachedMenu);
-    const comboChanged = JSON.stringify(comboSettings) !== JSON.stringify(cachedCombo);
+    renderMenuItems(currentMenuItems, MenuItemClass, grid);
 
-    // Only re-render if data changed or we had no cache
-    if (!cachedMenu || menuChanged) {
-      window._rrMenuItems = items;
-      availableBagels = items.filter(it => (it.category || '').toLowerCase() === 'bagels' && it.isAvailable !== false);
-      availableSchmears = items.filter(it => (it.category || '').toLowerCase() === 'schmears' && it.isAvailable !== false);
-
-      renderMenuItems(items, MenuItemClass, grid);
-
-      if (!grid._rr_init) {
-        grid.addEventListener('click', function (e) {
-          const btn = e.target.closest('.qty-btn');
-          if (!btn) return;
-          if (btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
-          const id = btn.dataset.id;
-          const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
-          let qty = parseInt(qtyEl.textContent) || 0;
-          if (btn.classList.contains('plus')) qty++; else qty = Math.max(0, qty - 1);
-          qtyEl.textContent = qty;
-          if (typeof updateCart === 'function') updateCart();
-        });
-        grid._rr_init = true;
-      }
+    if (!grid._rr_init) {
+      grid.addEventListener('click', function (e) {
+        const btn = e.target.closest('.qty-btn');
+        if (!btn || btn.classList.contains('combo-plus') || btn.classList.contains('combo-minus')) return;
+        const id = btn.dataset.id;
+        const qtyEl = document.querySelector(`.qty[data-id="${id}"]`);
+        if (!qtyEl) return;
+        let qty = parseInt(qtyEl.textContent, 10) || 0;
+        qty = btn.classList.contains('plus') ? qty + 1 : Math.max(0, qty - 1);
+        qtyEl.textContent = qty;
+        if (typeof updateCart === 'function') updateCart();
+      });
+      grid._rr_init = true;
     }
 
     if (loader) {
@@ -1034,26 +926,21 @@ async function renderMenu() {
       menuGrid.style.display = '';
     }
 
-    // Re-render combo/boxes if data changed
-    if (!cachedMenu || menuChanged || comboChanged) {
-      // Render combo
-      await renderCombo(items, comboSettings);
+    await renderCombo(currentMenuItems, currentComboSettings);
 
-      // Render boxes directly from combined response (no extra fetch needed)
-      const boxSection = document.getElementById('boxSection');
-      const boxContainer = document.getElementById('boxContainer');
-      if (boxSection && boxContainer && boxes.length > 0) {
-        renderBoxesToDOM(boxes, boxSection, boxContainer);
-      } else if (boxSection) {
-        boxSection.style.display = 'none';
-      }
+    const boxSection = document.getElementById('boxSection');
+    const boxContainer = document.getElementById('boxContainer');
+    if (boxSection && boxContainer && boxes.length > 0) {
+      renderBoxesToDOM(boxes, boxSection, boxContainer);
+    } else if (boxSection) {
+      boxSection.style.display = 'none';
     }
 
     if (typeof updateCart === 'function') updateCart();
   } catch (err) {
     console.error('Failed to load menu', err);
-    // Only show error if we have no cached data
-    if (!cachedMenu && loader) {
+    if (loader) {
+      loader.classList.remove('is-loading-skeleton');
       loader.classList.add('error');
       const msg = (err && err.name === 'AbortError') ? 'Request timed out' : (err && err.message) || 'Failed to load';
       loader.innerHTML = `${msg}. <button id="menuRetry">Retry</button>`;
@@ -1102,7 +989,7 @@ function applyOrderTypeVisibility() {
     if (bagelMenu) bagelMenu.style.display = '';
     if (schmearMenu) schmearMenu.style.display = '';
     if (dessertMenu) dessertMenu.style.display = '';
-    // boxSection visibility is controlled by renderBagelBoxes
+    // The combined menu response controls box section visibility.
 
     smallTitles.forEach(title => {
       title.style.display = '';
@@ -1112,12 +999,8 @@ function applyOrderTypeVisibility() {
 
 // Listen for order type selection to re-render
 window.addEventListener('orderTypeSelected', async function (e) {
-  // Re-render combo with updated pricing
-  const cachedMenu = getCachedData(MENU_CACHE_KEY);
-  const cachedCombo = getCachedData(COMBO_CACHE_KEY);
-
-  if (cachedMenu && cachedCombo) {
-    await renderCombo(cachedMenu, cachedCombo);
+  if (currentMenuItems && currentComboSettings) {
+    await renderCombo(currentMenuItems, currentComboSettings);
   }
 
   applyOrderTypeVisibility();

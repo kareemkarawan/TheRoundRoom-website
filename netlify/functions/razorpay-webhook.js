@@ -13,6 +13,7 @@
 
 const crypto = require("crypto");
 const { createMongoClient } = require("../mongo-uri");
+const { withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "orders";
@@ -187,3 +188,5 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: "Server error" };
   }
 };
+
+exports.handler = withNoStore(exports.handler);

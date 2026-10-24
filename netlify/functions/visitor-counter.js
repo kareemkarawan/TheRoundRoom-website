@@ -10,6 +10,7 @@
  */
 
 const { getDB } = require("./db");
+const { withNoStore } = require("./utils");
 const crypto = require("crypto");
 
 const collectionName = "visitor_stats";
@@ -48,6 +49,7 @@ exports.handler = async (event) => {
           uniqueVisitors: stats?.uniqueVisitors || 0,
         }),
       };
+
     }
 
     if (event.httpMethod === "POST") {
@@ -113,3 +115,5 @@ exports.handler = async (event) => {
     };
   }
 };
+
+exports.handler = withNoStore(exports.handler);

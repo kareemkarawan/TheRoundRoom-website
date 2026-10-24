@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { getDB } = require("./db");
+const { withNoStore } = require("./utils");
 
 const collectionName = "orders";
 
@@ -154,5 +155,5 @@ function createHandler({ getDatabase = getDB, keySecret = process.env.RAZORPAY_K
     };
 }
 
-exports.handler = createHandler();
+exports.handler = withNoStore(createHandler());
 exports.createHandler = createHandler;

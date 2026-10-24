@@ -12,7 +12,7 @@
  */
 
 const { getDB } = require("./db");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "bagel_boxes";
@@ -35,15 +35,11 @@ function normalizeOptionList(value) {
 
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
-  const cacheControl = isAdminRoute 
-    ? "no-store, no-cache, must-revalidate" 
-    : "public, max-age=30, stale-while-revalidate=60";
   return {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, x-admin-token",
-    "Cache-Control": cacheControl,
   };
 }
 
@@ -338,7 +334,7 @@ async function handleDelete(boxId) {
   }
 }
 
-exports.handler = async (event) => {
+exports.handler = withNoStore(async (event) => {
   const method = event.httpMethod;
   const headers = event.headers || {};
   const params = event.queryStringParameters || {};
@@ -387,4 +383,4 @@ exports.handler = async (event) => {
     ...result,
     headers: buildHeaders(isAdmin),
   };
-};
+});

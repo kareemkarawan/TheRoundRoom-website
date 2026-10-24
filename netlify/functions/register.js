@@ -17,6 +17,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { getDB } = require("./db");
 const { getClientIp, recordAuthEvent } = require("./auth-activity");
+const { withNoStore } = require("./utils");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = "7d";
@@ -170,3 +171,5 @@ exports.handler = async (event) => {
     return buildResponse(500, { error: "Internal server error" });
   }
 };
+
+exports.handler = withNoStore(exports.handler);

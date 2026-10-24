@@ -13,6 +13,7 @@
 const { ObjectId } = require("mongodb");
 const { getDB } = require("./db");
 const { verifyAuth } = require("./auth");
+const { withNoStore } = require("./utils");
 
 function buildResponse(statusCode, body) {
   return {
@@ -84,3 +85,5 @@ exports.handler = async (event) => {
     return buildResponse(500, { error: "Internal server error" });
   }
 };
+
+exports.handler = withNoStore(exports.handler);

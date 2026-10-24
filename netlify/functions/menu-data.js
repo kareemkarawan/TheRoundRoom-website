@@ -5,10 +5,11 @@
  * NOTES:
  * - Reduces 3 API calls to 1 for faster initial page load
  * - Returns: { menu: [...], combo: {...}, boxes: [...] }
- * - Aggressive caching for CDN edge delivery
+ * - Dynamic menu data is never cached so admin changes are visible immediately
  */
 
 const { getDB } = require("./db");
+const { withNoStore } = require("./utils");
 
 function buildHeaders() {
   return {
@@ -16,14 +17,10 @@ function buildHeaders() {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    // Cache at CDN edge for 30s, serve stale for 60s while revalidating
-    "Cache-Control": "public, max-age=30, stale-while-revalidate=60",
-    // Netlify-specific: cache at edge
-    "Netlify-CDN-Cache-Control": "public, max-age=30, stale-while-revalidate=60",
   };
 }
 
-exports.handler = async (event) => {
+exports.handler = withNoStore(async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: buildHeaders(), body: "" };
   }
@@ -74,4 +71,4 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: err.message }),
     };
   }
-};
+});

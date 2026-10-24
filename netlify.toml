@@ -14,13 +14,13 @@
 [functions."keep-warm"]
   schedule = "*/5 * * * *"
 
-# Prevent HTML caching to ensure users get latest version immediately
+# HTML revalidates on each navigation so it discovers the current asset URLs.
 [[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Cache static assets aggressively
+# Static assets use deploy-versioned URLs and can be cached for one year.
 [[headers]]
   for = "/webpimages/*"
   [headers.values]
@@ -36,7 +36,12 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Cache CSS/JS but use cache busting via version parameters in HTML
+[[headers]]
+  for = "/videos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# The build versions these URLs whenever local asset content may have changed.
 [[headers]]
   for = "/*.css"
   [headers.values]
@@ -48,18 +53,13 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
     Content-Security-Policy = "frame-ancestors 'self'"
     Strict-Transport-Security = "max-age=31536000"
-
-# Preload hints for menu page
-[[headers]]
-  for = "/order_page.html"
-  [headers.values]
-    Link = '''
-      </.netlify/functions/menu>; rel=preload; as=fetch; crossorigin,
-      </style.css>; rel=preload; as=style,
-      </script.js>; rel=preload; as=script
-    '''

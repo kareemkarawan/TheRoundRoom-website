@@ -1,37 +1,43 @@
 #!/usr/bin/env node
 /**
- * Cache busting helper - updates version timestamp in all HTML files
- * Run this before deploying to ensure users get the latest CSS/JS
+ * Versions local assets in HTML, CSS, and JavaScript before deploying.
  */
 
 const fs = require('fs');
 const path = require('path');
 
 const VERSION = Date.now(); // Use timestamp as version
-const HTML_FILES = [
-  'index.html',
-  'admin.html',
-  'careers.html',
-  'checkout.html',
-  'collections-admin.html',
-  'contact.html',
-  'login.html',
-  'menu-admin.html',
-  'order_page.html',
-  'pincodes-admin.html',
-  'pookie-admin.html',
-  'pookie.html',
-  'privacy.html',
-  'production.html',
-  'refund.html',
-  'register.html',
-  'settings.html',
-  'terms.html',
-  'thankyou.html',
-  'user-logs.html'
-];
+const HTML_FILES = fs.readdirSync(__dirname).filter(file => file.endsWith('.html'));
 
 console.log(`Updating version to: ${VERSION}`);
+
+function versionStaticAssets(content) {
+  return content
+    .replace(
+      /((?:\.\/|\/)?(?:images|webpimages|fonts|videos)\/[^"'?#]+)\?v=\d+/g,
+      '$1'
+    )
+    .replace(
+      /(["'])((?:\.\/|\/)?(?:images|webpimages|fonts|videos)\/[^"'?#]+)\1/g,
+      `$1$2?v=${VERSION}$1`
+    )
+    .replace(
+      /(url\(\s*)((?:\.\/|\/)?(?:images|webpimages|fonts|videos)\/[^)'"\s?#]+)(\s*\))/g,
+      `$1$2?v=${VERSION}$3`
+    );
+}
+
+function versionHtmlAssets(content) {
+  return content
+    .replace(
+      /((?:\.\/|\/)?(?:images|webpimages|fonts|videos)\/[^"'?#]+)\?v=\d+/g,
+      '$1'
+    )
+    .replace(
+      /((?:src|href|poster|data-fallback)=["'])((?:\.\/|\/)?(?:images|webpimages|fonts|videos)\/[^"'?#]+)(["'])/g,
+      `$1$2?v=${VERSION}$3`
+    );
+}
 
 HTML_FILES.forEach(file => {
   const filePath = path.join(__dirname, file);
@@ -55,6 +61,26 @@ HTML_FILES.forEach(file => {
     `src="script.js?v=${VERSION}"`
   );
 
+  content = content.replace(
+    /(src=["'])(js\/[^"']+\.js)(?:\?v=\d+)?(["'])/g,
+    `$1$2?v=${VERSION}$3`
+  );
+  content = versionHtmlAssets(content);
   fs.writeFileSync(filePath, content, 'utf8');
   console.log(`✓ Updated ${file}`);
+});
+
+['style.css', 'script.js', 'js/renderMenu.js'].forEach(file => {
+  const filePath = path.join(__dirname, file);
+  if (!fs.existsSync(filePath)) return;
+
+  let content = fs.readFileSync(filePath, 'utf8');
+  content = versionStaticAssets(content);
+  if (file === 'js/renderMenu.js') {
+    content = content.replace(
+      /(['"]\.\/models\/MenuItem\.js)(?:\?v=\d+)?(['"])/g,
+      `$1?v=${VERSION}$2`
+    );
+  }
+  fs.writeFileSync(filePath, content, 'utf8');
 });

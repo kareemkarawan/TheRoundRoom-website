@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Admin - The Round Room</title>
-    <link rel="stylesheet" href="style.css?v=1784299120714">
-    <link rel="icon" type="image/png" href="images/Icon.png">
+    <link rel="stylesheet" href="style.css?v=1792855803718">
+    <link rel="icon" type="image/png" href="images/Icon.png?v=1792855803718">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
         rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
@@ -305,7 +305,7 @@
             <div class="logo">
                 <h1>THE ROUND ROOM</h1>
             </div>
-            <img class="iconpic" src="webpimages/Icon.webp" alt="Logo">
+            <img class="iconpic" src="webpimages/Icon.webp?v=1792855803718" alt="Logo">
         </div>
     </nav>
 
@@ -608,7 +608,7 @@
         </div>
     </div>
 
-    <script src="js/admin-gate.js"></script>
+    <script src="js/admin-gate.js?v=1792855803718"></script>
     <script>
         let allItems = [];
         let editingId = null;
@@ -1622,7 +1622,6 @@
 
                 if (response.ok) {
                     console.debug('[menu-admin] Save success');
-                    try { localStorage.setItem('rr_menu_force_refresh', '1'); } catch (e) { /* ignore */ }
                     showMessage(editingId ? 'Item updated successfully' : 'Item added successfully', 'success');
                     closeModal();
                     await loadMenuItems();

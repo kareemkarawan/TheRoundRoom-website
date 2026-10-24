@@ -1,6 +1,7 @@
 
 
 const { getDB } = require("./db");
+const { withNoStore } = require("./utils");
 
 exports.handler = async (event) => {
   // Only run on scheduled events
@@ -28,6 +29,7 @@ exports.handler = async (event) => {
         timestamp: new Date().toISOString()
       }),
     };
+
   } catch (err) {
     console.error("Keep-warm error:", err);
     return {
@@ -36,3 +38,5 @@ exports.handler = async (event) => {
     };
   }
 };
+
+exports.handler = withNoStore(exports.handler);

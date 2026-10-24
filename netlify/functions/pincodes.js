@@ -12,7 +12,7 @@
  */
 
 const { createMongoClient } = require("../mongo-uri");
-const { isAdminAuthorized } = require("./utils");
+const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "pincodes";
@@ -228,6 +228,7 @@ exports.handler = async (event) => {
       headers,
       body: "",
     };
+
   }
 
   if (isAdminRoute && !isAdminAuthorized(event.headers, ADMIN_TOKEN)) {
@@ -260,3 +261,5 @@ exports.handler = async (event) => {
     headers,
   };
 };
+
+exports.handler = withNoStore(exports.handler);

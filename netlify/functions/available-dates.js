@@ -10,6 +10,7 @@
  */
 
 const { getDB } = require("./db");
+const { withNoStore } = require("./utils");
 
 const dbName = "round_room";
 
@@ -131,4 +132,7 @@ exports.handler = async (event) => {
     headers,
     body: JSON.stringify({ error: "Method not allowed" }),
   };
+
 };
+
+exports.handler = withNoStore(exports.handler);
