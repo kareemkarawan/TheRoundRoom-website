@@ -1186,6 +1186,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /* ===== Store status (open/closed) ===== */
 async function initStoreStatus() {
+    const modal = document.getElementById('storeStatusModal');
+    const checkoutBtn = document.querySelector('.checkout-btn');
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (!modal && !checkoutBtn && !checkoutForm) return;
+
     try {
         const response = await fetch('/.netlify/functions/settings');
         if (!response.ok) return;
@@ -1197,7 +1202,6 @@ async function initStoreStatus() {
         // Users can still order for future dates when daily cap is reached
         window._rr_storeOpen = isOpen;
 
-        const modal = document.getElementById('storeStatusModal');
         const modalMessage = document.getElementById('storeStatusMessage');
         const modalTitle = document.getElementById('storeStatusTitle');
         const modalClose = modal ? modal.querySelector('.store-status-close') : null;
@@ -1267,7 +1271,7 @@ async function initStoreStatus() {
             }
         }
 
-        const submitBtn = document.querySelector('.btn-submit, [type="submit"]');
+        const submitBtn = checkoutForm?.querySelector('.btn-submit, [type="submit"]');
         if (submitBtn) {
             // Only block submit if store is completely closed
             // Daily cap check will be handled by date picker availability

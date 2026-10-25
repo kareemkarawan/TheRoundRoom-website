@@ -10,10 +10,6 @@
 [functions]
   node_bundler = "esbuild"
   
-# Scheduled function to keep the main functions warm (prevents cold starts)
-[functions."keep-warm"]
-  schedule = "*/5 * * * *"
-
 # HTML revalidates on each navigation so it discovers the current asset URLs.
 [[headers]]
   for = "/*.html"
