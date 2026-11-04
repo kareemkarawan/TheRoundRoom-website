@@ -174,22 +174,10 @@ document.addEventListener('DOMContentLoaded', function () {
             isMobile = (window.innerWidth <= 600);
         });
 
-        // Wait for images to load before computing initial layout
-        var imgs = track.querySelectorAll('img');
-        var loaded = 0;
-        if (imgs.length === 0) {
-            centerIndex(currentIndex, false);
-        } else {
-            imgs.forEach(function (img) {
-                if (img.complete) {
-                    loaded++;
-                } else {
-                    img.addEventListener('load', function () { loaded++; if (loaded === imgs.length) centerIndex(currentIndex, false); });
-                    img.addEventListener('error', function () { loaded++; if (loaded === imgs.length) centerIndex(currentIndex, false); });
-                }
-            });
-            if (loaded === imgs.length) centerIndex(currentIndex, false);
-        }
+        centerIndex(currentIndex, false);
+        requestAnimationFrame(function () {
+            track.style.transition = '';
+        });
     }
 
 
