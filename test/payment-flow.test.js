@@ -27,7 +27,7 @@ function setPath(value, path, nextValue) {
     parent[key] = nextValue;
 }
 
-function createDatabase() {
+function createDatabase({ menuItems: suppliedMenuItems, comboSettings } = {}) {
     const orders = [];
     const settings = {
         key: "store",
@@ -37,7 +37,7 @@ function createDatabase() {
         storeOpen: true,
         deliveryFee: 0,
     };
-    const menuItems = [{ id: "test-bagel", name: "Test Bagel", price: 100, isAvailable: true }];
+    const menuItems = suppliedMenuItems || [{ id: "test-bagel", name: "Test Bagel", price: 100, isAvailable: true }];
 
     return {
         orders,
@@ -47,6 +47,9 @@ function createDatabase() {
             }
             if (name === "menu") {
                 return { find: () => ({ toArray: async () => menuItems }) };
+            }
+            if (name === "combo_settings") {
+                return { findOne: async () => comboSettings || null };
             }
             if (name === "orders") {
                 return {
@@ -170,6 +173,114 @@ test("creates an order, verifies payment, and persists the paid confirmation", a
         assert.ok(savedOrder.payment.paidAt instanceof Date);
         assert.equal(savedOrder.events[1].type, "PAYMENT_VERIFIED");
         assert.equal(savedOrder.events[1].details.source, "checkout_verification");
+    } finally {
+        Module._load = originalLoad;
+        global.fetch = originalFetch;
+        delete require.cache[ordersPath];
+        for (const [key, value] of Object.entries(originalEnv)) {
+            if (value === undefined) delete process.env[key];
+            else process.env[key] = value;
+        }
+    }
+});
+
+test("creates a Carbies sandwich order using its configured price and title", async () => {
+    const envKeys = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
+    const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    const originalLoad = Module._load;
+    const originalFetch = global.fetch;
+    const ordersPath = require.resolve("../netlify/functions/orders");
+    const database = createDatabase({
+        menuItems: [
+            { id: "everything", name: "Everything", category: "bagels", isAvailable: true },
+            { id: "scallion", name: "Scallion", category: "schmears", isAvailable: true },
+        ],
+        comboSettings: {
+            id: "combo",
+            isAvailable: false,
+            carbiesSandwich: {
+                title: "The Carbie Special",
+                price: 350,
+                isAvailable: true,
+                availableBagels: ["everything"],
+                availableSchmears: ["scallion"],
+            },
+        },
+    });
+
+    process.env.RAZORPAY_KEY_ID = "test-razorpay-key-id";
+    process.env.RAZORPAY_KEY_SECRET = keySecret;
+    global.fetch = async (_url, options) => {
+        const request = JSON.parse(options.body);
+        return {
+            ok: true,
+            json: async () => ({
+                id: "order_carbies123",
+                amount: request.amount,
+                currency: request.currency,
+            }),
+        };
+    };
+
+    Module._load = function (request, parent, isMain) {
+        if (request === "../mongo-uri" && parent?.filename === ordersPath) {
+            return {
+                createMongoClient: () => ({
+                    connect: async () => { },
+                    db: () => database,
+                }),
+            };
+        }
+        return originalLoad.call(this, request, parent, isMain);
+    };
+    delete require.cache[ordersPath];
+
+    try {
+        const { handler: createOrder } = require(ordersPath);
+        const response = await createOrder({
+            httpMethod: "POST",
+            body: JSON.stringify({
+                customer: { name: "Test Customer" },
+                orderType: "collection",
+                items: [{
+                    menuItemId: "cart-combo-collab",
+                    qty: 2,
+                    isCombo: true,
+                    comboType: "carbies_sandwich",
+                    bagelId: "everything",
+                    schmearId: "scallion",
+                    bagelName: "Everything",
+                    schmearName: "Scallion",
+                }],
+            }),
+        });
+        const responseData = JSON.parse(response.body);
+
+        assert.equal(response.statusCode, 201);
+        assert.equal(responseData.pricing.subtotal, 700);
+        assert.equal(database.orders[0].items[0].menuItemId, "combo_carbies_sandwich");
+        assert.equal(database.orders[0].items[0].name, "The Carbie Special: Everything + Scallion");
+        assert.equal(database.orders[0].items[0].comboType, "carbies_sandwich");
+
+        const invalidSelectionResponse = await createOrder({
+            httpMethod: "POST",
+            body: JSON.stringify({
+                customer: { name: "Test Customer" },
+                orderType: "collection",
+                items: [{
+                    menuItemId: "cart-combo-collab-invalid",
+                    qty: 1,
+                    isCombo: true,
+                    comboType: "carbies_sandwich",
+                    bagelId: "everything",
+                    schmearId: "not-configured",
+                    bagelName: "Everything",
+                    schmearName: "Unknown",
+                }],
+            }),
+        });
+        assert.equal(invalidSelectionResponse.statusCode, 400);
+        assert.equal(JSON.parse(invalidSelectionResponse.body).error, "Invalid Carbies sandwich selection");
     } finally {
         Module._load = originalLoad;
         global.fetch = originalFetch;

@@ -4,6 +4,8 @@
 # Local environment files and credentials
 .env*
 !.env.example
+.DS_Store
+**/.DS_Store
 
 # Local-only Docker configuration and MongoDB data
 /docker-compose.local.yml

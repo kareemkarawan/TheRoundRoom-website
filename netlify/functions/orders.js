@@ -186,6 +186,7 @@ async function handlePost(body) {
         menuItemId: String(i.menuItemId || "").trim(),
         qty: Number(i.qty || 0),
         isCombo: i.isCombo || false,
+        comboType: i.comboType || null,
         isBox: i.isBox || false,
         bagelId: i.bagelId || null,
         schmearId: i.schmearId || null,
@@ -211,7 +212,10 @@ async function handlePost(body) {
     const boxItems = requestedItems.filter((i) => i.isBox || i.menuItemId.startsWith("box_"));
     const regularItems = requestedItems.filter((i) => !i.isCombo && !i.isBox && i.menuItemId !== "combo_bagel_schmear" && !i.menuItemId.startsWith("box_"));
 
-    const ids = regularItems.map((i) => i.menuItemId);
+    const ids = [
+      ...regularItems.map((i) => i.menuItemId),
+      ...comboItems.flatMap((i) => [i.bagelId, i.schmearId]),
+    ].filter(Boolean);
     const menuItems = ids.length > 0 ? await menuCollection.find({ id: { $in: ids } }).toArray() : [];
     const menuMap = new Map(menuItems.map((m) => [m.id, m]));
 
@@ -292,24 +296,85 @@ async function handlePost(body) {
       const comboSettingsCollection = db.collection("combo_settings");
       const comboSettings = await comboSettingsCollection.findOne({ id: "combo" });
 
-      if (!comboSettings || !comboSettings.isAvailable) {
+      if (!comboSettings) {
         return {
           statusCode: 400,
-          body: JSON.stringify({ error: "Combo is currently unavailable" }),
+          body: JSON.stringify({ error: "Sandwich settings could not be loaded" }),
         };
       }
 
       for (const combo of comboItems) {
-        const comboPrice = Number(comboSettings.price || 0);
+        const comboType = combo.comboType || "bagel_schmear";
+        const isCarbiesSandwich = comboType === "carbies_sandwich";
+        if (comboType !== "bagel_schmear" && !isCarbiesSandwich) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: "Invalid sandwich type" }),
+          };
+        }
+        const sandwichSettings = isCarbiesSandwich
+          ? comboSettings.carbiesSandwich
+          : comboSettings;
+        if (!sandwichSettings || !sandwichSettings.isAvailable) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({
+              error: isCarbiesSandwich
+                ? "Carbies sandwich is currently unavailable"
+                : "Combo is currently unavailable",
+            }),
+          };
+        }
+        if (isCarbiesSandwich) {
+          const bagel = menuMap.get(combo.bagelId);
+          const schmear = menuMap.get(combo.schmearId);
+          const availableBagels = Array.isArray(sandwichSettings.availableBagels)
+            ? sandwichSettings.availableBagels
+            : [];
+          const availableSchmears = Array.isArray(sandwichSettings.availableSchmears)
+            ? sandwichSettings.availableSchmears
+            : [];
+          if (
+            !availableBagels.includes(combo.bagelId) ||
+            !availableSchmears.includes(combo.schmearId) ||
+            !bagel ||
+            bagel.category?.toLowerCase() !== "bagels" ||
+            bagel.isAvailable === false ||
+            !schmear ||
+            schmear.category?.toLowerCase() !== "schmears" ||
+            schmear.isAvailable === false
+          ) {
+            return {
+              statusCode: 400,
+              body: JSON.stringify({ error: "Invalid Carbies sandwich selection" }),
+            };
+          }
+        }
+
+        const comboPrice = Number(sandwichSettings.price || 0);
+        if (isCarbiesSandwich && (!Number.isFinite(comboPrice) || comboPrice <= 0)) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: "Carbies sandwich is currently unavailable" }),
+          };
+        }
         const lineTotal = Number((comboPrice * combo.qty).toFixed(2));
         subtotal += lineTotal;
 
-        const comboName = combo.bagelName && combo.schmearName
-          ? `Bagel & Schmear Sandwich: ${combo.bagelName} + ${combo.schmearName}`
-          : "Bagel & Schmear Sandwich";
+        const bagelName = isCarbiesSandwich
+          ? menuMap.get(combo.bagelId)?.name
+          : combo.bagelName;
+        const schmearName = isCarbiesSandwich
+          ? menuMap.get(combo.schmearId)?.name
+          : combo.schmearName;
+        const comboName = isCarbiesSandwich
+          ? `${sandwichSettings.title || "The Carbie Sandwich"}: ${bagelName} + ${schmearName}`
+          : bagelName && schmearName
+            ? `Bagel & Schmear Sandwich: ${bagelName} + ${schmearName}`
+            : "Bagel & Schmear Sandwich";
 
         lineItems.push({
-          menuItemId: "combo_bagel_schmear",
+          menuItemId: isCarbiesSandwich ? "combo_carbies_sandwich" : "combo_bagel_schmear",
           name: comboName,
           price: comboPrice,
           qty: combo.qty,
@@ -317,6 +382,7 @@ async function handlePost(body) {
           isCombo: true,
           bagelId: combo.bagelId,
           schmearId: combo.schmearId,
+          ...(isCarbiesSandwich ? { comboType } : {}),
         });
       }
     }

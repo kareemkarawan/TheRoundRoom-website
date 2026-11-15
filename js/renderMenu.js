@@ -127,6 +127,7 @@ async function renderCombo(menuItems, comboSettings) {
     );
 
     const comboDescription = (comboSettings.description || '').trim();
+    const comboImageUrl = typeof comboSettings.imageUrl === 'string' ? comboSettings.imageUrl.trim() : '';
 
     const comboPrice = comboSettings.price;
     window._rrComboPrice = comboPrice;
@@ -140,6 +141,7 @@ async function renderCombo(menuItems, comboSettings) {
 
     comboContainer.innerHTML = `
       <div class="combo-item" data-id="combo_bagel_schmear" data-name="Bagel & Schmear Sandwich" data-price="${comboPrice}">
+        ${comboImageUrl ? `<img class="combo-image" src="${escapeHtml(versionLocalAssetUrl(comboImageUrl))}" alt="Bagel and schmear sandwich" loading="lazy">` : ''}
         ${comboDescription ? `<p class="combo-description">${escapeHtml(comboDescription)}</p>` : ''}
         <div class="combo-selectors">
           <div class="combo-selector-group">
@@ -237,6 +239,148 @@ async function renderCombo(menuItems, comboSettings) {
     console.warn('Failed to load combo settings', err);
     comboSection.style.display = 'none';
   }
+}
+
+function renderCarbiesSandwich(menuItems, comboSettings) {
+  const section = document.getElementById('carbiesSandwichSection');
+  const container = document.getElementById('carbiesSandwichContainer');
+  if (!section || !container) return;
+
+  const defaults = {
+    sectionTitle: 'The Round Room x Carbies',
+    title: 'The Carbie Sandwich',
+    description: '',
+    price: 0,
+    isAvailable: false,
+    availableBagels: [],
+    availableSchmears: [],
+    bagelLabel: 'Choose your bagel:',
+    bagelPlaceholder: 'Select a bagel',
+    schmearLabel: 'Choose your schmear:',
+    schmearPlaceholder: 'Select a schmear',
+    buttonLabel: 'Add to Cart',
+    imageUrl: '',
+    allowedPincodes: []
+  };
+  const settings = { ...defaults, ...(comboSettings.carbiesSandwich || {}) };
+  settings.availableBagels = Array.isArray(settings.availableBagels) ? settings.availableBagels : [];
+  settings.availableSchmears = Array.isArray(settings.availableSchmears) ? settings.availableSchmears : [];
+  const sectionTitle = document.getElementById('carbiesSectionTitle');
+  const title = document.getElementById('carbiesSandwichTitle');
+  if (sectionTitle) sectionTitle.textContent = settings.sectionTitle || defaults.sectionTitle;
+  if (title) title.textContent = settings.title || defaults.title;
+
+  if (!settings.isAvailable || Number(settings.price) <= 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const selectedPincode = getSelectedPincode();
+  const allowedPincodes = normalizeAllowedPincodes(settings.allowedPincodes || []);
+  if (selectedPincode && allowedPincodes.length > 0 && !allowedPincodes.includes(selectedPincode)) {
+    section.style.display = 'none';
+    return;
+  }
+  const availableBagels = menuItems.filter(item =>
+    item.category?.toLowerCase() === 'bagels' &&
+    item.isAvailable !== false &&
+    settings.availableBagels.includes(item.id) &&
+    isItemAvailableForPincode(item, selectedPincode)
+  );
+  const availableSchmears = menuItems.filter(item =>
+    item.category?.toLowerCase() === 'schmears' &&
+    item.isAvailable !== false &&
+    settings.availableSchmears.includes(item.id) &&
+    isItemAvailableForPincode(item, selectedPincode)
+  );
+  if (availableBagels.length === 0 || availableSchmears.length === 0) {
+    container.innerHTML = '';
+    section.style.display = 'none';
+    return;
+  }
+
+  const selectorId = 'carbiesSandwich';
+  const imageUrl = typeof settings.imageUrl === 'string' ? settings.imageUrl.trim() : '';
+  container.innerHTML = `
+    <div class="combo-item" data-id="${selectorId}" data-name="${escapeHtml(settings.title || defaults.title)}" data-price="${Number(settings.price)}">
+      ${imageUrl ? `<img class="combo-image" src="${escapeHtml(versionLocalAssetUrl(imageUrl))}" alt="${escapeHtml(settings.title || defaults.title)}" loading="lazy">` : ''}
+      ${settings.description ? `<p class="combo-description">${escapeHtml(settings.description)}</p>` : ''}
+      <div class="combo-selectors">
+        <div class="combo-selector-group">
+          <label for="${selectorId}BagelSelect">${escapeHtml(settings.bagelLabel || defaults.bagelLabel)}</label>
+          <select id="${selectorId}BagelSelect" class="combo-select">
+            <option value="">${escapeHtml(settings.bagelPlaceholder || defaults.bagelPlaceholder)}</option>
+            ${availableBagels.map(item => `<option value="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="combo-selector-group">
+          <label for="${selectorId}SchmearSelect">${escapeHtml(settings.schmearLabel || defaults.schmearLabel)}</label>
+          <select id="${selectorId}SchmearSelect" class="combo-select">
+            <option value="">${escapeHtml(settings.schmearPlaceholder || defaults.schmearPlaceholder)}</option>
+            ${availableSchmears.map(item => `<option value="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="combo-info">
+        <p class="combo-price">₹${Number(settings.price).toFixed(2)}</p>
+        <div class="combo-controls">
+          <button type="button" class="qty-btn combo-minus" disabled aria-label="Decrease quantity">−</button>
+          <span class="qty combo-qty">1</span>
+          <button type="button" class="qty-btn combo-plus" disabled aria-label="Increase quantity">+</button>
+        </div>
+      </div>
+      <button type="button" class="combo-confirm-btn" disabled>${escapeHtml(settings.buttonLabel || defaults.buttonLabel)}</button>
+    </div>
+  `;
+  section.style.display = 'block';
+
+  const bagelSelect = container.querySelector(`#${selectorId}BagelSelect`);
+  const schmearSelect = container.querySelector(`#${selectorId}SchmearSelect`);
+  const quantity = container.querySelector('.combo-qty');
+  const minusButton = container.querySelector('.combo-minus');
+  const plusButton = container.querySelector('.combo-plus');
+  const confirmButton = container.querySelector('.combo-confirm-btn');
+
+  function updateButtons() {
+    const bothSelected = Boolean(bagelSelect.value && schmearSelect.value);
+    const qty = Number.parseInt(quantity.textContent, 10) || 1;
+    minusButton.disabled = !bothSelected || qty <= 1;
+    plusButton.disabled = !bothSelected;
+    confirmButton.disabled = !bothSelected;
+  }
+
+  bagelSelect.addEventListener('change', updateButtons);
+  schmearSelect.addEventListener('change', updateButtons);
+  plusButton.addEventListener('click', () => {
+    if (plusButton.disabled) return;
+    quantity.textContent = String((Number.parseInt(quantity.textContent, 10) || 1) + 1);
+    updateButtons();
+  });
+  minusButton.addEventListener('click', () => {
+    quantity.textContent = String(Math.max(1, (Number.parseInt(quantity.textContent, 10) || 1) - 1));
+    updateButtons();
+  });
+  confirmButton.addEventListener('click', () => {
+    if (confirmButton.disabled || typeof addComboToCart !== 'function') return;
+    const bagelName = bagelSelect.selectedOptions[0]?.dataset.name || '';
+    const schmearName = schmearSelect.selectedOptions[0]?.dataset.name || '';
+    const displayName = `${settings.title || defaults.title}: ${bagelName} + ${schmearName}`;
+    addComboToCart(
+      bagelSelect.value,
+      bagelName,
+      schmearSelect.value,
+      schmearName,
+      Number.parseInt(quantity.textContent, 10) || 1,
+      Number(settings.price),
+      displayName,
+      'carbies_sandwich'
+    );
+    bagelSelect.value = '';
+    schmearSelect.value = '';
+    quantity.textContent = '1';
+    updateButtons();
+  });
+  updateButtons();
 }
 
 // Store current box being selected and available menu items
@@ -927,6 +1071,7 @@ async function renderMenu() {
     }
 
     await renderCombo(currentMenuItems, currentComboSettings);
+    renderCarbiesSandwich(currentMenuItems, currentComboSettings);
 
     const boxSection = document.getElementById('boxSection');
     const boxContainer = document.getElementById('boxContainer');
@@ -976,6 +1121,7 @@ function applyOrderTypeVisibility() {
 
     // Hide titles for bagels, schmears only
     smallTitles.forEach(title => {
+      if (title.closest('#carbiesSandwichSection')) return;
       const h3Text = title.querySelector('h3')?.textContent?.toLowerCase() || '';
       if (h3Text.includes('bagel') && !h3Text.includes('combo') && !h3Text.includes('box')) {
         title.style.display = 'none';
@@ -1001,6 +1147,7 @@ function applyOrderTypeVisibility() {
 window.addEventListener('orderTypeSelected', async function (e) {
   if (currentMenuItems && currentComboSettings) {
     await renderCombo(currentMenuItems, currentComboSettings);
+    renderCarbiesSandwich(currentMenuItems, currentComboSettings);
   }
 
   applyOrderTypeVisibility();

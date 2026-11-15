@@ -110,7 +110,8 @@
         }
 
         .form-group input,
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 0.5rem;
             border: 1px solid #ccc;
@@ -353,6 +354,26 @@
             </div>
 
             <div class="form-group">
+                <label>Sandwich image</label>
+                <div style="display:flex; gap:1rem; align-items:center;">
+                    <label><input type="radio" name="comboImageSource" value="url" checked> Image path or URL</label>
+                    <label><input type="radio" name="comboImageSource" value="upload"> Upload</label>
+                </div>
+            </div>
+            <div class="form-group" id="comboImageUrlGroup">
+                <label for="comboImageUrl">Image path or URL</label>
+                <input type="text" id="comboImageUrl" name="comboImageUrl"
+                    placeholder="images/sandwich.webp">
+            </div>
+            <div class="form-group" id="comboImageUploadGroup" style="display:none;">
+                <label for="comboImageFile">Upload sandwich image</label>
+                <input type="file" id="comboImageFile" name="comboImageFile" accept="image/*">
+            </div>
+            <div class="form-group">
+                <img id="comboImagePreview" class="image-preview" alt="Sandwich image preview" style="display:none;">
+            </div>
+
+            <div class="form-group">
                 <label>Available at these delivery pincodes:</label>
                 <div id="comboPincodes" class="pincode-checkbox-grid">
                     <p class="muted">Loading delivery pincodes...</p>
@@ -360,7 +381,95 @@
                 <small class="muted">Leave all unchecked to allow the sandwich at every delivery pincode.</small>
             </div>
 
+            <p><a id="comboPreviewLink" href="combo-preview.html" target="_blank" rel="noopener">Preview current sandwich settings</a></p>
             <button type="button" class="btn-combo-save" id="saveComboBtn">Save Sandwich Settings</button>
+        </section>
+
+        <section class="combo-settings" id="carbiesSandwichSettings">
+            <h3>Round Room x Carbies Sandwich</h3>
+            <p class="muted">Configure the Carbies collaboration sandwich and all customer-facing text.</p>
+
+            <div class="form-group">
+                <label for="carbiesSectionTitleInput">Collaboration section heading</label>
+                <input type="text" id="carbiesSectionTitleInput" placeholder="The Round Room x Carbies">
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichTitleInput">Sandwich heading</label>
+                <input type="text" id="carbiesSandwichTitleInput" placeholder="The Carbie Sandwich">
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichDescriptionInput">Description</label>
+                <textarea id="carbiesSandwichDescriptionInput" rows="3"
+                    placeholder="Describe the collaboration sandwich"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichPriceInput">Sandwich price (₹)</label>
+                <input type="number" id="carbiesSandwichPriceInput" min="0" step="10" placeholder="e.g., 350">
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="carbiesSandwichAvailableInput">
+                    Sandwich available for order
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Available bagels:</label>
+                <div id="carbiesSandwichBagels" class="combo-checkbox-grid">
+                    <p class="muted">Loading bagels...</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichBagelLabelInput">Bagel selector label</label>
+                <input type="text" id="carbiesSandwichBagelLabelInput" placeholder="Choose your bagel">
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichBagelPlaceholderInput">Bagel selector placeholder</label>
+                <input type="text" id="carbiesSandwichBagelPlaceholderInput" placeholder="Select a bagel">
+            </div>
+            <div class="form-group">
+                <label>Available schmears:</label>
+                <div id="carbiesSandwichSchmears" class="combo-checkbox-grid">
+                    <p class="muted">Loading schmears...</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichSchmearLabelInput">Schmear selector label</label>
+                <input type="text" id="carbiesSandwichSchmearLabelInput" placeholder="Choose your schmear">
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichSchmearPlaceholderInput">Schmear selector placeholder</label>
+                <input type="text" id="carbiesSandwichSchmearPlaceholderInput" placeholder="Select a schmear">
+            </div>
+            <div class="form-group">
+                <label for="carbiesSandwichButtonLabelInput">Add-to-cart button text</label>
+                <input type="text" id="carbiesSandwichButtonLabelInput" placeholder="Add to Cart">
+            </div>
+            <div class="form-group">
+                <label>Sandwich image</label>
+                <div style="display:flex; gap:1rem; align-items:center;">
+                    <label><input type="radio" name="carbiesSandwichImageSource" value="url" checked> Image path or URL</label>
+                    <label><input type="radio" name="carbiesSandwichImageSource" value="upload"> Upload</label>
+                </div>
+            </div>
+            <div class="form-group" id="carbiesSandwichImageUrlGroup">
+                <label for="carbiesSandwichImageUrlInput">Image path or URL</label>
+                <input type="text" id="carbiesSandwichImageUrlInput" placeholder="images/sandwich.webp">
+            </div>
+            <div class="form-group" id="carbiesSandwichImageUploadGroup" style="display:none;">
+                <label for="carbiesSandwichImageFileInput">Upload sandwich image</label>
+                <input type="file" id="carbiesSandwichImageFileInput" accept="image/*">
+            </div>
+            <div class="form-group">
+                <img id="carbiesSandwichImagePreview" class="image-preview" alt="Collaboration sandwich preview" style="display:none;">
+            </div>
+            <div class="form-group">
+                <label>Available at these delivery pincodes:</label>
+                <div id="carbiesSandwichPincodes" class="pincode-checkbox-grid">
+                    <p class="muted">Loading delivery pincodes...</p>
+                </div>
+                <small class="muted">Leave all unchecked to allow the sandwich at every delivery pincode.</small>
+            </div>
+            <button type="button" class="btn-combo-save" id="saveCarbiesSandwichBtn">Save Carbies Sandwich</button>
         </section>
 
         <!-- Bagel Box Settings Section -->
@@ -614,6 +723,10 @@
         let editingId = null;
         let currentImageUrl = '';
         let currentImageMode = 'url';
+        let currentComboImageUrl = '';
+        let currentComboImageMode = 'url';
+        let currentCarbiesImageUrl = '';
+        let currentCarbiesImageMode = 'url';
         let allBites = [];
         let editingBitesId = null;
         let currentBitesImageUrl = '';
@@ -741,8 +854,10 @@
             availableBagels: [],
             availableSchmears: [],
             allowedPincodes: [],
-            description: ''
+            description: '',
+            imageUrl: ''
         };
+        let carbiesSandwichSettings = {};
 
         async function loadComboSettings() {
             console.debug('[menu-admin] Loading combo settings');
@@ -756,6 +871,7 @@
                 console.error('[menu-admin] Failed to load combo settings:', e);
             }
             renderComboCheckboxes();
+            renderCarbiesSandwichSettings();
         }
 
         function renderComboCheckboxes() {
@@ -764,10 +880,21 @@
             const priceInput = document.getElementById('comboPrice');
             const availableCheckbox = document.getElementById('comboAvailable');
             const descriptionInput = document.getElementById('comboDescription');
+            const imageUrlInput = document.getElementById('comboImageUrl');
+            const imagePreview = document.getElementById('comboImagePreview');
 
             if (priceInput) priceInput.value = comboSettings.price || '';
             if (availableCheckbox) availableCheckbox.checked = comboSettings.isAvailable === true;
             if (descriptionInput) descriptionInput.value = comboSettings.description || '';
+            currentComboImageUrl = comboSettings.imageUrl || '';
+            currentComboImageMode = currentComboImageUrl.startsWith('data:') ? 'upload' : 'url';
+            if (imageUrlInput) imageUrlInput.value = currentComboImageMode === 'url' ? currentComboImageUrl : '';
+            if (imagePreview && currentComboImageUrl) {
+                imagePreview.src = currentComboImageUrl;
+                imagePreview.style.display = 'block';
+            }
+            document.querySelector(`input[name="comboImageSource"][value="${currentComboImageMode}"]`).checked = true;
+            toggleComboImageSource(currentComboImageMode);
 
             const bagels = allItems.filter(item => (item.category || '').toLowerCase() === 'bagels');
             const schmears = allItems.filter(item => (item.category || '').toLowerCase() === 'schmears');
@@ -815,6 +942,9 @@
             const price = Number(document.getElementById('comboPrice').value) || 0;
             const isAvailable = document.getElementById('comboAvailable').checked;
             const description = (document.getElementById('comboDescription').value || '').trim();
+            const imageUrl = currentComboImageMode === 'upload'
+                ? currentComboImageUrl
+                : document.getElementById('comboImageUrl').value.trim();
             const allowedPincodes = getSelectedPincodes('comboPincodes');
 
             const availableBagels = Array.from(document.querySelectorAll('input[name="comboBagel"]:checked'))
@@ -823,7 +953,7 @@
             const availableSchmears = Array.from(document.querySelectorAll('input[name="comboSchmear"]:checked'))
                 .map(cb => cb.value);
 
-            const data = { price, isAvailable, availableBagels, availableSchmears, description, allowedPincodes };
+            const data = { price, isAvailable, availableBagels, availableSchmears, description, imageUrl, allowedPincodes };
 
             try {
                 const response = await fetch('/.netlify/functions/combo-settings', {
@@ -852,6 +982,232 @@
 
         // Attach combo save button handler
         document.getElementById('saveComboBtn')?.addEventListener('click', saveComboSettings);
+
+        function toggleComboImageSource(mode) {
+            currentComboImageMode = mode;
+            document.getElementById('comboImageUrlGroup').style.display = mode === 'url' ? 'block' : 'none';
+            document.getElementById('comboImageUploadGroup').style.display = mode === 'upload' ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('input[name="comboImageSource"]').forEach(radio => {
+            radio.addEventListener('change', event => toggleComboImageSource(event.target.value));
+        });
+
+        document.getElementById('comboImageUrl').addEventListener('input', event => {
+            currentComboImageUrl = event.target.value.trim();
+            const preview = document.getElementById('comboImagePreview');
+            if (currentComboImageUrl) {
+                preview.src = currentComboImageUrl;
+                preview.style.display = 'block';
+            } else {
+                preview.removeAttribute('src');
+                preview.style.display = 'none';
+            }
+        });
+
+        document.getElementById('comboImageFile').addEventListener('change', event => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = loadEvent => {
+                currentComboImageUrl = loadEvent.target.result;
+                const preview = document.getElementById('comboImagePreview');
+                preview.src = currentComboImageUrl;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('comboPreviewLink').addEventListener('click', () => {
+            const imageUrl = currentComboImageMode === 'upload'
+                ? currentComboImageUrl
+                : document.getElementById('comboImageUrl').value.trim();
+            const previewSettings = {
+                imageUrl,
+                description: document.getElementById('comboDescription').value.trim(),
+                price: Number(document.getElementById('comboPrice').value) || 0,
+                availableBagels: Array.from(document.querySelectorAll('input[name="comboBagel"]:checked'))
+                    .map(input => input.value),
+                availableSchmears: Array.from(document.querySelectorAll('input[name="comboSchmear"]:checked'))
+                    .map(input => input.value)
+            };
+            sessionStorage.setItem('rr_combo_preview_settings', JSON.stringify(previewSettings));
+        });
+
+        const defaultCarbiesSandwichSettings = {
+            sectionTitle: 'The Round Room x Carbies',
+            title: 'The Carbie Sandwich',
+            description: '',
+            price: 0,
+            isAvailable: false,
+            availableBagels: [],
+            availableSchmears: [],
+            bagelLabel: 'Choose your bagel:',
+            bagelPlaceholder: 'Select a bagel',
+            schmearLabel: 'Choose your schmear:',
+            schmearPlaceholder: 'Select a schmear',
+            buttonLabel: 'Add to Cart',
+            imageUrl: '',
+            allowedPincodes: []
+        };
+
+        function renderCarbiesSandwichSettings() {
+            carbiesSandwichSettings = {
+                ...defaultCarbiesSandwichSettings,
+                ...(comboSettings.carbiesSandwich || {})
+            };
+            const fields = {
+                carbiesSectionTitleInput: 'sectionTitle',
+                carbiesSandwichTitleInput: 'title',
+                carbiesSandwichDescriptionInput: 'description',
+                carbiesSandwichPriceInput: 'price',
+                carbiesSandwichAvailableInput: 'isAvailable',
+                carbiesSandwichBagelLabelInput: 'bagelLabel',
+                carbiesSandwichBagelPlaceholderInput: 'bagelPlaceholder',
+                carbiesSandwichSchmearLabelInput: 'schmearLabel',
+                carbiesSandwichSchmearPlaceholderInput: 'schmearPlaceholder',
+                carbiesSandwichButtonLabelInput: 'buttonLabel'
+            };
+            for (const [elementId, settingKey] of Object.entries(fields)) {
+                const element = document.getElementById(elementId);
+                if (!element) continue;
+                if (element.type === 'checkbox') element.checked = carbiesSandwichSettings[settingKey] === true;
+                else element.value = carbiesSandwichSettings[settingKey] ?? '';
+            }
+
+            currentCarbiesImageUrl = carbiesSandwichSettings.imageUrl || '';
+            currentCarbiesImageMode = currentCarbiesImageUrl.startsWith('data:') ? 'upload' : 'url';
+            const imageUrlInput = document.getElementById('carbiesSandwichImageUrlInput');
+            const imagePreview = document.getElementById('carbiesSandwichImagePreview');
+            if (imageUrlInput) imageUrlInput.value = currentCarbiesImageMode === 'url' ? currentCarbiesImageUrl : '';
+            if (imagePreview) {
+                if (currentCarbiesImageUrl) {
+                    imagePreview.src = currentCarbiesImageUrl;
+                    imagePreview.style.display = 'block';
+                } else {
+                    imagePreview.removeAttribute('src');
+                    imagePreview.style.display = 'none';
+                }
+            }
+            document.querySelector(`input[name="carbiesSandwichImageSource"][value="${currentCarbiesImageMode}"]`).checked = true;
+            toggleCarbiesImageSource(currentCarbiesImageMode);
+
+            const bagels = allItems.filter(item => (item.category || '').toLowerCase() === 'bagels');
+            const schmears = allItems.filter(item => (item.category || '').toLowerCase() === 'schmears');
+            renderCarbiesOptions('carbiesSandwichBagels', 'carbiesSandwichBagel', bagels, carbiesSandwichSettings.availableBagels);
+            renderCarbiesOptions('carbiesSandwichSchmears', 'carbiesSandwichSchmear', schmears, carbiesSandwichSettings.availableSchmears);
+            renderPincodeCheckboxes('carbiesSandwichPincodes', carbiesSandwichSettings.allowedPincodes || []);
+        }
+
+        function renderCarbiesOptions(containerId, inputName, items, selectedIds) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const selectedSet = new Set(Array.isArray(selectedIds) ? selectedIds : []);
+            if (items.length === 0) {
+                const category = inputName.endsWith('Bagel') ? 'bagels' : 'schmears';
+                container.innerHTML = `<p class="muted">No ${category} found. Add them to the menu first.</p>`;
+                return;
+            }
+            container.innerHTML = items.map(item => `
+                <label class="combo-checkbox-item">
+                    <input type="checkbox" name="${inputName}" value="${item.id}"
+                        ${selectedSet.has(item.id) ? 'checked' : ''}>
+                    ${item.name}
+                </label>
+            `).join('');
+        }
+
+        function toggleCarbiesImageSource(mode) {
+            currentCarbiesImageMode = mode;
+            document.getElementById('carbiesSandwichImageUrlGroup').style.display = mode === 'url' ? 'block' : 'none';
+            document.getElementById('carbiesSandwichImageUploadGroup').style.display = mode === 'upload' ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('input[name="carbiesSandwichImageSource"]').forEach(radio => {
+            radio.addEventListener('change', event => toggleCarbiesImageSource(event.target.value));
+        });
+
+        document.getElementById('carbiesSandwichImageUrlInput').addEventListener('input', event => {
+            currentCarbiesImageUrl = event.target.value.trim();
+            const preview = document.getElementById('carbiesSandwichImagePreview');
+            if (currentCarbiesImageUrl) {
+                preview.src = currentCarbiesImageUrl;
+                preview.style.display = 'block';
+            } else {
+                preview.removeAttribute('src');
+                preview.style.display = 'none';
+            }
+        });
+
+        document.getElementById('carbiesSandwichImageFileInput').addEventListener('change', event => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = loadEvent => {
+                currentCarbiesImageUrl = loadEvent.target.result;
+                const preview = document.getElementById('carbiesSandwichImagePreview');
+                preview.src = currentCarbiesImageUrl;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function saveCarbiesSandwichSettings() {
+            const token = getAdminToken();
+            if (!token) {
+                showMessage('Admin token required. Please try again.', 'error');
+                if (window.AdminGate) window.AdminGate.lock();
+                return;
+            }
+
+            const data = {
+                sectionTitle: document.getElementById('carbiesSectionTitleInput').value.trim(),
+                title: document.getElementById('carbiesSandwichTitleInput').value.trim(),
+                description: document.getElementById('carbiesSandwichDescriptionInput').value.trim(),
+                price: Number(document.getElementById('carbiesSandwichPriceInput').value) || 0,
+                isAvailable: document.getElementById('carbiesSandwichAvailableInput').checked,
+                availableBagels: Array.from(document.querySelectorAll('input[name="carbiesSandwichBagel"]:checked'))
+                    .map(input => input.value),
+                availableSchmears: Array.from(document.querySelectorAll('input[name="carbiesSandwichSchmear"]:checked'))
+                    .map(input => input.value),
+                bagelLabel: document.getElementById('carbiesSandwichBagelLabelInput').value.trim(),
+                bagelPlaceholder: document.getElementById('carbiesSandwichBagelPlaceholderInput').value.trim(),
+                schmearLabel: document.getElementById('carbiesSandwichSchmearLabelInput').value.trim(),
+                schmearPlaceholder: document.getElementById('carbiesSandwichSchmearPlaceholderInput').value.trim(),
+                buttonLabel: document.getElementById('carbiesSandwichButtonLabelInput').value.trim(),
+                imageUrl: currentCarbiesImageMode === 'upload'
+                    ? currentCarbiesImageUrl
+                    : document.getElementById('carbiesSandwichImageUrlInput').value.trim(),
+                allowedPincodes: getSelectedPincodes('carbiesSandwichPincodes')
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/combo-settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                    body: JSON.stringify({ carbiesSandwich: data })
+                });
+                if (response.ok) {
+                    carbiesSandwichSettings = { ...data };
+                    comboSettings.carbiesSandwich = { ...data };
+                    showMessage('Carbies sandwich settings saved successfully', 'success');
+                    return;
+                }
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.error || 'Failed to save Carbies sandwich settings');
+            } catch (error) {
+                console.error('[menu-admin] Save Carbies sandwich failed:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        document.getElementById('saveCarbiesSandwichBtn')
+            ?.addEventListener('click', saveCarbiesSandwichSettings);
         // ====== END COMBO SETTINGS FUNCTIONS ======
 
         // ====== BAGEL BOX FUNCTIONS ======

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Round Room x Carbies</title>
+    <link rel="stylesheet" href="style.css?v=1792855803718">
+    <link rel="stylesheet" href="carbies-collab.css">
+    <link rel="icon" type="image/png" href="images/Icon.png?v=1792855803718">
+    <script src="script.js?v=1792855803718" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+    <nav class="top-nav">
+        <div class="container">
+            <div class="nav-toggle" onclick="changeHamburger(this)">
+                <div class="bar1"></div>
+                <div class="bar2"></div>
+                <div class="bar3"></div>
+            </div>
+            <ul class="nav-links" id="TopNav">
+                <li><a href="#story">STORY</a></li>
+                <li><a href="#bagels">BAGELS</a></li>
+                <li><a href="#schmear">SCHMEARS</a></li>
+                <li><a href="#dessert">DESSERTS</a></li>
+                <li><a href="/order_page">ORDER</a></li>
+            </ul>
+            <div class="logo">
+                <h1 href="#story">THE ROUND ROOM</h1>
+            </div>
+            <img class="iconpic" src="webpimages/Icon.webp?v=1792855803718" alt="Logo">
+        </div>
+    </nav>
+    <div class="video-container">
+        <div class="video-overlay">
+            <video width="100%" height="100%" autoplay muted loop playsinline webkit-playsinline
+                poster="webpimages/hero-video-poster.jpg?v=1792855803718">
+                <source src="videos/New_front_web.mp4" type="video/mp4" data-fallback="videos/hero.mp4?v=1792855803718">
+                Your browser does not support the video tag.
+            </video>
+            <a href="/order_page.html" class="order-now-btn">ORDER NOW</a>
+        </div>
+    </div>
+    <section class="section-ss" id="story">
+        <h2>OUR STORY</h2>
+        <div class="ss">
+            <p>We craft handmade New York-style bagels, slow-whipped schmears, and dessert pots that feel familiar yet
+                considered. Every element is made to be shared, from weekend pop-ups to curated home deliveries designed
+                for moments that feel personal, not rushed. The Round Room isn't just about what's on the table. It's
+                about creating small pauses in the day, where food becomes a reason to gather, talk, and stay a little
+                longer.</p>
+            <p>With love,<br>Jia Kini<br>Founder, The Round Room</p>
+            <div class="front_images_container">
+                <img src="webpimages/bagel-in-hand.webp?v=1792855803718" alt="Bagel in hand">
+                <img src="webpimages/bagel-eat.webp?v=1792855803718" alt="Eating bagel">
+            </div>
+        </div>
+    </section>
+    <section class="section-m" id="bagels">
+        <h2>OUR BAGELS</h2>
+        <div class="carousel" id="bagelCarousel" aria-label="Bagel carousel">
+            <button class="carousel-btn prev" aria-label="Previous">‹</button>
+            <div class="carousel-track-wrapper">
+                <ul class="carousel-track">
+                    <li class="carousel-slide carousel-slide--everything" data-id="B-1"><img
+                            src="webpimages/Everything-bagel-with-plate.webp?v=1792855803718" alt="Bagel"
+                            loading="lazy">
+                        <h3>EVERYTHING</h3>
+                    </li>
+                    <li class="carousel-slide carousel-slide--sesame" data-id="B-4"><img
+                            src="webpimages/Sesame-bagel-with-plate.webp?v=1792855803718" alt="Bagel" loading="lazy">
+                        <h3>SESAME</h3>
+                    </li>
+                    <li class="carousel-slide carousel-slide--poppy" data-id="B-2"><img
+                            src="webpimages/Poppy-bagel-with-plate.webp?v=1792855803718" alt="Bagel" loading="lazy">
+                        <h3>POPPY</h3>
+                    </li>
+                    <li class="carousel-slide" data-id="B-3"><img src="webpimages/plain_bagel.webp?v=1792855803718"
+                            alt="Bagel" loading="lazy">
+                        <h3>PLAIN</h3>
+                    </li>
+                    <li class="carousel-slide" data-id="B-2"><img src="webpimages/final_ch_bagel.webp?v=1792855803718"
+                            alt="Bagel" loading="lazy">
+                        <h3>CHOCOLATE</h3>
+                    </li>
+                </ul>
+            </div>
+            <button class="carousel-btn next" aria-label="Next">›</button>
+        </div>
+        <section class="carbies-collab" aria-label="The Round Room and Carbies limited-time collaboration">
+            <div class="carbies-collab__copy">
+                <p class="carbies-collab__eyebrow">LIMITED DROP</p>
+                <div class="carbies-collab__brandmarks">
+                    <div class="carbies-collab__brand-logo carbies-collab__brand-logo--round-room">
+                        <img src="images/5.png" alt="The Round Room">
+                    </div>
+                    <span class="carbies-collab__brand-x" aria-hidden="true">×</span>
+                    <div class="carbies-collab__brand-logo carbies-collab__brand-logo--carbies">
+                        <img src="images/carbies_collab_logo.PNG" alt="Carbies">
+                    </div>
+                </div>
+                <p class="carbies-collab__intro">Two brands, coming together for a couple of special things. Meet the
+                    limited-edition Carbies Crunch and a box made for sharing.</p>
+                <div class="carbies-collab__menu">
+                    <article class="carbies-collab__item">
+                        <div>
+                            <p class="carbies-collab__item-label">LIMITED EDITION</p>
+                            <h3>The Carbie Schmear</h3>
+                            <p>Our signature Schmere with a beetroot, labneh Carbies twist.</p>
+                        </div>
+                    </article>
+                    <article class="carbies-collab__item">
+                        <div>
+                            <p class="carbies-collab__item-label">PERFECT PAIR</p>
+                            <h3>The Carbie Combo</h3>
+                            <p>A limited-run selection from both brands, ready to share.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+            <aside class="carbies-collab__product" aria-label="Featured collaboration product">
+                <p class="carbies-collab__product-label">LIMITED EDITION</p>
+                <img src="webpimages/Everything-bagel-with-plate.webp?v=1792855803718"
+                    alt="Everything bagel, featured as the Carbies Crunch" loading="lazy">
+                <h3>The Carbie Schmear</h3>
+                <p>A signature Round Room bagel with a Carbies-inspired twist.</p>
+                <span class="carbies-collab__product-note">HERE FOR A SHORT RUN</span>
+            </aside>
+        </section>
+    </section>
+    <section class="section-s" id="schmear">
+        <h2>OUR SCHMEARS</h2>
+        <div class="menu desktop-only">
+            <div class="menu-item-w">
+                <img src="webpimages/Plain Schmear.webp?v=1792855287695" alt="Plain Schmear" loading="lazy">
+                <h3>PLAIN</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Zest Schmear.webp?v=1792855287695" alt="Zest Schmear" loading="lazy">
+                <h3>SALT, PEPPER & LEMON ZEST</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Garlic and Herb Schmear.webp?v=1792855287695" alt="Garlic and Herb Schmear"
+                    loading="lazy">
+                <h3>GARLIC AND HERB</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Jalapeno and Parm.webp?v=1792855287695" alt="Jalapeño Schmear" loading="lazy">
+                <h3>JALAPEÑO AND PARM</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Sun-dried Tomato.webp?v=1792855287695" alt="Sun-Dried Tomato Schmear"
+                    loading="lazy">
+                <h3>SUN-DRIED TOMATOES</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Chilli Sundried Tomato.webp?v=1792855287695" alt="Chili Sun-Dried Tomato Schmear"
+                    loading="lazy">
+                <h3>CHILI SUN-DRIED TOMATOES</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Pesto Schmears.webp?v=1792855287695" alt="Pesto Genovese Schmear" loading="lazy">
+                <h3>PESTO GENOVESE</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Hazelnut Schmear.webp?v=1792855287695" alt="Hazelnut Schmear" loading="lazy">
+                <h3>HAZELNUT</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/Double Chocolate Schmear.webp?v=1792855287695" alt="Double Chocolate Schmear"
+                    loading="lazy">
+                <h3>DOUBLE CHOCOLATE</h3>
+            </div>
+        </div>
+        <div class="menu-p">
+            <div class="section-line"></div>
+            <div class="menu-item-p-w">
+                <h3>PLAIN</h3>
+                <img src="webpimages/Plain Schmear.webp?v=1792855287695" alt="Plain Schmear" loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3 class="shrink-label">SALT, PEPPER & LEMON ZEST</h3>
+                <img src="webpimages/Zest Schmear.webp?v=1792855287695" alt="Zest Schmear" loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3>GARLIC AND HERB</h3>
+                <img src="webpimages/Garlic and Herb Schmear.webp?v=1792855287695" alt="Garlic and Herb Schmear"
+                    loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3>JALAPEÑO AND PARM</h3>
+                <img src="webpimages/Jalapeno and Parm.webp?v=1792855287695" alt="Jalapeño and Parm Schmear"
+                    loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3>SUN-DRIED TOMATOES</h3>
+                <img src="webpimages/Sun-dried Tomato.webp?v=1792855287695" alt="Sun-Dried Tomato Schmear"
+                    loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3 class="shrink-label">CHILI SUN-DRIED TOMATOES</h3>
+                <img src="webpimages/Chilli Sundried Tomato.webp?v=1792855287695" alt="Chili Sun-Dried Tomato Schmear"
+                    loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3>PESTO GENOVESE</h3>
+                <img src="webpimages/Pesto Schmears.webp?v=1792855287695" alt="Pesto Genovese Schmear" loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3>HAZELNUT</h3>
+                <img src="webpimages/Hazelnut Schmear.webp?v=1792855287695" alt="Hazelnut Schmear" loading="lazy">
+            </div>
+            <div class="menu-item-p-w">
+                <h3>DOUBLE CHOCOLATE</h3>
+                <img src="webpimages/Double Chocolate Schmear.webp?v=1792855287695" alt="Double Chocolate Schmear"
+                    loading="lazy">
+            </div>
+        </div>
+    </section>
+    <section class="section-m" id="bagels">
+        <h2>OUR SANDWICHES</h2>
+        <p>
+
+        </p>
+        <h3>The New Yorker</h3>
+        <p>Silky salmon with our signature cream cheese and capers inside a perfectly chewy bagel. A classic done the
+            Round Room way.(non-veg)</p>
+        <h3>Breakfast Bagel</h3>
+        <p>Creamy avocado, soft eggs and our jalapeno cream cheese tucked into a perfectly toasted bagel. The perfect
+            slow breakfast in one bite.(egg)</p>
+        <h3>Ruby Chicken Bagel</h3>
+        <p>Our Bombay special butter chicken bagel with creamy sauce, fresh greens and soft shredded chicken in a
+            beautifully toasted New York style bagel.(non-veg)</p>
+    </section>
+    <section class="section-ms" id="dessert">
+        <h2>OUR DESSERTS</h2>
+        <div class="menu desktop-only">
+            <div class="menu-item-w">
+                <img src="webpimages/tiramisu.webp?v=1792855803718" alt="Tiramisu" loading="lazy">
+                <h3>TIRAMISU</h3>
+            </div>
+            <div class="menu-item-w">
+                <img src="webpimages/ch_mousse.webp?v=1792855803718" alt="Chocolate Mousse" loading="lazy">
+                <h3>CHOCOLATE MOUSSE</h3>
+            </div>
+        </div>
+        <div class="menu-p mobile-only">
+            <div class="section-line-w"></div>
+            <div class="menu-item-p">
+                <h3>TIRAMISU</h3>
+                <img src="webpimages/tiramisu.webp?v=1792855803718" alt="Tiramisu" style="border: none" loading="lazy">
+            </div>
+            <div class="menu-item-p">
+                <h3>CHOCOLATE MOUSSE</h3>
+                <img src="webpimages/ch_mousse.webp?v=1792855803718" alt="Chocolate Mousse" style="border: none"
+                    loading="lazy">
+            </div>
+        </div>
+    </section>
+    <section class="editorial-section" id="editorial">
+        <h2>EDITORIAL</h2>
+        <div class="editorial-container" id="editorialContainer">
+        </div>
+    </section>
+    <section class="section-ss" id="order">
+        <h2>ORDER</h2>
+        <div class="ss">
+            <p>Settle in and choose your favourites at your own pace. From warm bagels to dessert pots, everything is
+                curated for an easy, unhurried order that feels just as thoughtful as the food itself. When you're
+                ready, press the order button below.</p>
+            <p class="order-note" role="status" aria-live="polite">Orders take around 24 hrs.</p>
+            <div class="section-line-e"></div>
+        </div>
+        <div><a class="order-button" href="/order_page">ORDER NOW</a></div>
+    </section>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-links">
+                <a href="/privacy">Privacy</a>
+                <span aria-hidden="true">•</span>
+                <a href="/terms">Terms</a>
+                <span aria-hidden="true">•</span>
+                <a href="/refund">Refund</a>
+                <span aria-hidden="true">•</span>
+                <a href="/contact">Contact</a>
+                <span aria-hidden="true">•</span>
+                <a href="/careers">Join Our Team</a>
+            </div>
+            <div class="footer-meta">Established 2025 | @theroundroommumbai | Atelier Round Room LLP</div>
+        </div>
+    </footer>
+    <div id="logoutLoading" class="loading-overlay" style="display: none;">
+        <div class="loading-card">Logging out...</div>
+    </div>
+</body>
+
+</html>

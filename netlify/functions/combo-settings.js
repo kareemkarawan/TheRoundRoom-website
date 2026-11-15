@@ -28,6 +28,25 @@ function normalizeAllowedPincodes(value) {
     .filter(Boolean))];
 }
 
+function defaultCarbiesSandwichSettings() {
+  return {
+    sectionTitle: "The Round Room x Carbies",
+    title: "The Carbie Sandwich",
+    description: "",
+    price: 0,
+    isAvailable: false,
+    availableBagels: [],
+    availableSchmears: [],
+    bagelLabel: "Choose your bagel:",
+    bagelPlaceholder: "Select a bagel",
+    schmearLabel: "Choose your schmear:",
+    schmearPlaceholder: "Select a schmear",
+    buttonLabel: "Add to Cart",
+    imageUrl: "",
+    allowedPincodes: [],
+  };
+}
+
 function buildHeaders(isAdminRoute = false) {
   const origin = isAdminRoute && ADMIN_ORIGIN ? ADMIN_ORIGIN : "*";
   return {
@@ -56,9 +75,25 @@ async function handleGet() {
         availableBagels: [],
         availableSchmears: [],
         description: "",
+        imageUrl: "",
         allowedPincodes: [],
       };
     }
+    settings = {
+      id: "combo",
+      price: 0,
+      isAvailable: false,
+      availableBagels: [],
+      availableSchmears: [],
+      description: "",
+      imageUrl: "",
+      allowedPincodes: [],
+      ...settings,
+      carbiesSandwich: {
+        ...defaultCarbiesSandwichSettings(),
+        ...(settings.carbiesSandwich || {}),
+      },
+    };
 
     return {
       statusCode: 200,
@@ -92,8 +127,16 @@ async function handlePut(body) {
     };
   }
 
+  const hasComboUpdates = updates.price !== undefined ||
+    updates.isAvailable !== undefined ||
+    updates.availableBagels !== undefined ||
+    updates.availableSchmears !== undefined ||
+    updates.description !== undefined ||
+    updates.imageUrl !== undefined ||
+    updates.allowedPincodes !== undefined ||
+    updates.availablePincodes !== undefined;
   const priceValue = Number(updates.price);
-  if (Number.isNaN(priceValue) || priceValue < 0) {
+  if (hasComboUpdates && (Number.isNaN(priceValue) || priceValue < 0)) {
     return {
       statusCode: 400,
       body: JSON.stringify({ error: "Invalid price value" }),
@@ -105,16 +148,62 @@ async function handlePut(body) {
     const collection = db.collection(collectionName);
 
     const now = new Date();
-    const settingsData = {
-      id: "combo",
-      price: priceValue,
-      isAvailable: updates.isAvailable === true,
-      availableBagels: Array.isArray(updates.availableBagels) ? updates.availableBagels : [],
-      availableSchmears: Array.isArray(updates.availableSchmears) ? updates.availableSchmears : [],
-      description: typeof updates.description === "string" ? updates.description.trim() : "",
-      allowedPincodes: normalizeAllowedPincodes(updates.allowedPincodes || updates.availablePincodes || []),
-      updatedAt: now,
-    };
+    const settingsData = { id: "combo", updatedAt: now };
+    if (hasComboUpdates) {
+      Object.assign(settingsData, {
+        price: priceValue,
+        isAvailable: updates.isAvailable === true,
+        availableBagels: Array.isArray(updates.availableBagels) ? updates.availableBagels : [],
+        availableSchmears: Array.isArray(updates.availableSchmears) ? updates.availableSchmears : [],
+        description: typeof updates.description === "string" ? updates.description.trim() : "",
+        allowedPincodes: normalizeAllowedPincodes(updates.allowedPincodes || updates.availablePincodes || []),
+      });
+    }
+
+    if (hasComboUpdates && typeof updates.imageUrl === "string") {
+      settingsData.imageUrl = updates.imageUrl.trim();
+    }
+
+    if (updates.carbiesSandwich !== undefined) {
+      if (!updates.carbiesSandwich || typeof updates.carbiesSandwich !== "object" || Array.isArray(updates.carbiesSandwich)) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: "Invalid Carbies sandwich settings" }),
+        };
+      }
+      const collab = updates.carbiesSandwich;
+      const collabPrice = Number(collab.price);
+      if (Number.isNaN(collabPrice) || collabPrice < 0) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: "Invalid Carbies sandwich price" }),
+        };
+      }
+      const defaults = defaultCarbiesSandwichSettings();
+      const textFields = [
+        "sectionTitle",
+        "title",
+        "description",
+        "bagelLabel",
+        "bagelPlaceholder",
+        "schmearLabel",
+        "schmearPlaceholder",
+        "buttonLabel",
+        "imageUrl",
+      ];
+      const collabSettings = {
+        ...defaults,
+        price: collabPrice,
+        isAvailable: collab.isAvailable === true,
+        availableBagels: Array.isArray(collab.availableBagels) ? collab.availableBagels : [],
+        availableSchmears: Array.isArray(collab.availableSchmears) ? collab.availableSchmears : [],
+        allowedPincodes: normalizeAllowedPincodes(collab.allowedPincodes || []),
+      };
+      for (const field of textFields) {
+        if (typeof collab[field] === "string") collabSettings[field] = collab[field].trim();
+      }
+      settingsData.carbiesSandwich = collabSettings;
+    }
 
     await collection.updateOne(
       { id: "combo" },

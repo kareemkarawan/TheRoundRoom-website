@@ -5,6 +5,15 @@ window._rrCombos = [];
 // Global array to store confirmed box sets
 window._rrBoxes = [];
 
+function escapeCartText(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Load saved combos and boxes from localStorage
 (function loadSavedCart() {
     try {
@@ -18,11 +27,11 @@ window._rrBoxes = [];
 })();
 
 // Add a confirmed combo to the cart
-function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) {
+function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price, customName = '', comboType = '') {
     const comboId = `combo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    const displayName = `Bagel & Schmear Sandwich: ${bagelName} + ${schmearName}`;
+    const displayName = customName || `Bagel & Schmear Sandwich: ${bagelName} + ${schmearName}`;
 
-    window._rrCombos.push({
+    const combo = {
         id: comboId,
         name: displayName,
         price: price,
@@ -33,7 +42,9 @@ function addComboToCart(bagelId, bagelName, schmearId, schmearName, qty, price) 
         schmearId,
         bagelName,
         schmearName
-    });
+    };
+    if (comboType) combo.comboType = comboType;
+    window._rrCombos.push(combo);
 
     updateCart();
 }
@@ -443,7 +454,7 @@ function updateCart() {
                         <button class="cart-item-btn" onclick="adjustSheetQty('${item.id}', 1)">+</button>
                     </div>
                     <div class="cart-item-info">
-                        <span class="cart-item-name">${item.name}</span>
+                        <span class="cart-item-name">${escapeCartText(item.name)}</span>
                         ${detailsHtml}
                     </div>
                 </div>
@@ -469,7 +480,7 @@ function updateCart() {
     if (reviewItemsDiv) {
         reviewItemsDiv.innerHTML = cartItems.map(item =>
             `<div class="review-item">
-                <span>${item.qty}x ${item.name}</span>
+                <span>${item.qty}x ${escapeCartText(item.name)}</span>
                 <span>₹${item.itemTotal.toFixed(2)}</span>
             </div>`
         ).join('');
@@ -501,7 +512,7 @@ function updateCart() {
             sheetCartItems.innerHTML = cartItems.map(item =>
                 `<div class="sheet-cart-item">
                     <div class="sheet-item-info">
-                        <span class="sheet-item-name">${item.name}</span>
+                        <span class="sheet-item-name">${escapeCartText(item.name)}</span>
                         <span class="sheet-item-price">₹${item.itemTotal.toFixed(2)}</span>
                     </div>
                     <div class="sheet-item-controls">
@@ -971,6 +982,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         menuItemId: i.id,
                         qty: Number(i.qty),
                         isCombo: true,
+                        ...(i.comboType ? { comboType: i.comboType } : {}),
                         bagelId: i.bagelId,
                         schmearId: i.schmearId,
                         bagelName: i.bagelName,

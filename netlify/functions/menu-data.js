@@ -51,6 +51,7 @@ exports.handler = withNoStore(async (event) => {
       availableBagels: [],
       availableSchmears: [],
       description: "",
+      imageUrl: "",
       allowedPincodes: [],
     };
 
