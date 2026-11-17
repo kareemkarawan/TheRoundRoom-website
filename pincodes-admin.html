@@ -211,6 +211,16 @@
             return token;
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
         async function loadPincodes() {
             const tbody = document.getElementById('pincodesTableBody');
             console.debug('[pincodes-admin] Loading pincodes');
@@ -225,7 +235,7 @@
                 }
             } catch (e) {
                 console.error('[pincodes-admin] Load failed:', e);
-                tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Error loading pincodes: ${e.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Error loading pincodes: ${escapeHtml(e.message)}</td></tr>`;
             }
         }
 
@@ -248,9 +258,9 @@
 
             tbody.innerHTML = sorted.map(p => `
             <tr>
-                <td class="pincode-code">${p.code}</td>
+                <td class="pincode-code">${escapeHtml(p.code)}</td>
                 <td class="action-cell">
-                    <button class="btn-delete-small" onclick="deletePincode('${p.code}')">Delete</button>
+                    <button class="btn-delete-small" data-code="${escapeHtml(p.code)}" onclick="deletePincode(this.dataset.code)">Delete</button>
                 </td>
             </tr>
         `).join('');

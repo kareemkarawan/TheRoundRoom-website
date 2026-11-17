@@ -134,6 +134,16 @@
             return response;
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
         async function loadUserLogs() {
             const tbody = document.getElementById('userLogsTbody');
             tbody.innerHTML = '<tr><td colspan="6" class="muted">Loading user logs…</td></tr>';
@@ -175,15 +185,15 @@
                 }
 
                 tbody.innerHTML = filtered.map((log) => {
-                    const safeMessage = String(log.message || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const safeUrl = String(log.url || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const level = (log.level || 'info').toLowerCase();
+                    const safeMessage = escapeHtml(log.message || '—');
+                    const safeUrl = escapeHtml(log.url || '—');
+                    const level = String(log.level || 'info').toLowerCase();
                     return `
                     <tr>
                         <td>${fmtDate(log.createdAt)}</td>
-                        <td><span class="status-pill" data-status="${level}">${level.toUpperCase()}</span></td>
-                        <td>${log.type || 'action'}</td>
-                        <td>${log.source || '—'}</td>
+                        <td><span class="status-pill" data-status="${escapeHtml(level)}">${escapeHtml(level.toUpperCase())}</span></td>
+                        <td>${escapeHtml(log.type || 'action')}</td>
+                        <td>${escapeHtml(log.source || '—')}</td>
                         <td title="${safeMessage}">${safeMessage}</td>
                         <td title="${safeUrl}">${safeUrl}</td>
                     </tr>
@@ -191,7 +201,7 @@
                 }).join('');
             } catch (e) {
                 console.error('Failed to load user logs:', e);
-                tbody.innerHTML = `<tr><td colspan="6" class="muted">Error: ${e.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="muted">Error: ${escapeHtml(e.message)}</td></tr>`;
             }
         }
 

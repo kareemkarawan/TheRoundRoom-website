@@ -242,13 +242,12 @@ async function renderCombo(menuItems, comboSettings) {
 }
 
 function renderCarbiesSandwich(menuItems, comboSettings) {
-  const section = document.getElementById('carbiesSandwichSection');
   const container = document.getElementById('carbiesSandwichContainer');
-  if (!section || !container) return;
+  if (!container) return;
 
   const defaults = {
     sectionTitle: 'The Round Room x Carbies',
-    title: 'The Carbie Sandwich',
+    title: 'The Carbies Combo',
     description: '',
     price: 0,
     isAvailable: false,
@@ -256,29 +255,28 @@ function renderCarbiesSandwich(menuItems, comboSettings) {
     availableSchmears: [],
     bagelLabel: 'Choose your bagel:',
     bagelPlaceholder: 'Select a bagel',
-    schmearLabel: 'Choose your schmear:',
-    schmearPlaceholder: 'Select a schmear',
     buttonLabel: 'Add to Cart',
-    imageUrl: '',
     allowedPincodes: []
   };
   const settings = { ...defaults, ...(comboSettings.carbiesSandwich || {}) };
   settings.availableBagels = Array.isArray(settings.availableBagels) ? settings.availableBagels : [];
   settings.availableSchmears = Array.isArray(settings.availableSchmears) ? settings.availableSchmears : [];
   const sectionTitle = document.getElementById('carbiesSectionTitle');
-  const title = document.getElementById('carbiesSandwichTitle');
   if (sectionTitle) sectionTitle.textContent = settings.sectionTitle || defaults.sectionTitle;
-  if (title) title.textContent = settings.title || defaults.title;
 
   if (!settings.isAvailable || Number(settings.price) <= 0) {
-    section.style.display = 'none';
+    container.style.display = 'none';
+    container.innerHTML = '';
+    updateCarbiesSectionVisibility();
     return;
   }
 
   const selectedPincode = getSelectedPincode();
   const allowedPincodes = normalizeAllowedPincodes(settings.allowedPincodes || []);
   if (selectedPincode && allowedPincodes.length > 0 && !allowedPincodes.includes(selectedPincode)) {
-    section.style.display = 'none';
+    container.style.display = 'none';
+    container.innerHTML = '';
+    updateCarbiesSectionVisibility();
     return;
   }
   const availableBagels = menuItems.filter(item =>
@@ -287,23 +285,23 @@ function renderCarbiesSandwich(menuItems, comboSettings) {
     settings.availableBagels.includes(item.id) &&
     isItemAvailableForPincode(item, selectedPincode)
   );
-  const availableSchmears = menuItems.filter(item =>
-    item.category?.toLowerCase() === 'schmears' &&
+  const selectedSchmear = menuItems.find(item =>
+    item.id === settings.availableSchmears[0] &&
+    item.category?.toLowerCase() === 'carbies' &&
     item.isAvailable !== false &&
-    settings.availableSchmears.includes(item.id) &&
     isItemAvailableForPincode(item, selectedPincode)
   );
-  if (availableBagels.length === 0 || availableSchmears.length === 0) {
+  if (availableBagels.length === 0 || !selectedSchmear) {
     container.innerHTML = '';
-    section.style.display = 'none';
+    container.style.display = 'none';
+    updateCarbiesSectionVisibility();
     return;
   }
 
   const selectorId = 'carbiesSandwich';
-  const imageUrl = typeof settings.imageUrl === 'string' ? settings.imageUrl.trim() : '';
   container.innerHTML = `
     <div class="combo-item" data-id="${selectorId}" data-name="${escapeHtml(settings.title || defaults.title)}" data-price="${Number(settings.price)}">
-      ${imageUrl ? `<img class="combo-image" src="${escapeHtml(versionLocalAssetUrl(imageUrl))}" alt="${escapeHtml(settings.title || defaults.title)}" loading="lazy">` : ''}
+      <h3 class="combo-title">${escapeHtml(settings.title || defaults.title)}</h3>
       ${settings.description ? `<p class="combo-description">${escapeHtml(settings.description)}</p>` : ''}
       <div class="combo-selectors">
         <div class="combo-selector-group">
@@ -314,11 +312,8 @@ function renderCarbiesSandwich(menuItems, comboSettings) {
           </select>
         </div>
         <div class="combo-selector-group">
-          <label for="${selectorId}SchmearSelect">${escapeHtml(settings.schmearLabel || defaults.schmearLabel)}</label>
-          <select id="${selectorId}SchmearSelect" class="combo-select">
-            <option value="">${escapeHtml(settings.schmearPlaceholder || defaults.schmearPlaceholder)}</option>
-            ${availableSchmears.map(item => `<option value="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('')}
-          </select>
+          <p class="combo-selector-label">Your schmear:</p>
+          <p class="combo-static-value">Carbies Schmear</p>
         </div>
       </div>
       <div class="combo-info">
@@ -332,25 +327,24 @@ function renderCarbiesSandwich(menuItems, comboSettings) {
       <button type="button" class="combo-confirm-btn" disabled>${escapeHtml(settings.buttonLabel || defaults.buttonLabel)}</button>
     </div>
   `;
-  section.style.display = 'block';
+  container.style.display = 'block';
+  updateCarbiesSectionVisibility();
 
   const bagelSelect = container.querySelector(`#${selectorId}BagelSelect`);
-  const schmearSelect = container.querySelector(`#${selectorId}SchmearSelect`);
   const quantity = container.querySelector('.combo-qty');
   const minusButton = container.querySelector('.combo-minus');
   const plusButton = container.querySelector('.combo-plus');
   const confirmButton = container.querySelector('.combo-confirm-btn');
 
   function updateButtons() {
-    const bothSelected = Boolean(bagelSelect.value && schmearSelect.value);
+    const bagelSelected = Boolean(bagelSelect.value);
     const qty = Number.parseInt(quantity.textContent, 10) || 1;
-    minusButton.disabled = !bothSelected || qty <= 1;
-    plusButton.disabled = !bothSelected;
-    confirmButton.disabled = !bothSelected;
+    minusButton.disabled = !bagelSelected || qty <= 1;
+    plusButton.disabled = !bagelSelected;
+    confirmButton.disabled = !bagelSelected;
   }
 
   bagelSelect.addEventListener('change', updateButtons);
-  schmearSelect.addEventListener('change', updateButtons);
   plusButton.addEventListener('click', () => {
     if (plusButton.disabled) return;
     quantity.textContent = String((Number.parseInt(quantity.textContent, 10) || 1) + 1);
@@ -363,12 +357,12 @@ function renderCarbiesSandwich(menuItems, comboSettings) {
   confirmButton.addEventListener('click', () => {
     if (confirmButton.disabled || typeof addComboToCart !== 'function') return;
     const bagelName = bagelSelect.selectedOptions[0]?.dataset.name || '';
-    const schmearName = schmearSelect.selectedOptions[0]?.dataset.name || '';
+    const schmearName = selectedSchmear.name;
     const displayName = `${settings.title || defaults.title}: ${bagelName} + ${schmearName}`;
     addComboToCart(
       bagelSelect.value,
       bagelName,
-      schmearSelect.value,
+      selectedSchmear.id,
       schmearName,
       Number.parseInt(quantity.textContent, 10) || 1,
       Number(settings.price),
@@ -376,11 +370,22 @@ function renderCarbiesSandwich(menuItems, comboSettings) {
       'carbies_sandwich'
     );
     bagelSelect.value = '';
-    schmearSelect.value = '';
     quantity.textContent = '1';
     updateButtons();
   });
   updateButtons();
+}
+
+function updateCarbiesSectionVisibility() {
+  const section = document.getElementById('carbiesSection');
+  const schmearMenu = document.getElementById('carbiesSchmearMenu');
+  const comboContainer = document.getElementById('carbiesSandwichContainer');
+  if (!section || !schmearMenu || !comboContainer) return;
+
+  const hasSchmears = schmearMenu.querySelector('.menu-item') !== null;
+  const hasCombo = comboContainer.querySelector('.combo-item') !== null &&
+    comboContainer.style.display !== 'none';
+  section.style.display = hasSchmears || hasCombo ? 'block' : 'none';
 }
 
 // Store current box being selected and available menu items
@@ -719,7 +724,8 @@ function renderMenuItems(items, MenuItemClass, grid) {
   const categoryMap = {
     'bagels': 'bagelMenu',
     'schmears': 'schmearMenu',
-    'desserts': 'dessertMenu'
+    'desserts': 'dessertMenu',
+    'carbies': 'carbiesSchmearMenu'
   };
 
   items
@@ -1072,6 +1078,7 @@ async function renderMenu() {
 
     await renderCombo(currentMenuItems, currentComboSettings);
     renderCarbiesSandwich(currentMenuItems, currentComboSettings);
+    updateCarbiesSectionVisibility();
 
     const boxSection = document.getElementById('boxSection');
     const boxContainer = document.getElementById('boxContainer');
@@ -1121,7 +1128,6 @@ function applyOrderTypeVisibility() {
 
     // Hide titles for bagels, schmears only
     smallTitles.forEach(title => {
-      if (title.closest('#carbiesSandwichSection')) return;
       const h3Text = title.querySelector('h3')?.textContent?.toLowerCase() || '';
       if (h3Text.includes('bagel') && !h3Text.includes('combo') && !h3Text.includes('box')) {
         title.style.display = 'none';
@@ -1148,6 +1154,7 @@ window.addEventListener('orderTypeSelected', async function (e) {
   if (currentMenuItems && currentComboSettings) {
     await renderCombo(currentMenuItems, currentComboSettings);
     renderCarbiesSandwich(currentMenuItems, currentComboSettings);
+    updateCarbiesSectionVisibility();
   }
 
   applyOrderTypeVisibility();

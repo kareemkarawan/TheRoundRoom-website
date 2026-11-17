@@ -407,6 +407,16 @@
             await loadSnapshot();
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
         async function loadAuditLog() {
             const type = document.getElementById('auditType').value;
             const level = document.getElementById('auditLevel').value;
@@ -436,10 +446,10 @@
             document.getElementById('auditTbody').innerHTML = filtered.map(log => `
             <tr>
                 <td>${fmtDate(log.createdAt)}</td>
-                <td><span class="status-pill" data-status="${log.level || 'info'}">${(log.level || 'info').toUpperCase()}</span></td>
-                <td>${log.type || 'action'}</td>
-                <td title="${String(log.message || '').replace(/"/g, '&quot;')}">${log.message || '—'}</td>
-                <td>${log.source || '—'}</td>
+                <td><span class="status-pill" data-status="${escapeHtml(log.level || 'info')}">${escapeHtml(String(log.level || 'info').toUpperCase())}</span></td>
+                <td>${escapeHtml(log.type || 'action')}</td>
+                <td title="${escapeHtml(log.message || '')}">${escapeHtml(log.message || '—')}</td>
+                <td>${escapeHtml(log.source || '—')}</td>
             </tr>
         `).join('');
         }

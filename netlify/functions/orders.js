@@ -320,7 +320,7 @@ async function handlePost(body) {
             statusCode: 400,
             body: JSON.stringify({
               error: isCarbiesSandwich
-                ? "Carbies sandwich is currently unavailable"
+                ? "Carbies combo is currently unavailable"
                 : "Combo is currently unavailable",
             }),
           };
@@ -336,17 +336,17 @@ async function handlePost(body) {
             : [];
           if (
             !availableBagels.includes(combo.bagelId) ||
-            !availableSchmears.includes(combo.schmearId) ||
+            availableSchmears[0] !== combo.schmearId ||
             !bagel ||
             bagel.category?.toLowerCase() !== "bagels" ||
             bagel.isAvailable === false ||
             !schmear ||
-            schmear.category?.toLowerCase() !== "schmears" ||
+            schmear.category?.toLowerCase() !== "carbies" ||
             schmear.isAvailable === false
           ) {
             return {
               statusCode: 400,
-              body: JSON.stringify({ error: "Invalid Carbies sandwich selection" }),
+              body: JSON.stringify({ error: "Invalid Carbies combo selection" }),
             };
           }
         }
@@ -355,7 +355,7 @@ async function handlePost(body) {
         if (isCarbiesSandwich && (!Number.isFinite(comboPrice) || comboPrice <= 0)) {
           return {
             statusCode: 400,
-            body: JSON.stringify({ error: "Carbies sandwich is currently unavailable" }),
+            body: JSON.stringify({ error: "Carbies combo is currently unavailable" }),
           };
         }
         const lineTotal = Number((comboPrice * combo.qty).toFixed(2));
@@ -368,7 +368,7 @@ async function handlePost(body) {
           ? menuMap.get(combo.schmearId)?.name
           : combo.schmearName;
         const comboName = isCarbiesSandwich
-          ? `${sandwichSettings.title || "The Carbie Sandwich"}: ${bagelName} + ${schmearName}`
+          ? `${sandwichSettings.title || "The Carbies Combo"}: ${bagelName} + ${schmearName}`
           : bagelName && schmearName
             ? `Bagel & Schmear Sandwich: ${bagelName} + ${schmearName}`
             : "Bagel & Schmear Sandwich";

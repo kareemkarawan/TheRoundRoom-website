@@ -115,6 +115,16 @@
             }
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
         function renderOrders(orders) {
             const container = document.getElementById('ordersContainer');
 
@@ -126,6 +136,7 @@
             container.innerHTML = orders.map(order => {
                 const items = order.items.map(item => {
                     let itemName = item.name || 'Unknown Item';
+                    let itemDetails = '';
 
                     // Handle combo items
                     if (item.isCombo) {
@@ -149,23 +160,24 @@
 
                         const bagelList = formatSelections(item.selectedBagels || []);
                         const schmearList = formatSelections(item.selectedSchmears || []);
-                        itemName = `${item.boxName || item.name || 'Box'}<br><small style="color: #666;">Bagels: ${bagelList}<br>Schmears: ${schmearList}</small>`;
+                        itemName = item.boxName || item.name || 'Box';
+                        itemDetails = `<br><small style="color: #666;">Bagels: ${escapeHtml(bagelList)}<br>Schmears: ${escapeHtml(schmearList)}</small>`;
                     }
 
-                    return `<li>${item.qty}× ${itemName}</li>`;
+                    return `<li>${escapeHtml(item.qty)}× ${escapeHtml(itemName)}${itemDetails}</li>`;
                 }).join('');
 
                 return `
                     <div style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
                             <div>
-                                <strong style="font-size: 1.1rem; color: var(--rr-bg);">${order.orderNumber || 'N/A'}</strong>
+                                <strong style="font-size: 1.1rem; color: var(--rr-bg);">${escapeHtml(order.orderNumber || 'N/A')}</strong>
                                 <p style="margin: 0.25rem 0 0 0; color: #666; font-size: 0.9rem;">
-                                    ${order.customer?.name || 'Unknown'} • ${order.customer?.phone || 'No phone'}
+                                    ${escapeHtml(order.customer?.name || 'Unknown')} • ${escapeHtml(order.customer?.phone || 'No phone')}
                                 </p>
                             </div>
                             <span style="background: ${getStatusColor(order.status)}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
-                                ${order.status || 'CREATED'}
+                                ${escapeHtml(order.status || 'CREATED')}
                             </span>
                         </div>
                         <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; line-height: 1.8;">
@@ -220,9 +232,9 @@
                         <ul style="list-style: none; padding: 0; margin: 0;">
                             ${items.map(item => `
                                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #eee;">
-                                    <span style="font-weight: 500; color: #333;">${item.name}</span>
+                                    <span style="font-weight: 500; color: #333;">${escapeHtml(item.name)}</span>
                                     <span style="background: var(--rr-bg); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">
-                                        ${item.qty}
+                                        ${escapeHtml(item.qty)}
                                     </span>
                                 </li>
                             `).join('')}

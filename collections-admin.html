@@ -335,6 +335,16 @@
             }
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
         async function loadCollectionOrders() {
             const container = document.getElementById('ordersList');
             container.innerHTML = '<div class="loading-message">Loading collection orders...</div>';
@@ -368,15 +378,15 @@
                             const bagelsFormatted = formatSelections(item.selectedBagels || []);
                             const schmearsFormatted = formatSelections(item.selectedSchmears || []);
                             detailsHtml = `<div class="box-item-details">
-                                ${bagelsFormatted ? `<small>Bagels: ${bagelsFormatted}</small>` : ''}
-                                ${schmearsFormatted ? `<small>Schmears: ${schmearsFormatted}</small>` : ''}
+                                ${bagelsFormatted ? `<small>Bagels: ${escapeHtml(bagelsFormatted)}</small>` : ''}
+                                ${schmearsFormatted ? `<small>Schmears: ${escapeHtml(schmearsFormatted)}</small>` : ''}
                             </div>`;
                         }
                         return `
                         <div class="order-item">
                             <span>
-                                <span class="item-qty">${item.qty}x</span>
-                                <span class="item-name">${item.name}</span>
+                                <span class="item-qty">${escapeHtml(item.qty)}x</span>
+                                <span class="item-name">${escapeHtml(item.name)}</span>
                                 ${detailsHtml}
                             </span>
                         </div>
@@ -386,16 +396,16 @@
                     const noteHtml = order.customer?.note ? `
                         <div class="order-note">
                             <strong>Note:</strong>
-                            ${order.customer.note}
+                            ${escapeHtml(order.customer.note)}
                         </div>
                     ` : '';
 
                     return `
-                        <div class="collection-card" data-order="${order.orderNumber}">
+                        <div class="collection-card" data-order="${escapeHtml(order.orderNumber)}">
                             <div class="collection-card-header">
                                 <div>
-                                    <h2 class="customer-name">${order.customer?.name || 'Unknown'}</h2>
-                                    <div class="order-number">${order.orderNumber}</div>
+                                    <h2 class="customer-name">${escapeHtml(order.customer?.name || 'Unknown')}</h2>
+                                    <div class="order-number">${escapeHtml(order.orderNumber)}</div>
                                 </div>
                                 <div class="order-time">
                                     <div>${timeStr}</div>
@@ -404,7 +414,7 @@
                             </div>
                             <div class="order-items">${itemsHtml}</div>
                             ${noteHtml}
-                            <button class="complete-btn" onclick="completeOrder('${order.orderNumber}')">
+                            <button class="complete-btn" onclick="completeOrder(this.dataset.order)">
                                 Mark as Collected
                             </button>
                         </div>

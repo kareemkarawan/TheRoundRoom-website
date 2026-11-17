@@ -1,6 +1,6 @@
 /**
  * FILE: combo-settings.js
- * PURPOSE: Netlify function to manage bagel+schmear combo settings and availability.
+ * PURPOSE: Netlify function to manage bagel+schmear and Carbies combo settings.
  *
  * NOTES:
  * - GET: Returns combo price, availability, and allowed bagel/schmear IDs
@@ -31,7 +31,7 @@ function normalizeAllowedPincodes(value) {
 function defaultCarbiesSandwichSettings() {
   return {
     sectionTitle: "The Round Room x Carbies",
-    title: "The Carbie Sandwich",
+    title: "The Carbies Combo",
     description: "",
     price: 0,
     isAvailable: false,
@@ -168,7 +168,7 @@ async function handlePut(body) {
       if (!updates.carbiesSandwich || typeof updates.carbiesSandwich !== "object" || Array.isArray(updates.carbiesSandwich)) {
         return {
           statusCode: 400,
-          body: JSON.stringify({ error: "Invalid Carbies sandwich settings" }),
+          body: JSON.stringify({ error: "Invalid Carbies combo settings" }),
         };
       }
       const collab = updates.carbiesSandwich;
@@ -176,7 +176,7 @@ async function handlePut(body) {
       if (Number.isNaN(collabPrice) || collabPrice < 0) {
         return {
           statusCode: 400,
-          body: JSON.stringify({ error: "Invalid Carbies sandwich price" }),
+          body: JSON.stringify({ error: "Invalid Carbies combo price" }),
         };
       }
       const defaults = defaultCarbiesSandwichSettings();
@@ -196,7 +196,7 @@ async function handlePut(body) {
         price: collabPrice,
         isAvailable: collab.isAvailable === true,
         availableBagels: Array.isArray(collab.availableBagels) ? collab.availableBagels : [],
-        availableSchmears: Array.isArray(collab.availableSchmears) ? collab.availableSchmears : [],
+        availableSchmears: Array.isArray(collab.availableSchmears) ? collab.availableSchmears.slice(0, 1) : [],
         allowedPincodes: normalizeAllowedPincodes(collab.allowedPincodes || []),
       };
       for (const field of textFields) {

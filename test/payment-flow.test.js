@@ -184,7 +184,7 @@ test("creates an order, verifies payment, and persists the paid confirmation", a
     }
 });
 
-test("creates a Carbies sandwich order using its configured price and title", async () => {
+test("creates a Carbies combo order with its configured Carbies Schmear", async () => {
     const envKeys = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalLoad = Module._load;
@@ -193,6 +193,7 @@ test("creates a Carbies sandwich order using its configured price and title", as
     const database = createDatabase({
         menuItems: [
             { id: "everything", name: "Everything", category: "bagels", isAvailable: true },
+            { id: "carbies-schmear", name: "Carbies Schmear", category: "carbies", isAvailable: true },
             { id: "scallion", name: "Scallion", category: "schmears", isAvailable: true },
         ],
         comboSettings: {
@@ -203,7 +204,7 @@ test("creates a Carbies sandwich order using its configured price and title", as
                 price: 350,
                 isAvailable: true,
                 availableBagels: ["everything"],
-                availableSchmears: ["scallion"],
+                availableSchmears: ["carbies-schmear", "scallion"],
             },
         },
     });
@@ -248,9 +249,9 @@ test("creates a Carbies sandwich order using its configured price and title", as
                     isCombo: true,
                     comboType: "carbies_sandwich",
                     bagelId: "everything",
-                    schmearId: "scallion",
+                    schmearId: "carbies-schmear",
                     bagelName: "Everything",
-                    schmearName: "Scallion",
+                    schmearName: "Carbies Schmear",
                 }],
             }),
         });
@@ -259,7 +260,7 @@ test("creates a Carbies sandwich order using its configured price and title", as
         assert.equal(response.statusCode, 201);
         assert.equal(responseData.pricing.subtotal, 700);
         assert.equal(database.orders[0].items[0].menuItemId, "combo_carbies_sandwich");
-        assert.equal(database.orders[0].items[0].name, "The Carbie Special: Everything + Scallion");
+        assert.equal(database.orders[0].items[0].name, "The Carbie Special: Everything + Carbies Schmear");
         assert.equal(database.orders[0].items[0].comboType, "carbies_sandwich");
 
         const invalidSelectionResponse = await createOrder({
@@ -273,14 +274,14 @@ test("creates a Carbies sandwich order using its configured price and title", as
                     isCombo: true,
                     comboType: "carbies_sandwich",
                     bagelId: "everything",
-                    schmearId: "not-configured",
+                    schmearId: "scallion",
                     bagelName: "Everything",
-                    schmearName: "Unknown",
+                    schmearName: "Scallion",
                 }],
             }),
         });
         assert.equal(invalidSelectionResponse.statusCode, 400);
-        assert.equal(JSON.parse(invalidSelectionResponse.body).error, "Invalid Carbies sandwich selection");
+        assert.equal(JSON.parse(invalidSelectionResponse.body).error, "Invalid Carbies combo selection");
     } finally {
         Module._load = originalLoad;
         global.fetch = originalFetch;

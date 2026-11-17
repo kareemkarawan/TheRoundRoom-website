@@ -66,7 +66,7 @@ test("combo settings save optional image without requiring it from older clients
     assert.deepEqual(savedSettings.availableBagels, baseSettings.availableBagels);
 });
 
-test("Carbies sandwich settings save independently from the existing sandwich", async () => {
+test("Carbies combo settings save independently from the existing sandwich", async () => {
     let savedSettings;
     let storedSettings = null;
     const database = {
@@ -93,7 +93,7 @@ test("Carbies sandwich settings save independently from the existing sandwich", 
                 price: 350,
                 isAvailable: true,
                 availableBagels: ["plain"],
-                availableSchmears: ["scallion"],
+                availableSchmears: ["carbies-schmear", "another-schmear"],
                 bagelLabel: "Pick your bagel",
                 bagelPlaceholder: "Choose one",
                 schmearLabel: "Pick your schmear",
@@ -111,6 +111,7 @@ test("Carbies sandwich settings save independently from the existing sandwich", 
     assert.equal(savedSettings.carbiesSandwich.title, "The Carbie Special");
     assert.equal(savedSettings.carbiesSandwich.imageUrl, "images/carbies.webp");
     assert.deepEqual(savedSettings.carbiesSandwich.availableBagels, ["plain"]);
+    assert.deepEqual(savedSettings.carbiesSandwich.availableSchmears, ["carbies-schmear"]);
 
     const getResponse = await handler({
         httpMethod: "GET",
