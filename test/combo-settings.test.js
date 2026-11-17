@@ -122,4 +122,37 @@ test("Carbies combo settings save independently from the existing sandwich", asy
     assert.deepEqual(settings.availableSchmears, []);
     assert.equal(settings.isAvailable, false);
     assert.equal(settings.carbiesSandwich.title, "The Carbie Special");
+    assert.deepEqual(settings.carbiesOrderDays, [0, 3, 6]);
+});
+
+test("saves Carbies order days independently and rejects invalid schedules", async () => {
+    let storedSettings = null;
+    const database = {
+        collection(name) {
+            assert.equal(name, "combo_settings");
+            return {
+                findOne: async () => storedSettings,
+                updateOne: async (_query, update) => {
+                    storedSettings = { ...storedSettings, ...update.$set };
+                },
+            };
+        },
+    };
+    const handler = loadComboSettingsHandler(database);
+    const request = days => ({
+        httpMethod: "PUT",
+        headers: { "x-admin-token": "test-admin-token" },
+        body: JSON.stringify({ carbiesOrderDays: days }),
+    });
+
+    const saveResponse = await handler(request([3, 6, 0]));
+    assert.equal(saveResponse.statusCode, 200);
+    assert.deepEqual(storedSettings.carbiesOrderDays, [3, 6, 0]);
+
+    const invalidResponse = await handler(request([3, 7]));
+    assert.equal(invalidResponse.statusCode, 400);
+    assert.deepEqual(storedSettings.carbiesOrderDays, [3, 6, 0]);
+
+    const getResponse = await handler({ httpMethod: "GET", headers: {} });
+    assert.deepEqual(JSON.parse(getResponse.body).carbiesOrderDays, [3, 6, 0]);
 });

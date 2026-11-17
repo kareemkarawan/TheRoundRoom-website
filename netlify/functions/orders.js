@@ -29,7 +29,7 @@ const MAX_DELIVERY_FEE = 5000;
 const ORDER_TYPES = new Set(["delivery", "collection"]);
 const CARBIES_ORDER_DAYS = new Set([0, 3, 6]);
 
-function isAllowedCarbiesOrderDate(value) {
+function isAllowedCarbiesOrderDate(value, allowedDays = CARBIES_ORDER_DAYS) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
   }
@@ -39,7 +39,7 @@ function isAllowedCarbiesOrderDate(value) {
   return date.getUTCFullYear() === year &&
     date.getUTCMonth() === month - 1 &&
     date.getUTCDate() === day &&
-    CARBIES_ORDER_DAYS.has(date.getUTCDay());
+    allowedDays.has(date.getUTCDay());
 }
 
 function normalizeOrderType(value) {
@@ -240,13 +240,25 @@ async function handlePost(body) {
       item.comboType === "carbies_sandwich" ||
       menuMap.get(item.schmearId)?.category?.toLowerCase() === "carbies"
     );
-    if ((hasCarbiesSchmear || hasCarbiesCombo) && !isAllowedCarbiesOrderDate(order.orderDate)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: "Carbies Schmear and Carbies Combo are only available for order on Wednesday, Saturday, and Sunday.",
-        }),
-      };
+    if (hasCarbiesSchmear || hasCarbiesCombo) {
+      const carbiesSettings = await db.collection("combo_settings").findOne({ id: "combo" });
+      const allowedDays = Array.isArray(carbiesSettings?.carbiesOrderDays)
+        ? new Set(carbiesSettings.carbiesOrderDays.filter((day) =>
+          Number.isInteger(day) && day >= 0 && day <= 6
+        ))
+        : CARBIES_ORDER_DAYS;
+
+      if (!isAllowedCarbiesOrderDate(order.orderDate, allowedDays)) {
+        const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const allowedDayNames = [...allowedDays].sort((first, second) => first - second)
+          .map((day) => weekdayNames[day]);
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: `Carbies items are only available on ${allowedDayNames.join(", ") || "no configured days"}.`,
+          }),
+        };
+      }
     }
 
     let subtotal = 0;

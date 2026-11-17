@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const Module = require("node:module");
 const test = require("node:test");
 
-function loadOrdersHandler(settings, menuItems = []) {
+function loadOrdersHandler(settings, menuItems = [], comboSettings = { carbiesOrderDays: [0, 3, 6] }) {
     const envKeys = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalLoad = Module._load;
@@ -15,7 +15,11 @@ function loadOrdersHandler(settings, menuItems = []) {
     const database = {
         collection(name) {
             return {
-                findOne: async () => name === "settings" ? settings : null,
+                findOne: async () => name === "settings"
+                    ? settings
+                    : name === "combo_settings"
+                        ? comboSettings
+                        : null,
                 find: (query) => ({
                     toArray: async () => menuItems.filter((item) => query.id.$in.includes(item.id)),
                 }),
@@ -119,7 +123,7 @@ test("rejects Carbies Schmear orders without a supported weekday date", async ()
             ));
 
             assert.equal(response.statusCode, 400);
-            assert.match(JSON.parse(response.body).error, /Wednesday, Saturday, and Sunday/);
+            assert.match(JSON.parse(response.body).error, /Carbies items are only available/);
         }
     } finally {
         cleanup();
@@ -143,7 +147,28 @@ test("rejects Carbies combo orders without a supported date even if combo type i
         }], "2026-11-17"));
 
         assert.equal(response.statusCode, 400);
-        assert.match(JSON.parse(response.body).error, /Wednesday, Saturday, and Sunday/);
+        assert.match(JSON.parse(response.body).error, /Carbies items are only available/);
+    } finally {
+        cleanup();
+    }
+});
+
+test("uses the Carbies order days saved in combo settings", async () => {
+    const menuItems = [{ id: "carbies-schmear", category: "carbies", isAvailable: true, price: 180 }];
+    const { handler, cleanup } = loadOrdersHandler(
+        { storeOpen: true },
+        menuItems,
+        { carbiesOrderDays: [3] }
+    );
+
+    try {
+        const response = await handler(createCarbiesOrderRequest(
+            [{ menuItemId: "carbies-schmear", qty: 1 }],
+            "2026-11-21"
+        ));
+
+        assert.equal(response.statusCode, 400);
+        assert.match(JSON.parse(response.body).error, /Wednesday/);
     } finally {
         cleanup();
     }

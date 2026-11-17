@@ -53,6 +53,7 @@ exports.handler = withNoStore(async (event) => {
       description: "",
       imageUrl: "",
       allowedPincodes: [],
+      carbiesOrderDays: [0, 3, 6],
     };
 
     return {

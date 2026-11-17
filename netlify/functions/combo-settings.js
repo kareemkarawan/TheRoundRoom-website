@@ -3,7 +3,7 @@
  * PURPOSE: Netlify function to manage bagel+schmear and Carbies combo settings.
  *
  * NOTES:
- * - GET: Returns combo price, availability, and allowed bagel/schmear IDs
+ * - GET: Returns combo price, availability, allowed item IDs, and Carbies order days
  * - PUT: Updates combo settings (admin only, requires x-admin-token)
  * - Settings stored in MongoDB round_room.combo_settings collection
  * - Single document with id="combo" holds all combo configuration
@@ -16,6 +16,7 @@ const { isAdminAuthorized, withNoStore } = require("./utils");
 
 const dbName = "round_room";
 const collectionName = "combo_settings";
+const DEFAULT_CARBIES_ORDER_DAYS = [0, 3, 6];
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN;
 
@@ -77,6 +78,7 @@ async function handleGet() {
         description: "",
         imageUrl: "",
         allowedPincodes: [],
+        carbiesOrderDays: DEFAULT_CARBIES_ORDER_DAYS,
       };
     }
     settings = {
@@ -89,6 +91,9 @@ async function handleGet() {
       imageUrl: "",
       allowedPincodes: [],
       ...settings,
+      carbiesOrderDays: Array.isArray(settings.carbiesOrderDays)
+        ? settings.carbiesOrderDays
+        : DEFAULT_CARBIES_ORDER_DAYS,
       carbiesSandwich: {
         ...defaultCarbiesSandwichSettings(),
         ...(settings.carbiesSandwich || {}),
@@ -149,6 +154,20 @@ async function handlePut(body) {
 
     const now = new Date();
     const settingsData = { id: "combo", updatedAt: now };
+    if (updates.carbiesOrderDays !== undefined) {
+      if (
+        !Array.isArray(updates.carbiesOrderDays) ||
+        updates.carbiesOrderDays.length === 0 ||
+        updates.carbiesOrderDays.some((day) => !Number.isInteger(day) || day < 0 || day > 6)
+      ) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: "Carbies order days must include at least one valid weekday (0-6)" }),
+        };
+      }
+      settingsData.carbiesOrderDays = [...new Set(updates.carbiesOrderDays)];
+    }
+
     if (hasComboUpdates) {
       Object.assign(settingsData, {
         price: priceValue,

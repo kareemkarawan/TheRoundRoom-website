@@ -210,8 +210,10 @@
 
     <script>
         const orderDays = new Set([0, 3, 6]);
+        const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const orderDateInput = document.getElementById('orderDate');
         const carbiesDateModal = document.getElementById('carbiesDateModal');
+        const carbiesDateModalMessage = document.getElementById('carbiesDateModalMessage');
         const carbiesDateModalItems = document.getElementById('carbiesDateModalItems');
         let lastDateFocusTarget = null;
 
@@ -242,6 +244,24 @@
                 date.getUTCMonth() === month - 1 &&
                 date.getUTCDate() === day &&
                 orderDays.has(date.getUTCDay());
+        }
+
+        function formatOrderDays() {
+            const days = [...orderDays].sort((first, second) => first - second).map(day => weekdayNames[day]);
+            if (days.length < 2) return days[0] || 'no available days';
+            if (days.length === 2) return `${days[0]} and ${days[1]}`;
+            return `${days.slice(0, -1).join(', ')}, and ${days[days.length - 1]}`;
+        }
+
+        function updateCarbiesOrderDayCopy() {
+            const days = formatOrderDays();
+            if (carbiesDateModalMessage) {
+                carbiesDateModalMessage.textContent = `These items are only available for order on ${days}:`;
+            }
+            const helpText = document.getElementById('orderDateHelp');
+            if (helpText && hasCarbiesOrder) {
+                helpText.textContent = `Carbies Schmear and Carbies Combo are available for order on ${days}.`;
+            }
         }
 
         function showCarbiesDateModal(items) {
@@ -291,8 +311,7 @@
                 orderDateInput.setAttribute('aria-required', 'true');
                 orderDateInput.addEventListener('change', window.validateCarbiesOrderDate);
             }
-            const helpText = document.getElementById('orderDateHelp');
-            if (helpText) helpText.textContent = 'Carbies Schmear and Carbies Combo are available for order on Wednesday, Saturday, and Sunday.';
+            updateCarbiesOrderDayCopy();
         }
 
         document.getElementById('carbiesDateModalClose')?.addEventListener('click', closeCarbiesDateModal);
@@ -316,6 +335,22 @@
                     fetch('/.netlify/functions/settings'),
                     fetch('/.netlify/functions/available-dates')
                 ]);
+
+                if (hasCarbiesOrder) {
+                    const comboSettingsResponse = await fetch('/.netlify/functions/combo-settings');
+                    if (!comboSettingsResponse.ok) {
+                        throw new Error('Could not load Carbies order day settings');
+                    }
+                    const comboSettings = await comboSettingsResponse.json();
+                    if (Array.isArray(comboSettings.carbiesOrderDays)) {
+                        const configuredDays = comboSettings.carbiesOrderDays.filter(day =>
+                            Number.isInteger(day) && day >= 0 && day <= 6
+                        );
+                        orderDays.clear();
+                        configuredDays.forEach(day => orderDays.add(day));
+                    }
+                    updateCarbiesOrderDayCopy();
+                }
 
                 if (!settingsResponse.ok) {
                     console.warn('Could not load date settings, using defaults');
@@ -539,7 +574,7 @@
                         year: 'numeric'
                     });
                     helpText.textContent = hasCarbiesOrder
-                        ? `Carbies Schmear and Carbies Combo are available for order on Wednesday, Saturday, and Sunday. Earliest available: ${minFormatted}`
+                        ? `Carbies Schmear and Carbies Combo are available for order on ${formatOrderDays()}. Earliest available: ${minFormatted}`
                         : `Earliest available: ${minFormatted}`;
                 }
 

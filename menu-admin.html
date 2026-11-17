@@ -279,6 +279,33 @@
             background: #8a2d3d;
         }
 
+        .carbies-order-days-save {
+            display: block;
+            margin-top: 0.75rem;
+        }
+
+        .staff-page .carbies-order-days-save {
+            color: #fff !important;
+        }
+
+        .carbies-schmear-admin-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .carbies-schmear-add {
+            display: block;
+        }
+
+        .carbies-schmear-add[hidden] {
+            display: none;
+        }
+
+        .staff-page .carbies-schmear-add {
+            color: #fff !important;
+        }
+
         /* Bagel box admin styles */
         .box-settings {
             border-color: #2196F3;
@@ -313,7 +340,7 @@
     <main class="admin-container">
         <h2>Menu Management</h2>
         <p class="muted">Add, edit, or remove menu items from the database.</p>
-        <p class="muted">Add the Carbies Schmear as a menu item in the Carbies category. Configure the Carbies Combo below.</p>
+        <p class="muted">Add the Carbies Schmear as a Carbies menu item, then set Carbies order days and configure the Combo below.</p>
 
         <div id="messageBox" class="message"></div>
 
@@ -386,8 +413,26 @@
         </section>
 
         <section class="combo-settings" id="carbiesSandwichSettings">
-            <h3>Round Room x Carbies Combo</h3>
-            <p class="muted">Configure the Carbies collaboration combo and its bagel and Carbies Schmear choices.</p>
+            <h3>Carbies Schmear &amp; Combo Settings</h3>
+            <p class="muted">Configure the Carbies Schmear schedule and collaboration combo.</p>
+
+            <div class="form-group">
+                <h4>Carbies Schmear</h4>
+                <p class="muted">Add, edit, or remove the Carbies Schmear here, separately from the general menu items.</p>
+                <div id="carbiesSchmearAdmin" class="carbies-schmear-admin-grid">
+                    <p class="muted">Loading Carbies Schmear...</p>
+                </div>
+                <button type="button" class="btn-combo-save carbies-schmear-add" id="addCarbiesSchmearBtn">+ Add Carbies Schmear</button>
+            </div>
+
+            <div class="form-group">
+                <label>Order days for Carbies Schmear and Combo:</label>
+                <div id="carbiesOrderDays" class="combo-checkbox-grid">
+                    <p class="muted">Loading order days...</p>
+                </div>
+                <small class="muted">These days apply to both the Carbies Schmear and Carbies Combo.</small>
+                <button type="button" class="btn-combo-save carbies-order-days-save" id="saveCarbiesOrderDaysBtn">Save Carbies Order Days</button>
+            </div>
 
             <div class="form-group">
                 <label for="carbiesSectionTitleInput">Collaboration section heading</label>
@@ -827,9 +872,19 @@
             availableBagels: [],
             availableSchmears: [],
             allowedPincodes: [],
+            carbiesOrderDays: [0, 3, 6],
             description: '',
             imageUrl: ''
         };
+        const carbiesWeekdays = [
+            { value: 0, label: 'Sunday' },
+            { value: 1, label: 'Monday' },
+            { value: 2, label: 'Tuesday' },
+            { value: 3, label: 'Wednesday' },
+            { value: 4, label: 'Thursday' },
+            { value: 5, label: 'Friday' },
+            { value: 6, label: 'Saturday' }
+        ];
         let carbiesSandwichSettings = {};
 
         async function loadComboSettings() {
@@ -845,7 +900,66 @@
             }
             renderComboCheckboxes();
             renderCarbiesSandwichSettings();
+            renderCarbiesOrderDays();
         }
+
+        function renderCarbiesOrderDays() {
+            const container = document.getElementById('carbiesOrderDays');
+            if (!container) return;
+            const selectedDays = new Set(
+                Array.isArray(comboSettings.carbiesOrderDays) ? comboSettings.carbiesOrderDays : [0, 3, 6]
+            );
+            container.innerHTML = carbiesWeekdays.map(day => `
+                <label class="combo-checkbox-item">
+                    <input type="checkbox" name="carbiesOrderDay" value="${day.value}"
+                        ${selectedDays.has(day.value) ? 'checked' : ''}>
+                    ${day.label}
+                </label>
+            `).join('');
+        }
+
+        async function saveCarbiesOrderDays() {
+            const token = getAdminToken();
+            if (!token) {
+                showMessage('Admin token required. Please try again.', 'error');
+                if (window.AdminGate) window.AdminGate.lock();
+                return;
+            }
+
+            const carbiesOrderDays = Array.from(
+                document.querySelectorAll('input[name="carbiesOrderDay"]:checked')
+            ).map(input => Number(input.value));
+            if (carbiesOrderDays.length === 0) {
+                showMessage('Select at least one order day for Carbies items.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/combo-settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                    body: JSON.stringify({ carbiesOrderDays })
+                });
+                if (response.ok) {
+                    comboSettings.carbiesOrderDays = carbiesOrderDays;
+                    showMessage('Carbies order days saved successfully', 'success');
+                    return;
+                }
+                if (response.status === 401) {
+                    if (window.AdminGate) window.AdminGate.lock();
+                    showMessage('Unauthorized. Please re-enter admin token.', 'error');
+                    return;
+                }
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.error || 'Failed to save Carbies order days');
+            } catch (error) {
+                console.error('[menu-admin] Save Carbies order days failed:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        document.getElementById('saveCarbiesOrderDaysBtn')
+            ?.addEventListener('click', saveCarbiesOrderDays);
 
         function renderComboCheckboxes() {
             const bagelsContainer = document.getElementById('comboBagels');
@@ -1572,24 +1686,90 @@
         });
         // ====== END BAGEL BITES FUNCTIONS ======
 
+        function renderCarbiesSchmearAdmin() {
+            const container = document.getElementById('carbiesSchmearAdmin');
+            const addButton = document.getElementById('addCarbiesSchmearBtn');
+            if (!container) return;
+
+            const carbiesItems = allItems.filter(item => (item.category || '').toLowerCase() === 'carbies');
+            container.textContent = '';
+            if (addButton) addButton.hidden = carbiesItems.length > 0;
+
+            if (carbiesItems.length === 0) {
+                const message = document.createElement('p');
+                message.className = 'muted';
+                message.textContent = 'No Carbies Schmear added yet.';
+                container.appendChild(message);
+                return;
+            }
+
+            carbiesItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'menu-card';
+
+                if (item.imageUrl) {
+                    const image = document.createElement('img');
+                    image.src = item.imageUrl;
+                    image.alt = item.name;
+                    card.appendChild(image);
+                }
+
+                const title = document.createElement('h4');
+                title.textContent = item.name;
+                card.appendChild(title);
+
+                const price = document.createElement('p');
+                price.textContent = `Price: ₹${Number(item.price).toFixed(2)}`;
+                card.appendChild(price);
+
+                const availability = document.createElement('p');
+                availability.textContent = `Availability: ${item.isAvailable === false ? 'Unavailable' : 'Available'}`;
+                card.appendChild(availability);
+
+                const actions = document.createElement('div');
+                actions.className = 'menu-card-actions';
+
+                const editButton = document.createElement('button');
+                editButton.type = 'button';
+                editButton.className = 'btn-edit';
+                editButton.textContent = 'Edit Carbies Schmear';
+                editButton.addEventListener('click', () => editItem(item.id));
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn-delete';
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', () => deleteItem(item.id));
+
+                actions.append(editButton, deleteButton);
+                card.appendChild(actions);
+                container.appendChild(card);
+            });
+        }
+
         function renderMenuItems() {
             const grid = document.getElementById('menuGridAdmin');
             grid.textContent = '';
-            if (!allItems || allItems.length === 0) {
-                console.debug('[menu-admin] No items to render');
+            renderCarbiesSchmearAdmin();
+
+            const menuItems = allItems.filter(item => (item.category || '').toLowerCase() !== 'carbies');
+            if (menuItems.length === 0) {
+                console.debug('[menu-admin] No general menu items to render');
                 const msg = document.createElement('p');
                 msg.className = 'muted';
-                msg.textContent = 'No menu items yet. Add one to get started!';
+                msg.textContent = allItems.length > 0
+                    ? 'No other menu items yet.'
+                    : 'No menu items yet. Add one to get started!';
                 grid.appendChild(msg);
                 return;
             }
 
-            console.debug('[menu-admin] Rendering items:', allItems.length);
+            console.debug('[menu-admin] Rendering items:', menuItems.length);
 
-            const order = ['carbies', 'bagels', 'schmears', 'desserts'];
+            const order = ['bagels', 'schmears', 'desserts'];
             const groups = {};
 
-            allItems.forEach(item => {
+            menuItems.forEach(item => {
                 const key = (item.category || 'other').toLowerCase();
                 if (!groups[key]) groups[key] = [];
                 groups[key].push(item);
@@ -1689,6 +1869,8 @@
             editingId = itemId;
             const modal = document.getElementById('itemModal');
             const titleEl = document.getElementById('modalTitle');
+            const categoryField = document.getElementById('itemCategory');
+            categoryField.disabled = false;
             titleEl.textContent = title;
             currentImageUrl = '';
             currentImageMode = 'url';
@@ -1702,7 +1884,9 @@
                     document.getElementById('itemId').value = item.id;
                     document.getElementById('itemId').disabled = true;
                     document.getElementById('itemName').value = item.name;
-                    document.getElementById('itemCategory').value = item.category;
+                    const isCarbiesItem = (item.category || '').toLowerCase() === 'carbies';
+                    categoryField.value = isCarbiesItem ? 'carbies' : item.category;
+                    categoryField.disabled = isCarbiesItem;
                     document.getElementById('itemPrice').value = item.price;
                     document.getElementById('itemIsAvailable').checked = item.isAvailable !== false;
                     document.getElementById('itemImageUrl').value = item.imageUrl || '';
@@ -1728,10 +1912,21 @@
             modal.classList.add('active');
         }
 
+        function openCarbiesSchmearModal() {
+            showModal('Add Carbies Schmear');
+            const baseId = 'carbies_schmear';
+            const itemId = allItems.some(item => item.id === baseId) ? 'carbies_schmear_collab' : baseId;
+            document.getElementById('itemId').value = itemId;
+            document.getElementById('itemName').value = 'Carbies Schmear';
+            document.getElementById('itemCategory').value = 'carbies';
+            document.getElementById('itemCategory').disabled = true;
+        }
+
         function closeModal() {
             console.debug('[menu-admin] Close modal');
             const modal = document.getElementById('itemModal');
             modal.classList.remove('active');
+            document.getElementById('itemCategory').disabled = false;
             editingId = null;
             currentImageUrl = '';
             currentImageMode = 'url';
@@ -1747,7 +1942,13 @@
 
         async function editItem(itemId) {
             console.debug('[menu-admin] Edit item:', itemId);
-            showModal('Edit Menu Item', itemId);
+            const item = allItems.find(menuItem => menuItem.id === itemId);
+            showModal(
+                item && (item.category || '').toLowerCase() === 'carbies'
+                    ? 'Edit Carbies Schmear'
+                    : 'Edit Menu Item',
+                itemId
+            );
         }
 
         async function deleteItem(itemId) {
@@ -1785,6 +1986,9 @@
         document.getElementById('addItemBtn').addEventListener('click', () => {
             showModal('Add Menu Item');
         });
+
+        document.getElementById('addCarbiesSchmearBtn')
+            ?.addEventListener('click', openCarbiesSchmearModal);
 
         document.getElementById('cancelBtn').addEventListener('click', closeModal);
 
