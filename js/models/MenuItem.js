@@ -23,12 +23,13 @@ class MenuItem {
    * @param {string} [opts.description]
    * @param {number} [opts.stock]
    */
-  constructor({ id, name, price, image = '', imageUrl = '', description = '', stock = Infinity } = {}) {
+  constructor({ id, name, price, image = '', imageUrl = '', description = '', category = '', stock = Infinity } = {}) {
     this.id = String(id);
     this.name = name || '';
     this.price = Number(price) || 0;
     this.image = imageUrl || image;
     this.description = description;
+    this.category = category;
     this.stock = typeof stock === 'number' ? stock : Infinity;
   }
 
@@ -38,13 +39,21 @@ class MenuItem {
       name: this.name,
       price: this.price,
       qty: Number(qty),
-      itemTotal: Number((this.price * qty).toFixed(2))
+      itemTotal: Number((this.price * qty).toFixed(2)),
+      category: this.category
     };
   }
 
   renderHTML() {
+    const category = String(this.category).replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
     return `
-      <div class="menu-item" data-id="${this.id}" data-name="${this.name}" data-price="${this.price}">
+      <div class="menu-item" data-id="${this.id}" data-name="${this.name}" data-price="${this.price}" data-category="${category}">
         ${this.image ? `<img src="${this.image}" alt="${this.name}" loading="lazy">` : ''}
         <div class="menu-item-info">
           <h3>${this.name}</h3>
@@ -66,7 +75,7 @@ class MenuItem {
     const price = parseFloat(el.dataset.price || el.querySelector('.price')?.textContent?.replace(/[₹,\s]/g, '') || 0);
     const img = el.querySelector('img')?.getAttribute('src') || '';
     const desc = el.dataset.description || '';
-    return new MenuItem({ id, name, price, image: img, description: desc });
+    return new MenuItem({ id, name, price, image: img, description: desc, category: el.dataset.category || '' });
   }
 
   static fromData(obj) {

@@ -175,6 +175,20 @@
         <div id="paymentLoading" class="loading-overlay" style="display:none;">
             <div class="loading-card">Processing your payment…</div>
         </div>
+        <div id="carbiesDateModal" class="carbies-date-modal" aria-hidden="true">
+            <section class="carbies-date-modal-card" role="dialog" aria-modal="true" aria-labelledby="carbiesDateModalTitle"
+                aria-describedby="carbiesDateModalMessage">
+                <button class="carbies-date-modal-close" id="carbiesDateModalClose" type="button"
+                    aria-label="Close">×</button>
+                <p class="carbies-date-modal-eyebrow">ORDER DAY</p>
+                <h2 id="carbiesDateModalTitle">Please choose another day</h2>
+                <p id="carbiesDateModalMessage">These items are only available for order on Wednesday, Saturday, and
+                    Sunday:</p>
+                <ul id="carbiesDateModalItems" class="carbies-date-modal-items"></ul>
+                <button class="carbies-date-modal-action" id="carbiesDateModalAction" type="button">Choose another
+                    day</button>
+            </section>
+        </div>
     </main>
 
     <footer class="site-footer">
@@ -195,9 +209,105 @@
     </footer>
 
     <script>
+        const orderDays = new Set([0, 3, 6]);
+        const orderDateInput = document.getElementById('orderDate');
+        const carbiesDateModal = document.getElementById('carbiesDateModal');
+        const carbiesDateModalItems = document.getElementById('carbiesDateModalItems');
+        let lastDateFocusTarget = null;
+
+        function parseCartItems() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('rr_cart') || 'null');
+                return Array.isArray(cart?.items) ? cart.items : [];
+            } catch (error) {
+                console.error('Could not read cart for Carbies date validation:', error);
+                return [];
+            }
+        }
+
+        function getCarbiesCartItems(items) {
+            return items.filter(item => item && typeof item === 'object' && (
+                String(item.category || '').toLowerCase() === 'carbies' ||
+                item.comboType === 'carbies_sandwich' ||
+                (item.isCombo && String(item.schmearName || '').toLowerCase().includes('carbies')) ||
+                String(item.name || '').toLowerCase().includes('carbies')
+            ));
+        }
+
+        function isAllowedCarbiesDate(dateString) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString || '')) return false;
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(Date.UTC(year, month - 1, day));
+            return date.getUTCFullYear() === year &&
+                date.getUTCMonth() === month - 1 &&
+                date.getUTCDate() === day &&
+                orderDays.has(date.getUTCDay());
+        }
+
+        function showCarbiesDateModal(items) {
+            if (!carbiesDateModal || !carbiesDateModalItems) return;
+            carbiesDateModalItems.replaceChildren();
+            [...new Set(items.map(item => item.name || 'Carbies item'))].forEach(name => {
+                const listItem = document.createElement('li');
+                listItem.textContent = name;
+                carbiesDateModalItems.appendChild(listItem);
+            });
+            lastDateFocusTarget = document.activeElement;
+            carbiesDateModal.classList.add('is-open');
+            carbiesDateModal.setAttribute('aria-hidden', 'false');
+            document.getElementById('carbiesDateModalAction')?.focus();
+        }
+
+        function closeCarbiesDateModal() {
+            if (!carbiesDateModal) return;
+            carbiesDateModal.classList.remove('is-open');
+            carbiesDateModal.setAttribute('aria-hidden', 'true');
+            lastDateFocusTarget?.focus();
+        }
+
+        window.getCarbiesOrderItems = getCarbiesCartItems;
+        window.validateCarbiesOrderDate = function () {
+            const items = getCarbiesCartItems(parseCartItems());
+            if (items.length === 0 || !orderDateInput?.value) return true;
+            if (isAllowedCarbiesDate(orderDateInput.value)) {
+                orderDateInput.setCustomValidity('');
+                return true;
+            }
+            orderDateInput.setCustomValidity('Carbies items are only available on Wednesday, Saturday, and Sunday.');
+            showCarbiesDateModal(items);
+            return false;
+        };
+
+        const initialCarbiesItems = getCarbiesCartItems(parseCartItems());
+        const hasCarbiesOrder = initialCarbiesItems.length > 0;
+        window._rrHasCarbiesOrder = hasCarbiesOrder;
+        if (hasCarbiesOrder) {
+            const datePickerSection = document.getElementById('datePickerSection');
+            const preorderToggleSection = document.getElementById('preorderToggleSection');
+            if (datePickerSection) datePickerSection.style.display = 'block';
+            if (preorderToggleSection) preorderToggleSection.style.display = 'none';
+            if (orderDateInput) {
+                orderDateInput.required = true;
+                orderDateInput.setAttribute('aria-required', 'true');
+                orderDateInput.addEventListener('change', window.validateCarbiesOrderDate);
+            }
+            const helpText = document.getElementById('orderDateHelp');
+            if (helpText) helpText.textContent = 'Carbies Schmear and Carbies Combo are available for order on Wednesday, Saturday, and Sunday.';
+        }
+
+        document.getElementById('carbiesDateModalClose')?.addEventListener('click', closeCarbiesDateModal);
+        document.getElementById('carbiesDateModalAction')?.addEventListener('click', closeCarbiesDateModal);
+        carbiesDateModal?.addEventListener('click', event => {
+            if (event.target === carbiesDateModal) closeCarbiesDateModal();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && carbiesDateModal?.classList.contains('is-open')) {
+                closeCarbiesDateModal();
+            }
+        });
+
         // Initialize order date picker with settings and availability from admin
         (async function initOrderDatePicker() {
-            const orderDateInput = document.getElementById('orderDate');
             if (!orderDateInput) return;
 
             try {
@@ -247,6 +357,14 @@
                     if (preorderOnlyNotice) {
                         preorderOnlyNotice.style.display = 'block';
                     }
+                } else if (hasCarbiesOrder) {
+                    if (preorderToggleSection) preorderToggleSection.style.display = 'none';
+                    if (datePickerSection) {
+                        datePickerSection.style.display = 'block';
+                        orderDateInput.required = true;
+                        orderDateInput.setAttribute('aria-required', 'true');
+                    }
+                    if (preorderOnlyNotice) preorderOnlyNotice.style.display = 'none';
                 } else {
                     // Normal mode: show toggle, hide date picker until checked
                     if (preorderToggleSection) preorderToggleSection.style.display = 'block';
@@ -329,6 +447,7 @@
                                     this.classList.add('selected');
                                     this.style.background = '#4CAF50';
                                     this.style.color = '#fff';
+                                    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
                                 });
                             });
 
@@ -381,10 +500,19 @@
                 // Find first available date and set as default
                 let defaultDate = actualMinDate;
                 if (availabilityData && availabilityData.dates) {
-                    const firstAvailable = availabilityData.dates.find(d => d.available);
+                    const firstAvailable = availabilityData.dates.find(d =>
+                        d.available && (!hasCarbiesOrder || isAllowedCarbiesDate(d.date))
+                    );
                     if (firstAvailable) {
                         defaultDate = new Date(firstAvailable.date);
                     }
+                }
+                if (hasCarbiesOrder && !isAllowedCarbiesDate(formatDate(defaultDate))) {
+                    const nextCarbiesDate = new Date(actualMinDate);
+                    while (nextCarbiesDate <= maxDate && !isAllowedCarbiesDate(formatDate(nextCarbiesDate))) {
+                        nextCarbiesDate.setDate(nextCarbiesDate.getDate() + 1);
+                    }
+                    if (nextCarbiesDate <= maxDate) defaultDate = nextCarbiesDate;
                 }
                 orderDateInput.value = formatDate(defaultDate);
 
@@ -410,7 +538,9 @@
                         month: 'short',
                         year: 'numeric'
                     });
-                    helpText.textContent = `Earliest available: ${minFormatted}`;
+                    helpText.textContent = hasCarbiesOrder
+                        ? `Carbies Schmear and Carbies Combo are available for order on Wednesday, Saturday, and Sunday. Earliest available: ${minFormatted}`
+                        : `Earliest available: ${minFormatted}`;
                 }
 
                 // Add validation on date change - check against available dates
@@ -485,6 +615,11 @@
 
                 orderDateInput.min = formatDate(tomorrow);
                 orderDateInput.max = formatDate(twoWeeks);
+                if (hasCarbiesOrder) {
+                    while (tomorrow <= twoWeeks && !isAllowedCarbiesDate(formatDate(tomorrow))) {
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                    }
+                }
                 orderDateInput.value = formatDate(tomorrow);
             }
         })();
@@ -498,6 +633,7 @@
 
             if (preorderToggle && datePickerSection && orderDateInput) {
                 preorderToggle.addEventListener('change', function () {
+                    if (window._rrHasCarbiesOrder) return;
                     if (this.checked) {
                         datePickerSection.style.display = 'block';
                         orderDateInput.required = true;

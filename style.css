@@ -3365,6 +3365,83 @@ footer {
 	box-shadow: 0 2px 8px rgba(109, 36, 48, 0.1);
 }
 
+.carbies-date-modal {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 3000;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	background: rgba(27, 27, 27, 0.58);
+}
+
+.carbies-date-modal.is-open {
+	display: flex;
+}
+
+.carbies-date-modal-card {
+	position: relative;
+	width: min(100%, 390px);
+	box-sizing: border-box;
+	padding: 2rem;
+	border-radius: 12px;
+	background: #fff;
+	color: var(--rr-bg);
+	box-shadow: 0 20px 55px rgba(0, 0, 0, 0.25);
+}
+
+.carbies-date-modal-eyebrow {
+	margin: 0 0 0.5rem;
+	color: var(--rr-bg);
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+}
+
+.carbies-date-modal-card h2 {
+	margin: 0 2rem 0.75rem 0;
+	font-family: 'Noto Serif Display', serif;
+	font-size: 1.5rem;
+}
+
+.carbies-date-modal-card p:not(.carbies-date-modal-eyebrow) {
+	margin: 0;
+	line-height: 1.55;
+}
+
+.carbies-date-modal-items {
+	margin: 0.75rem 0 1.5rem;
+	padding-left: 1.25rem;
+	font-weight: 600;
+}
+
+.carbies-date-modal-close {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	width: 2rem;
+	height: 2rem;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--rr-bg);
+	font-size: 1.5rem;
+	cursor: pointer;
+}
+
+.carbies-date-modal-action {
+	width: 100%;
+	padding: 0.85rem 1rem;
+	border: 0;
+	border-radius: 6px;
+	background: var(--rr-bg);
+	color: #fff;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
 .date-input:focus {
 	outline: none;
 	border-color: var(--rr-text) !important;

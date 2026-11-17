@@ -740,7 +740,7 @@ function renderMenuItems(items, MenuItemClass, grid) {
         html = mi.renderHTML();
       } else {
         html = `
-          <div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}">
+          <div class="menu-item" data-id="${data.id}" data-name="${data.name}" data-price="${data.price}" data-category="${escapeHtml(data.category || '')}">
             ${data.imageUrl ? `<img src="${versionLocalAssetUrl(data.imageUrl)}" alt="${data.name}" loading="lazy">` : ''}
             <div class="menu-item-info">
               <h3>${data.name}</h3>

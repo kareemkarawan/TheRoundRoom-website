@@ -27,6 +27,20 @@ const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const MAX_DELIVERY_FEE = 5000;
 const ORDER_TYPES = new Set(["delivery", "collection"]);
+const CARBIES_ORDER_DAYS = new Set([0, 3, 6]);
+
+function isAllowedCarbiesOrderDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day &&
+    CARBIES_ORDER_DAYS.has(date.getUTCDay());
+}
 
 function normalizeOrderType(value) {
   if (value === undefined || value === null) {
@@ -218,6 +232,22 @@ async function handlePost(body) {
     ].filter(Boolean);
     const menuItems = ids.length > 0 ? await menuCollection.find({ id: { $in: ids } }).toArray() : [];
     const menuMap = new Map(menuItems.map((m) => [m.id, m]));
+
+    const hasCarbiesSchmear = regularItems.some((item) =>
+      menuMap.get(item.menuItemId)?.category?.toLowerCase() === "carbies"
+    );
+    const hasCarbiesCombo = comboItems.some((item) =>
+      item.comboType === "carbies_sandwich" ||
+      menuMap.get(item.schmearId)?.category?.toLowerCase() === "carbies"
+    );
+    if ((hasCarbiesSchmear || hasCarbiesCombo) && !isAllowedCarbiesOrderDate(order.orderDate)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: "Carbies Schmear and Carbies Combo are only available for order on Wednesday, Saturday, and Sunday.",
+        }),
+      };
+    }
 
     let subtotal = 0;
     const lineItems = [];

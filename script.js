@@ -414,7 +414,7 @@ function updateCart() {
             const itemTotal = qty * price;
             const isBox = item.dataset.isBox === 'true';
 
-            cartItems.push({ id, name, price, qty, itemTotal, isBox });
+            cartItems.push({ id, name, price, qty, itemTotal, isBox, category: item.dataset.category || '' });
             subtotal += itemTotal;
         }
     });
@@ -896,6 +896,7 @@ document.addEventListener('DOMContentLoaded', function () {
     checkoutForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         const form = e.target;
+        if (typeof window.validateCarbiesOrderDate === 'function' && !window.validateCarbiesOrderDate()) return;
         if (!form.reportValidity()) return;
 
         const paymentLoading = document.getElementById('paymentLoading');

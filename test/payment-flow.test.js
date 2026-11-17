@@ -243,6 +243,7 @@ test("creates a Carbies combo order with its configured Carbies Schmear", async 
             body: JSON.stringify({
                 customer: { name: "Test Customer" },
                 orderType: "collection",
+                orderDate: "2026-11-18",
                 items: [{
                     menuItemId: "cart-combo-collab",
                     qty: 2,
@@ -268,6 +269,7 @@ test("creates a Carbies combo order with its configured Carbies Schmear", async 
             body: JSON.stringify({
                 customer: { name: "Test Customer" },
                 orderType: "collection",
+                orderDate: "2026-11-18",
                 items: [{
                     menuItemId: "cart-combo-collab-invalid",
                     qty: 1,

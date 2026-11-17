@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const Module = require("node:module");
 const test = require("node:test");
 
-function loadOrdersHandler(settings) {
+function loadOrdersHandler(settings, menuItems = []) {
     const envKeys = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
     const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
     const originalLoad = Module._load;
@@ -16,6 +16,9 @@ function loadOrdersHandler(settings) {
         collection(name) {
             return {
                 findOne: async () => name === "settings" ? settings : null,
+                find: (query) => ({
+                    toArray: async () => menuItems.filter((item) => query.id.$in.includes(item.id)),
+                }),
             };
         },
     };
@@ -65,6 +68,18 @@ function createOrderRequest(orderType) {
     };
 }
 
+function createCarbiesOrderRequest(items, orderDate) {
+    return {
+        httpMethod: "POST",
+        body: JSON.stringify({
+            customer: { name: "Test Customer" },
+            items,
+            orderType: "delivery",
+            ...(orderDate ? { orderDate } : {}),
+        }),
+    };
+}
+
 test("rejects unsupported order types before database access", async () => {
     const { handler, getMongoClientCreations, cleanup } = loadOrdersHandler({ collectionEnabled: true });
 
@@ -87,6 +102,48 @@ test("rejects collection orders when the store has disabled them", async () => {
 
         assert.equal(response.statusCode, 403);
         assert.equal(JSON.parse(response.body).error, "Collection orders are currently unavailable");
+    } finally {
+        cleanup();
+    }
+});
+
+test("rejects Carbies Schmear orders without a supported weekday date", async () => {
+    const menuItems = [{ id: "carbies-schmear", category: "carbies", isAvailable: true, price: 180 }];
+    const { handler, cleanup } = loadOrdersHandler({ storeOpen: true }, menuItems);
+
+    try {
+        for (const orderDate of ["2026-11-17", undefined]) {
+            const response = await handler(createCarbiesOrderRequest(
+                [{ menuItemId: "carbies-schmear", qty: 1 }],
+                orderDate
+            ));
+
+            assert.equal(response.statusCode, 400);
+            assert.match(JSON.parse(response.body).error, /Wednesday, Saturday, and Sunday/);
+        }
+    } finally {
+        cleanup();
+    }
+});
+
+test("rejects Carbies combo orders without a supported date even if combo type is omitted", async () => {
+    const menuItems = [
+        { id: "bagel", category: "bagels", isAvailable: true, price: 100 },
+        { id: "carbies-schmear", category: "carbies", isAvailable: true, price: 180 },
+    ];
+    const { handler, cleanup } = loadOrdersHandler({ storeOpen: true }, menuItems);
+
+    try {
+        const response = await handler(createCarbiesOrderRequest([{
+            menuItemId: "combo-id",
+            qty: 1,
+            isCombo: true,
+            bagelId: "bagel",
+            schmearId: "carbies-schmear",
+        }], "2026-11-17"));
+
+        assert.equal(response.statusCode, 400);
+        assert.match(JSON.parse(response.body).error, /Wednesday, Saturday, and Sunday/);
     } finally {
         cleanup();
     }
